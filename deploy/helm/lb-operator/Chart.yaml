@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: lb-operator
+version: 0.5.0-nightly
+appVersion: "0.5.0-nightly"
+description: The Stackable Operator for Stackable Load Balancing Operator
+home: https://github.com/stackabletech/lb-operator
+maintainers:
+  - name: Stackable
+    url: https://www.stackable.tech

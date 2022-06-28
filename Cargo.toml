@@ -1,0 +1,6 @@
+[workspace]
+members = ["rust/lb-operator"]
+
+[patch.crates-io]
+# Workaround for https://github.com/hyperium/tonic/issues/243
+h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds" }

@@ -1,0 +1,34 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: exposed-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exposed-nginx
+  template:
+    metadata:
+      labels:
+        app: exposed-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - name: http
+          containerPort: 80
+        volumeMounts:
+        - name: lb
+          mountPath: /usr/share/nginx/html/lb
+  volumeClaimTemplates:
+  - metadata:
+      name: lb
+    spec:
+      accessModes:
+      - ReadWriteMany
+      storageClassName: lb.stackable.tech
+      resources:
+        requests:
+          storage: 1
