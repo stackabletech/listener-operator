@@ -36,7 +36,7 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
         Ok(Response::new(csi::v1::CreateVolumeResponse {
             volume: Some(csi::v1::Volume {
                 capacity_bytes: 0,
-                volume_id: "asdf".to_string(),
+                volume_id: request.name,
                 volume_context: [].into(),
                 content_source: None,
                 accessible_topology: vec![request

@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use stackable_operator::{
-    k8s_openapi::api::core::v1::{Node, Pod, Service, ServicePort, ServiceSpec},
+    builder::OwnerReferenceBuilder,
+    k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod, Service, ServicePort, ServiceSpec},
     kube::core::ObjectMeta,
 };
 use tokio::io::AsyncWriteExt;
@@ -71,6 +72,11 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             .volume_context
             .get("csi.storage.k8s.io/pod.name")
             .unwrap();
+        let pv = self
+            .client
+            .get::<PersistentVolume>(&request.volume_id, None)
+            .await
+            .unwrap();
         let pod = self.client.get::<Pod>(pod_name, Some(ns)).await.unwrap();
         let node = self
             .client
@@ -87,6 +93,10 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             metadata: ObjectMeta {
                 namespace: Some(ns.clone()),
                 name: Some(request.volume_id.clone()),
+                owner_references: Some(vec![OwnerReferenceBuilder::new()
+                    .initialize_from_resource(&pv)
+                    .build()
+                    .unwrap()]),
                 ..Default::default()
             },
             spec: Some(ServiceSpec {
