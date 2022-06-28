@@ -8,7 +8,10 @@ use stackable_operator::{
 use tokio::io::AsyncWriteExt;
 use tonic::{Request, Response, Status};
 
-use crate::grpc::csi::{self, v1::Topology};
+use crate::{
+    crd::{LoadBalancerClass, ServiceType},
+    grpc::csi::{self, v1::Topology},
+};
 
 const FIELD_MANAGER_SCOPE: &str = "volume";
 
@@ -38,25 +41,11 @@ impl csi::v1::node_server::Node for LbOperatorNode {
 
     async fn node_get_capabilities(
         &self,
-        request: Request<csi::v1::NodeGetCapabilitiesRequest>,
+        _request: Request<csi::v1::NodeGetCapabilitiesRequest>,
     ) -> Result<Response<csi::v1::NodeGetCapabilitiesResponse>, Status> {
         Ok(Response::new(csi::v1::NodeGetCapabilitiesResponse {
             capabilities: Vec::new(),
         }))
-    }
-
-    async fn node_stage_volume(
-        &self,
-        request: Request<csi::v1::NodeStageVolumeRequest>,
-    ) -> Result<Response<csi::v1::NodeStageVolumeResponse>, Status> {
-        todo!()
-    }
-
-    async fn node_unstage_volume(
-        &self,
-        request: Request<csi::v1::NodeUnstageVolumeRequest>,
-    ) -> Result<Response<csi::v1::NodeUnstageVolumeResponse>, Status> {
-        todo!()
     }
 
     async fn node_publish_volume(
@@ -71,6 +60,17 @@ impl csi::v1::node_server::Node for LbOperatorNode {
         let pod_name = request
             .volume_context
             .get("csi.storage.k8s.io/pod.name")
+            .unwrap();
+        let lb_class = self
+            .client
+            .get::<LoadBalancerClass>(
+                request
+                    .volume_context
+                    .get("lb.stackable.tech/lb-class")
+                    .unwrap(),
+                None,
+            )
+            .await
             .unwrap();
         let pv = self
             .client
@@ -100,7 +100,10 @@ impl csi::v1::node_server::Node for LbOperatorNode {
                 ..Default::default()
             },
             spec: Some(ServiceSpec {
-                type_: Some("NodePort".to_string()),
+                type_: Some(match lb_class.spec.service_type {
+                    ServiceType::NodePort => "NodePort".to_string(),
+                    ServiceType::LoadBalancer => "LoadBalancer".to_string(),
+                }),
                 ports: Some(
                     pod.spec
                         .iter()
@@ -127,20 +130,58 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             .await
             .unwrap();
 
+        let address;
+        let ports: Vec<_>;
+        match lb_class.spec.service_type {
+            ServiceType::NodePort => {
+                address = node.metadata.name.as_deref().unwrap();
+                ports = svc
+                    .spec
+                    .as_ref()
+                    .unwrap()
+                    .ports
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|port| (port.name.as_deref().unwrap(), port.node_port.unwrap()))
+                    .collect();
+            }
+            ServiceType::LoadBalancer => {
+                address = svc
+                    .status
+                    .as_ref()
+                    .and_then(|ss| {
+                        let ingress = ss.load_balancer.as_ref()?.ingress.as_ref()?.first()?;
+                        ingress.hostname.as_deref().or(ingress.ip.as_deref())
+                    })
+                    .unwrap();
+                ports = svc
+                    .spec
+                    .as_ref()
+                    .unwrap()
+                    .ports
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|port| (port.name.as_deref().unwrap(), port.port))
+                    .collect();
+            }
+        };
+
         let target_path = PathBuf::from(&request.target_path);
         let ports_path = target_path.join("ports");
         tokio::fs::create_dir_all(&ports_path).await.unwrap();
         tokio::fs::File::create(target_path.join("address"))
             .await
             .unwrap()
-            .write_all(node.metadata.name.unwrap().as_bytes())
+            .write_all(address.as_bytes())
             .await
             .unwrap();
-        for port in svc.spec.as_ref().unwrap().ports.as_ref().unwrap() {
-            tokio::fs::File::create(ports_path.join(port.name.as_deref().unwrap()))
+        for (port_name, port) in ports {
+            tokio::fs::File::create(ports_path.join(port_name))
                 .await
                 .unwrap()
-                .write_all(port.node_port.unwrap().to_string().as_bytes())
+                .write_all(port.to_string().as_bytes())
                 .await
                 .unwrap();
         }
@@ -153,10 +194,28 @@ impl csi::v1::node_server::Node for LbOperatorNode {
         request: Request<csi::v1::NodeUnpublishVolumeRequest>,
     ) -> Result<Response<csi::v1::NodeUnpublishVolumeResponse>, Status> {
         let request = request.into_inner();
-        tokio::fs::remove_dir_all(request.target_path)
-            .await
-            .unwrap();
+        match tokio::fs::remove_dir_all(request.target_path).await {
+            Ok(()) => {}
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                // already deleted => nothing to do
+            }
+            Err(err) => Err(err).unwrap(),
+        }
         Ok(Response::new(csi::v1::NodeUnpublishVolumeResponse {}))
+    }
+
+    async fn node_stage_volume(
+        &self,
+        request: Request<csi::v1::NodeStageVolumeRequest>,
+    ) -> Result<Response<csi::v1::NodeStageVolumeResponse>, Status> {
+        todo!()
+    }
+
+    async fn node_unstage_volume(
+        &self,
+        request: Request<csi::v1::NodeUnstageVolumeRequest>,
+    ) -> Result<Response<csi::v1::NodeUnstageVolumeResponse>, Status> {
+        todo!()
     }
 
     async fn node_get_volume_stats(

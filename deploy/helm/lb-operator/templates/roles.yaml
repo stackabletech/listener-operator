@@ -52,8 +52,8 @@ rules:
       - get
       - patch
   - apiGroups:
-      - secrets.stackable.tech
+      - lb.stackable.tech
     resources:
-      - secretclasses
+      - loadbalancerclasses
     verbs:
       - get

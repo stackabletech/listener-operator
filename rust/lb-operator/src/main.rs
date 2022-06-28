@@ -8,12 +8,15 @@ use futures::{FutureExt, TryStreamExt};
 use grpc::csi::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
 };
-use stackable_operator::{cli::ProductOperatorRun, logging::TracingTarget};
+use stackable_operator::{kube::CustomResourceExt, logging::TracingTarget};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::{uds_bind_private, TonicUnixStream};
 
+use crate::crd::LoadBalancerClass;
+
+mod crd;
 mod csi_server;
 mod grpc;
 mod utils;
@@ -39,7 +42,12 @@ struct LbOperatorRun {
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
-        stackable_operator::cli::Command::Crd => {}
+        stackable_operator::cli::Command::Crd => {
+            println!(
+                "{}",
+                serde_yaml::to_string(&LoadBalancerClass::crd()).unwrap()
+            );
+        }
         stackable_operator::cli::Command::Run(LbOperatorRun {
             csi_endpoint,
             node_name,

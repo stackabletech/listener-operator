@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: exposed-nginx
+  name: exposed-nginx-nodeport
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: exposed-nginx
+      app: exposed-nginx-nodeport
   template:
     metadata:
       labels:
-        app: exposed-nginx
+        app: exposed-nginx-nodeport
     spec:
       containers:
       - name: nginx
@@ -25,6 +25,8 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: lb
+      annotations:
+        lb.stackable.tech/lb-class: nodeport
     spec:
       accessModes:
       - ReadWriteMany

@@ -1,8 +1,9 @@
+use stackable_operator::k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use tonic::{Request, Response, Status};
 
-use crate::grpc::csi::{
-    self,
-    v1::{controller_server::Controller, ControllerGetCapabilitiesResponse},
+use crate::{
+    crd::{LoadBalancerClass, ServiceType},
+    grpc::csi,
 };
 
 pub struct LbOperatorController {
@@ -33,19 +34,47 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
         request: Request<csi::v1::CreateVolumeRequest>,
     ) -> Result<Response<csi::v1::CreateVolumeResponse>, Status> {
         let request = request.into_inner();
+        let pvc = self
+            .client
+            .get::<PersistentVolumeClaim>(
+                request
+                    .parameters
+                    .get("csi.storage.k8s.io/pvc/name")
+                    .unwrap(),
+                Some(
+                    request
+                        .parameters
+                        .get("csi.storage.k8s.io/pvc/namespace")
+                        .unwrap(),
+                ),
+            )
+            .await
+            .unwrap();
+        let volume_context = pvc.metadata.annotations.unwrap_or_default();
+        let lb_class = self
+            .client
+            .get::<LoadBalancerClass>(
+                volume_context.get("lb.stackable.tech/lb-class").unwrap(),
+                None,
+            )
+            .await
+            .unwrap();
         Ok(Response::new(csi::v1::CreateVolumeResponse {
             volume: Some(csi::v1::Volume {
                 capacity_bytes: 0,
                 volume_id: request.name,
-                volume_context: [].into(),
+                volume_context: volume_context.into_iter().collect(),
                 content_source: None,
-                accessible_topology: vec![request
-                    .accessibility_requirements
-                    .unwrap_or_default()
-                    .preferred
-                    .first()
-                    .unwrap()
-                    .clone()],
+                accessible_topology: match lb_class.spec.service_type {
+                    ServiceType::NodePort => vec![request
+                        .accessibility_requirements
+                        .unwrap_or_default()
+                        .preferred
+                        .first()
+                        .unwrap()
+                        .clone()],
+                    ServiceType::LoadBalancer => Vec::new(),
+                },
             }),
         }))
     }

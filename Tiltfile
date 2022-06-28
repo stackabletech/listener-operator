@@ -28,6 +28,5 @@ helm_crds, helm_non_crds = filter_yaml(
 k8s_yaml(helm_non_crds)
 
 # Load examples
-k8s_yaml('examples/nginx.yaml')
-# k8s_yaml('examples/simple-consumer-nginx.yaml')
-# k8s_yaml('examples/simple-consumer-shell.yaml')
+k8s_yaml('examples/nginx-nodeport.yaml')
+k8s_yaml('examples/nginx-lb.yaml')
