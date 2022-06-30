@@ -9,7 +9,7 @@ use tokio::io::AsyncWriteExt;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    crd::{LoadBalancerClass, ServiceType},
+    crd::{LoadBalancer, LoadBalancerClass, LoadBalancerPort, LoadBalancerSpec, ServiceType},
     grpc::csi::{self, v1::Topology},
 };
 
@@ -61,129 +61,75 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             .volume_context
             .get("csi.storage.k8s.io/pod.name")
             .unwrap();
-        let lb_class = self
-            .client
-            .get::<LoadBalancerClass>(
-                request
-                    .volume_context
-                    .get("lb.stackable.tech/lb-class")
-                    .unwrap(),
-                None,
-            )
-            .await
-            .unwrap();
         let pv = self
             .client
             .get::<PersistentVolume>(&request.volume_id, None)
             .await
             .unwrap();
         let pod = self.client.get::<Pod>(pod_name, Some(ns)).await.unwrap();
-        let node = self
-            .client
-            .get::<Node>(
-                pod.spec
-                    .as_ref()
-                    .and_then(|ps| ps.node_name.as_deref())
-                    .unwrap(),
-                None,
-            )
-            .await
-            .unwrap();
-        let svc = Service {
-            metadata: ObjectMeta {
-                namespace: Some(ns.clone()),
-                name: Some(request.volume_id.clone()),
-                owner_references: Some(vec![OwnerReferenceBuilder::new()
-                    .initialize_from_resource(&pv)
-                    .build()
-                    .unwrap()]),
-                ..Default::default()
-            },
-            spec: Some(ServiceSpec {
-                type_: Some(match lb_class.spec.service_type {
-                    ServiceType::NodePort => "NodePort".to_string(),
-                    ServiceType::LoadBalancer => "LoadBalancer".to_string(),
-                }),
-                ports: Some(
-                    pod.spec
-                        .iter()
-                        .flat_map(|ps| &ps.containers)
-                        .flat_map(|ctr| &ctr.ports)
-                        .flatten()
-                        .map(|port| ServicePort {
-                            name: port.name.clone(),
-                            protocol: port.protocol.clone(),
-                            port: port.container_port,
-                            ..Default::default()
-                        })
-                        .collect(),
-                ),
-                external_traffic_policy: Some("Local".to_string()),
-                selector: pod.metadata.labels,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let svc = self
-            .client
-            .apply_patch(FIELD_MANAGER_SCOPE, &svc, &svc)
-            .await
-            .unwrap();
 
-        let address;
-        let ports: Vec<_>;
-        match lb_class.spec.service_type {
-            ServiceType::NodePort => {
-                address = node.metadata.name.as_deref().unwrap();
-                ports = svc
-                    .spec
-                    .as_ref()
-                    .unwrap()
-                    .ports
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .map(|port| (port.name.as_deref().unwrap(), port.node_port.unwrap()))
-                    .collect();
-            }
-            ServiceType::LoadBalancer => {
-                address = svc
-                    .status
-                    .as_ref()
-                    .and_then(|ss| {
-                        let ingress = ss.load_balancer.as_ref()?.ingress.as_ref()?.first()?;
-                        ingress.hostname.as_deref().or(ingress.ip.as_deref())
-                    })
-                    .unwrap();
-                ports = svc
-                    .spec
-                    .as_ref()
-                    .unwrap()
-                    .ports
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .map(|port| (port.name.as_deref().unwrap(), port.port))
-                    .collect();
-            }
+        let lb = if let Some(lb_name) = request.volume_context.get("lb.stackable.tech/lb-name") {
+            self.client.get(lb_name, Some(ns)).await.unwrap()
+        } else {
+            let lb = LoadBalancer {
+                metadata: ObjectMeta {
+                    namespace: Some(ns.clone()),
+                    name: Some(request.volume_id.clone()),
+                    owner_references: Some(vec![OwnerReferenceBuilder::new()
+                        .initialize_from_resource(&pv)
+                        .build()
+                        .unwrap()]),
+                    ..Default::default()
+                },
+                spec: LoadBalancerSpec {
+                    class_name: request
+                        .volume_context
+                        .get("lb.stackable.tech/lb-class")
+                        .cloned(),
+                    ports: Some(
+                        pod.spec
+                            .iter()
+                            .flat_map(|ps| &ps.containers)
+                            .flat_map(|ctr| &ctr.ports)
+                            .flatten()
+                            .map(|port| LoadBalancerPort {
+                                name: port.name.clone().unwrap(),
+                                protocol: port.protocol.clone(),
+                                port: port.container_port,
+                            })
+                            .collect(),
+                    ),
+                    pod_selector: pod.metadata.labels,
+                },
+                status: None,
+            };
+            self.client
+                .apply_patch(FIELD_MANAGER_SCOPE, &lb, &lb)
+                .await
+                .unwrap()
         };
 
         let target_path = PathBuf::from(&request.target_path);
-        let ports_path = target_path.join("ports");
-        tokio::fs::create_dir_all(&ports_path).await.unwrap();
-        tokio::fs::File::create(target_path.join("address"))
-            .await
-            .unwrap()
-            .write_all(address.as_bytes())
-            .await
-            .unwrap();
-        for (port_name, port) in ports {
-            tokio::fs::File::create(ports_path.join(port_name))
-                .await
-                .unwrap()
-                .write_all(port.to_string().as_bytes())
+        let addrs_path = target_path.join("addresses");
+        tokio::fs::create_dir_all(&addrs_path).await.unwrap();
+        for addr in lb
+            .status
+            .as_ref()
+            .and_then(|lbs| lbs.ingress_addresses.as_ref())
+            .into_iter()
+            .flatten()
+        {
+            let addr_dir = addrs_path.join(&addr.address);
+            let ports_dir = addr_dir.join("ports");
+            tokio::fs::create_dir_all(&ports_dir).await.unwrap();
+            tokio::fs::write(addr_dir.join("address"), addr.address.as_bytes())
                 .await
                 .unwrap();
+            for (port_name, port) in &addr.ports {
+                tokio::fs::write(ports_dir.join(port_name), port.to_string().as_bytes())
+                    .await
+                    .unwrap();
+            }
         }
 
         Ok(Response::new(csi::v1::NodePublishVolumeResponse {}))

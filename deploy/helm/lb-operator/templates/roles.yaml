@@ -31,6 +31,7 @@ rules:
     resources:
       - nodes
       - persistentvolumeclaims
+      - endpoints
     verbs:
       - get
       - list
@@ -55,5 +56,16 @@ rules:
       - lb.stackable.tech
     resources:
       - loadbalancerclasses
+      - loadbalancers
     verbs:
       - get
+      - list
+      - watch
+  - apiGroups:
+      - lb.stackable.tech
+    resources:
+      - loadbalancers
+      - loadbalancers/status
+    verbs:
+      - patch
+      - create

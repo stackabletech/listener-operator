@@ -4,7 +4,7 @@ use clap::Parser;
 use csi_server::{
     controller::LbOperatorController, identity::LbOperatorIdentity, node::LbOperatorNode,
 };
-use futures::{FutureExt, TryStreamExt};
+use futures::{pin_mut, FutureExt, TryStreamExt};
 use grpc::csi::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
 };
@@ -14,11 +14,12 @@ use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::{uds_bind_private, TonicUnixStream};
 
-use crate::crd::LoadBalancerClass;
+use crate::crd::{LoadBalancer, LoadBalancerClass};
 
 mod crd;
 mod csi_server;
 mod grpc;
+mod lb_controller;
 mod utils;
 
 #[derive(clap::Parser)]
@@ -44,8 +45,9 @@ async fn main() -> anyhow::Result<()> {
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
             println!(
-                "{}",
-                serde_yaml::to_string(&LoadBalancerClass::crd()).unwrap()
+                "{}{}",
+                serde_yaml::to_string(&LoadBalancerClass::crd()).unwrap(),
+                serde_yaml::to_string(&LoadBalancer::crd()).unwrap()
             );
         }
         stackable_operator::cli::Command::Run(LbOperatorRun {
@@ -68,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
                 let _ = std::fs::remove_file(&csi_endpoint);
             }
             let mut sigterm = signal(SignalKind::terminate())?;
-            Server::builder()
+            let csi_server = Server::builder()
                 .add_service(
                     tonic_reflection::server::Builder::configure()
                         .include_reflection_service(true)
@@ -79,13 +81,18 @@ async fn main() -> anyhow::Result<()> {
                 .add_service(ControllerServer::new(LbOperatorController {
                     client: client.clone(),
                 }))
-                .add_service(NodeServer::new(LbOperatorNode { client, node_name }))
+                .add_service(NodeServer::new(LbOperatorNode {
+                    client: client.clone(),
+                    node_name,
+                }))
                 .serve_with_incoming_shutdown(
                     UnixListenerStream::new(uds_bind_private(csi_endpoint)?)
                         .map_ok(TonicUnixStream),
                     sigterm.recv().map(|_| ()),
-                )
-                .await?;
+                );
+            let controller = lb_controller::run(client);
+            pin_mut!(csi_server, controller);
+            futures::future::select(csi_server, controller).await;
         }
     }
     Ok(())
