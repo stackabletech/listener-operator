@@ -31,4 +31,4 @@ k8s_yaml(helm_non_crds)
 k8s_yaml('examples/nginx-nodeport.yaml')
 k8s_yaml('examples/nginx-lb.yaml')
 # use case currently broken...
-#k8s_yaml('examples/nginx-preprovisioned-lb.yaml')
+k8s_yaml('examples/nginx-preprovisioned-lb.yaml')

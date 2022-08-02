@@ -2,7 +2,7 @@ use stackable_operator::k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    crd::{LoadBalancerClass, ServiceType},
+    crd::{LoadBalancer, LoadBalancerClass, ServiceType},
     grpc::csi,
 };
 
@@ -34,6 +34,10 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
         request: Request<csi::v1::CreateVolumeRequest>,
     ) -> Result<Response<csi::v1::CreateVolumeResponse>, Status> {
         let request = request.into_inner();
+        let ns = request
+            .parameters
+            .get("csi.storage.k8s.io/pvc/namespace")
+            .unwrap();
         let pvc = self
             .client
             .get::<PersistentVolumeClaim>(
@@ -41,22 +45,29 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                     .parameters
                     .get("csi.storage.k8s.io/pvc/name")
                     .unwrap(),
-                Some(
-                    request
-                        .parameters
-                        .get("csi.storage.k8s.io/pvc/namespace")
-                        .unwrap(),
-                ),
+                Some(ns),
             )
             .await
             .unwrap();
         let volume_context = pvc.metadata.annotations.unwrap_or_default();
+        let lb_name = volume_context.get("lb.stackable.tech/lb-name");
+        let lb_class_name = if let Some(lb_name) = lb_name {
+            self.client
+                .get::<LoadBalancer>(lb_name, Some(ns))
+                .await
+                .unwrap()
+                .spec
+                .class_name
+                .unwrap()
+        } else {
+            volume_context
+                .get("lb.stackable.tech/lb-class")
+                .unwrap()
+                .to_string()
+        };
         let lb_class = self
             .client
-            .get::<LoadBalancerClass>(
-                volume_context.get("lb.stackable.tech/lb-class").unwrap(),
-                None,
-            )
+            .get::<LoadBalancerClass>(&lb_class_name, None)
             .await
             .unwrap();
         Ok(Response::new(csi::v1::CreateVolumeResponse {
