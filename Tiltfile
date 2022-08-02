@@ -1,9 +1,9 @@
-default_registry('docker.stackable.tech')
+default_registry("docker.stackable.tech/sandbox")
 
 custom_build(
-    'docker.stackable.tech/teozkr/lb-operator',
-    'nix run -f . crate2nix generate && nix-build . -A docker --arg dockerTag null --argstr dockerRegistry k3d-registry.localhost:11337 && ./result/load-image | docker load',
-    deps=['rust', 'Cargo.toml', 'Cargo.lock', 'default.nix', 'build.rs', 'vendor'],
+    'docker.stackable.tech/sandbox/lb-operator',
+    'nix run -f . crate2nix generate && nix-build . -A docker --argstr dockerName "${EXPECTED_REGISTRY}/lb-operator" && ./result/load-image | docker load',
+    deps=['rust', 'Cargo.toml', 'Cargo.lock', 'default.nix', "nix", 'build.rs', 'vendor'],
     # ignore=['result*', 'Cargo.nix', 'target', *.yaml],
     outputs_image_ref_to='result/ref',
 )
@@ -19,7 +19,7 @@ helm_crds, helm_non_crds = filter_yaml(
       'deploy/helm/lb-operator',
       name='lb-operator',
       set=[
-         'image.repository=docker.stackable.tech/teozkr/lb-operator',
+         'image.repository=docker.stackable.tech/sandbox/lb-operator',
       ],
    ),
    api_version = "^apiextensions\\.k8s\\.io/.*$",
