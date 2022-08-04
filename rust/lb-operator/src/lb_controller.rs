@@ -3,19 +3,18 @@ use crate::crd::{
     LoadBalancerStatus, ServiceType,
 };
 use futures::StreamExt;
-use snafu::Snafu;
+use snafu::{ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    k8s_openapi::api::core::v1::{
-        Endpoints, PersistentVolume, Pod, Service, ServicePort, ServiceSpec,
-    },
+    k8s_openapi::api::core::v1::{Endpoints, Service, ServicePort, ServiceSpec},
     kube::{
-        api::{ListParams, ObjectMeta},
+        api::{DynamicObject, ListParams, ObjectMeta},
         runtime::{controller, reflector::ObjectRef},
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
 };
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
+use strum::IntoStaticStr;
 
 const FIELD_MANAGER_SCOPE: &str = "loadbalancer";
 
@@ -45,7 +44,7 @@ pub async fn run(client: stackable_operator::client::Client) {
         .run(
             reconcile,
             error_policy,
-            controller::Context::new(Ctx {
+            Arc::new(Ctx {
                 client: client.clone(),
             }),
         )
@@ -60,29 +59,26 @@ pub struct Ctx {
     pub client: stackable_operator::client::Client,
 }
 
-#[derive(Debug, Snafu)]
-pub enum Error {}
+#[derive(Debug, Snafu, IntoStaticStr)]
+pub enum Error {
+    ApplyService {
+        source: stackable_operator::error::Error,
+        svc: ObjectRef<Service>,
+    },
+}
 impl ReconcilerError for Error {
     fn category(&self) -> &'static str {
-        match *self {}
+        self.into()
     }
 
-    fn secondary_object(
-        &self,
-    ) -> Option<
-        stackable_operator::kube::runtime::reflector::ObjectRef<
-            stackable_operator::kube::api::DynamicObject,
-        >,
-    > {
-        match *self {}
+    fn secondary_object(&self) -> Option<ObjectRef<DynamicObject>> {
+        match self {
+            Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
+        }
     }
 }
 
-pub async fn reconcile(
-    lb: Arc<LoadBalancer>,
-    ctx: controller::Context<Ctx>,
-) -> Result<controller::Action, Error> {
-    let ctx = ctx.get_ref();
+pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controller::Action, Error> {
     let ns = lb.metadata.namespace.clone().unwrap();
     let lb_class = ctx
         .client
@@ -125,6 +121,7 @@ pub async fn reconcile(
             ),
             external_traffic_policy: Some("Local".to_string()),
             selector: lb.spec.pod_selector.clone(),
+            publish_not_ready_addresses: Some(true),
             ..Default::default()
         }),
         ..Default::default()
@@ -133,7 +130,9 @@ pub async fn reconcile(
         .client
         .apply_patch(FIELD_MANAGER_SCOPE, &svc, &svc)
         .await
-        .unwrap();
+        .with_context(|_| ApplyServiceSnafu {
+            svc: ObjectRef::from_obj(&svc),
+        })?;
 
     let addresses: Vec<_>;
     let ports: BTreeMap<String, i32>;
@@ -141,9 +140,10 @@ pub async fn reconcile(
         ServiceType::NodePort => {
             let endpoints = ctx
                 .client
-                .get::<Endpoints>(svc.metadata.name.as_deref().unwrap(), Some(&ns))
+                .get_opt::<Endpoints>(svc.metadata.name.as_deref().unwrap(), Some(&ns))
                 .await
-                .unwrap();
+                .unwrap()
+                .unwrap_or_default();
             addresses = endpoints
                 .subsets
                 .into_iter()
@@ -205,6 +205,7 @@ pub async fn reconcile(
                 })
                 .collect(),
         ),
+        node_ports: (lb_class.spec.service_type == ServiceType::NodePort).then(|| ports),
     };
     ctx.client
         .apply_patch_status(FIELD_MANAGER_SCOPE, &lb_status_meta, &lb_status)
@@ -214,6 +215,6 @@ pub async fn reconcile(
     Ok(controller::Action::await_change())
 }
 
-pub fn error_policy(err: &Error, ctx: controller::Context<Ctx>) -> controller::Action {
+pub fn error_policy(_err: &Error, _ctx: Arc<Ctx>) -> controller::Action {
     controller::Action::requeue(Duration::from_secs(5))
 }

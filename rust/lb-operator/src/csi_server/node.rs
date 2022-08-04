@@ -2,14 +2,13 @@ use std::path::PathBuf;
 
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod, Service, ServicePort, ServiceSpec},
+    k8s_openapi::api::core::v1::{PersistentVolume, Pod},
     kube::core::ObjectMeta,
 };
-use tokio::io::AsyncWriteExt;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    crd::{LoadBalancer, LoadBalancerClass, LoadBalancerPort, LoadBalancerSpec, ServiceType},
+    crd::{LoadBalancer, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec},
     grpc::csi::{self, v1::Topology},
 };
 
@@ -112,13 +111,28 @@ impl csi::v1::node_server::Node for LbOperatorNode {
         let target_path = PathBuf::from(&request.target_path);
         let addrs_path = target_path.join("addresses");
         tokio::fs::create_dir_all(&addrs_path).await.unwrap();
-        for addr in lb
+        // Prefer calculating a per-node address where possible, to ensure that the address at least tries to
+        // connect to the pod in question.
+        // We also can't rely on `ingress_addresses` being set yet, since the pod won't not have an IP address yet
+        // (and so can't be found in `Endpoints`)
+        let lb_addrs = if let Some(node_ports) = lb
             .status
             .as_ref()
-            .and_then(|lbs| lbs.ingress_addresses.as_ref())
-            .into_iter()
-            .flatten()
+            .and_then(|status| status.node_ports.clone())
         {
+            vec![LoadBalancerIngress {
+                address: pod.spec.as_ref().unwrap().node_name.clone().unwrap(),
+                ports: node_ports,
+            }]
+        } else {
+            lb.status
+                .as_ref()
+                .and_then(|lbs| lbs.ingress_addresses.as_ref())
+                .cloned()
+                .unwrap_or_default()
+        };
+        let mut default_addr_dir = None;
+        for addr in &lb_addrs {
             let addr_dir = addrs_path.join(&addr.address);
             let ports_dir = addr_dir.join("ports");
             tokio::fs::create_dir_all(&ports_dir).await.unwrap();
@@ -130,7 +144,17 @@ impl csi::v1::node_server::Node for LbOperatorNode {
                     .await
                     .unwrap();
             }
+            default_addr_dir.get_or_insert(addr_dir);
         }
+        tokio::fs::symlink(
+            default_addr_dir
+                .expect("no default lb addr set")
+                .strip_prefix(&target_path)
+                .expect("default addr dir is not inside target dir"),
+            target_path.join("default-address"),
+        )
+        .await
+        .unwrap();
 
         Ok(Response::new(csi::v1::NodePublishVolumeResponse {}))
     }

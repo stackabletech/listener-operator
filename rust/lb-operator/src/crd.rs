@@ -23,7 +23,7 @@ pub struct LoadBalancerClassSpec {
     pub service_annotations: BTreeMap<String, String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema, PartialEq, Eq)]
 pub enum ServiceType {
     NodePort,
     LoadBalancer,
@@ -63,6 +63,7 @@ pub struct LoadBalancerPort {
 pub struct LoadBalancerStatus {
     pub service_name: Option<String>,
     pub ingress_addresses: Option<Vec<LoadBalancerIngress>>,
+    pub node_ports: Option<BTreeMap<String, i32>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
