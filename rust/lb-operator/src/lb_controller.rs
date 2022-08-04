@@ -65,6 +65,9 @@ pub enum Error {
         source: stackable_operator::error::Error,
         svc: ObjectRef<Service>,
     },
+    ApplyStatus {
+        source: stackable_operator::error::Error,
+    },
 }
 impl ReconcilerError for Error {
     fn category(&self) -> &'static str {
@@ -74,6 +77,7 @@ impl ReconcilerError for Error {
     fn secondary_object(&self) -> Option<ObjectRef<DynamicObject>> {
         match self {
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
+            Self::ApplyStatus { source: _ } => None,
         }
     }
 }
@@ -210,7 +214,7 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
     ctx.client
         .apply_patch_status(FIELD_MANAGER_SCOPE, &lb_status_meta, &lb_status)
         .await
-        .unwrap();
+        .context(ApplyStatusSnafu)?;
 
     Ok(controller::Action::await_change())
 }
