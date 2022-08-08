@@ -13,7 +13,11 @@ use stackable_operator::{
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
 };
-use std::{collections::BTreeMap, sync::Arc, time::Duration};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+    time::Duration,
+};
 use strum::IntoStaticStr;
 
 const FIELD_MANAGER_SCOPE: &str = "loadbalancer";
@@ -89,6 +93,30 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
         .get::<LoadBalancerClass>(lb.spec.class_name.as_deref().unwrap(), None)
         .await
         .unwrap();
+    let pod_ports = lb
+        .spec
+        .ports
+        .iter()
+        .flatten()
+        .map(
+            |LoadBalancerPort {
+                 name,
+                 port,
+                 protocol,
+             }| {
+                (
+                    (protocol, name),
+                    ServicePort {
+                        name: Some(name.clone()),
+                        protocol: protocol.clone(),
+                        port: *port,
+                        ..Default::default()
+                    },
+                )
+            },
+        )
+        // Deduplicate ports by (protocol, name)
+        .collect::<BTreeMap<_, ServicePort>>();
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.clone()),
@@ -104,25 +132,7 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
                 ServiceType::NodePort => "NodePort".to_string(),
                 ServiceType::LoadBalancer => "LoadBalancer".to_string(),
             }),
-            ports: Some(
-                lb.spec
-                    .ports
-                    .iter()
-                    .flatten()
-                    .map(
-                        |LoadBalancerPort {
-                             name,
-                             port,
-                             protocol,
-                         }| ServicePort {
-                            name: Some(name.clone()),
-                            protocol: protocol.clone(),
-                            port: *port,
-                            ..Default::default()
-                        },
-                    )
-                    .collect(),
-            ),
+            ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy: Some("Local".to_string()),
             selector: lb.spec.pod_selector.clone(),
             publish_not_ready_addresses: Some(true),
