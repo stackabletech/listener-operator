@@ -53,6 +53,12 @@ rules:
       - get
       - patch
   - apiGroups:
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+  - apiGroups:
       - lb.stackable.tech
     resources:
       - loadbalancerclasses
