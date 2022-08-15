@@ -73,7 +73,10 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             let lb = LoadBalancer {
                 metadata: ObjectMeta {
                     namespace: Some(ns.clone()),
-                    name: Some(request.volume_id.clone()),
+                    name: pv
+                        .spec
+                        .as_ref()
+                        .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.clone()),
                     owner_references: Some(vec![OwnerReferenceBuilder::new()
                         .initialize_from_resource(&pv)
                         .build()
