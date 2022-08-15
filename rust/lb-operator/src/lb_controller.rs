@@ -2,22 +2,18 @@ use crate::crd::{
     LoadBalancer, LoadBalancerClass, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec,
     LoadBalancerStatus, ServiceType,
 };
-use futures::StreamExt;
+use futures::{future::try_join_all, StreamExt};
 use snafu::{ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    k8s_openapi::api::core::v1::{Endpoints, Service, ServicePort, ServiceSpec},
+    k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
         api::{DynamicObject, ListParams, ObjectMeta},
         runtime::{controller, reflector::ObjectRef},
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
 };
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use strum::IntoStaticStr;
 
 const FIELD_MANAGER_SCOPE: &str = "loadbalancer";
@@ -148,7 +144,7 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
             svc: ObjectRef::from_obj(&svc),
         })?;
 
-    let addresses: Vec<_>;
+    let addresses: Vec<String>;
     let ports: BTreeMap<String, i32>;
     match lb_class.spec.service_type {
         ServiceType::NodePort => {
@@ -158,13 +154,32 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
                 .await
                 .unwrap()
                 .unwrap_or_default();
-            addresses = endpoints
+            let node_names = endpoints
                 .subsets
                 .into_iter()
                 .flatten()
                 .flat_map(|subset| subset.addresses)
                 .flatten()
                 .flat_map(|addr| addr.node_name)
+                .collect::<Vec<_>>();
+            let nodes = try_join_all(
+                node_names
+                    .iter()
+                    .map(|node_name| ctx.client.get::<Node>(node_name, None)),
+            )
+            .await
+            .unwrap();
+            addresses = nodes
+                .into_iter()
+                .flat_map(|node| {
+                    let addrs = node.status.and_then(|s| s.addresses).unwrap_or_default();
+                    addrs
+                        .iter()
+                        .find(|addr| addr.type_ == "ExternalIP")
+                        .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
+                        .or_else(|| addrs.iter().find(|addr| addr.type_ == "Hostname"))
+                        .map(|addr| addr.address.clone())
+                })
                 .collect();
             ports = svc
                 .spec
