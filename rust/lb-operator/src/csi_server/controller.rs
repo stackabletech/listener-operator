@@ -1,3 +1,4 @@
+use serde::{de::IntoDeserializer, Deserialize};
 use stackable_operator::k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use tonic::{Request, Response, Status};
 
@@ -6,8 +7,18 @@ use crate::{
     grpc::csi,
 };
 
+use super::{LbSelector, LbVolumeContext};
+
 pub struct LbOperatorController {
     pub client: stackable_operator::client::Client,
+}
+
+#[derive(Deserialize)]
+struct ControllerVolumeParams {
+    #[serde(rename = "csi.storage.k8s.io/pvc/name")]
+    pvc_name: String,
+    #[serde(rename = "csi.storage.k8s.io/pvc/namespace")]
+    pvc_namespace: String,
 }
 
 #[tonic::async_trait]
@@ -34,36 +45,32 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
         request: Request<csi::v1::CreateVolumeRequest>,
     ) -> Result<Response<csi::v1::CreateVolumeResponse>, Status> {
         let request = request.into_inner();
-        let ns = request
-            .parameters
-            .get("csi.storage.k8s.io/pvc/namespace")
+        let ControllerVolumeParams {
+            pvc_name,
+            pvc_namespace: ns,
+        } = ControllerVolumeParams::deserialize(request.parameters.into_deserializer())
+            .map_err(|e: serde::de::value::Error| e)
             .unwrap();
         let pvc = self
             .client
-            .get::<PersistentVolumeClaim>(
-                request
-                    .parameters
-                    .get("csi.storage.k8s.io/pvc/name")
-                    .unwrap(),
-                Some(ns),
-            )
+            .get::<PersistentVolumeClaim>(&pvc_name, Some(&ns))
             .await
             .unwrap();
-        let volume_context = pvc.metadata.annotations.unwrap_or_default();
-        let lb_name = volume_context.get("lb.stackable.tech/lb-name");
-        let lb_class_name = if let Some(lb_name) = lb_name {
-            self.client
-                .get::<LoadBalancer>(lb_name, Some(ns))
+        let raw_volume_context = pvc.metadata.annotations.unwrap_or_default();
+        let LbVolumeContext { lb_selector } =
+            LbVolumeContext::deserialize(raw_volume_context.clone().into_deserializer())
+                .map_err(|e: serde::de::value::Error| e)
+                .unwrap();
+        let lb_class_name = match lb_selector {
+            LbSelector::Lb(lb_name) => self
+                .client
+                .get::<LoadBalancer>(&lb_name, Some(&ns))
                 .await
                 .unwrap()
                 .spec
                 .class_name
-                .unwrap()
-        } else {
-            volume_context
-                .get("lb.stackable.tech/lb-class")
-                .unwrap()
-                .to_string()
+                .unwrap(),
+            LbSelector::LbClass(lb_class) => lb_class,
         };
         let lb_class = self
             .client
@@ -74,7 +81,7 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
             volume: Some(csi::v1::Volume {
                 capacity_bytes: 0,
                 volume_id: request.name,
-                volume_context: volume_context.into_iter().collect(),
+                volume_context: raw_volume_context.into_iter().collect(),
                 content_source: None,
                 accessible_topology: match lb_class.spec.service_type {
                     ServiceType::NodePort => vec![request

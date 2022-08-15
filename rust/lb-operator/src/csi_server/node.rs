@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use serde::{de::IntoDeserializer, Deserialize};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
     k8s_openapi::api::core::v1::{PersistentVolume, Pod},
@@ -12,11 +13,24 @@ use crate::{
     grpc::csi::{self, v1::Topology},
 };
 
+use super::{LbSelector, LbVolumeContext};
+
 const FIELD_MANAGER_SCOPE: &str = "volume";
 
 pub struct LbOperatorNode {
     pub client: stackable_operator::client::Client,
     pub node_name: String,
+}
+
+#[derive(Deserialize)]
+struct LbNodeVolumeContext {
+    #[serde(rename = "csi.storage.k8s.io/pod.namespace")]
+    pod_namespace: String,
+    #[serde(rename = "csi.storage.k8s.io/pod.name")]
+    pod_name: String,
+
+    #[serde(flatten)]
+    common: LbVolumeContext,
 }
 
 #[tonic::async_trait]
@@ -52,63 +66,60 @@ impl csi::v1::node_server::Node for LbOperatorNode {
         request: Request<csi::v1::NodePublishVolumeRequest>,
     ) -> Result<Response<csi::v1::NodePublishVolumeResponse>, Status> {
         let request = request.into_inner();
-        let ns = request
-            .volume_context
-            .get("csi.storage.k8s.io/pod.namespace")
-            .unwrap();
-        let pod_name = request
-            .volume_context
-            .get("csi.storage.k8s.io/pod.name")
+        let LbNodeVolumeContext {
+            pod_namespace: ns,
+            pod_name,
+            common: LbVolumeContext { lb_selector },
+        } = LbNodeVolumeContext::deserialize(request.volume_context.into_deserializer())
+            .map_err(|e: serde::de::value::Error| e)
             .unwrap();
         let pv = self
             .client
             .get::<PersistentVolume>(&request.volume_id, None)
             .await
             .unwrap();
-        let pod = self.client.get::<Pod>(pod_name, Some(ns)).await.unwrap();
+        let pod = self.client.get::<Pod>(&pod_name, Some(&ns)).await.unwrap();
 
-        let lb = if let Some(lb_name) = request.volume_context.get("lb.stackable.tech/lb-name") {
-            self.client.get(lb_name, Some(ns)).await.unwrap()
-        } else {
-            let lb = LoadBalancer {
-                metadata: ObjectMeta {
-                    namespace: Some(ns.clone()),
-                    name: pv
-                        .spec
-                        .as_ref()
-                        .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.clone()),
-                    owner_references: Some(vec![OwnerReferenceBuilder::new()
-                        .initialize_from_resource(&pv)
-                        .build()
-                        .unwrap()]),
-                    ..Default::default()
-                },
-                spec: LoadBalancerSpec {
-                    class_name: request
-                        .volume_context
-                        .get("lb.stackable.tech/lb-class")
-                        .cloned(),
-                    ports: Some(
-                        pod.spec
-                            .iter()
-                            .flat_map(|ps| &ps.containers)
-                            .flat_map(|ctr| &ctr.ports)
-                            .flatten()
-                            .map(|port| LoadBalancerPort {
-                                name: port.name.clone().unwrap(),
-                                protocol: port.protocol.clone(),
-                                port: port.container_port,
-                            })
-                            .collect(),
-                    ),
-                    pod_selector: pod.metadata.labels,
-                },
-                status: None,
-            };
-            self.client
-                .apply_patch(FIELD_MANAGER_SCOPE, &lb, &lb)
-                .await
-                .unwrap()
+        let lb = match lb_selector {
+            LbSelector::Lb(lb_name) => self.client.get(&lb_name, Some(&ns)).await.unwrap(),
+            LbSelector::LbClass(lb_class_name) => {
+                let lb = LoadBalancer {
+                    metadata: ObjectMeta {
+                        namespace: Some(ns.clone()),
+                        name: pv
+                            .spec
+                            .as_ref()
+                            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.clone()),
+                        owner_references: Some(vec![OwnerReferenceBuilder::new()
+                            .initialize_from_resource(&pv)
+                            .build()
+                            .unwrap()]),
+                        ..Default::default()
+                    },
+                    spec: LoadBalancerSpec {
+                        class_name: Some(lb_class_name),
+                        ports: Some(
+                            pod.spec
+                                .iter()
+                                .flat_map(|ps| &ps.containers)
+                                .flat_map(|ctr| &ctr.ports)
+                                .flatten()
+                                .map(|port| LoadBalancerPort {
+                                    name: port.name.clone().unwrap(),
+                                    protocol: port.protocol.clone(),
+                                    port: port.container_port,
+                                })
+                                .collect(),
+                        ),
+                        pod_selector: pod.metadata.labels,
+                    },
+                    status: None,
+                };
+                self.client
+                    .apply_patch(FIELD_MANAGER_SCOPE, &lb, &lb)
+                    .await
+                    .unwrap()
+            }
         };
 
         let target_path = PathBuf::from(&request.target_path);
