@@ -1,10 +1,14 @@
 use serde::{de::IntoDeserializer, Deserialize};
-use stackable_operator::k8s_openapi::api::core::v1::PersistentVolumeClaim;
+use snafu::{OptionExt, ResultExt, Snafu};
+use stackable_operator::{
+    k8s_openapi::api::core::v1::PersistentVolumeClaim, kube::runtime::reflector::ObjectRef,
+};
 use tonic::{Request, Response, Status};
 
 use crate::{
     crd::{LoadBalancer, LoadBalancerClass, ServiceType},
     grpc::csi,
+    utils::error_full_message,
 };
 
 use super::{LbSelector, LbVolumeContext};
@@ -19,6 +23,47 @@ struct ControllerVolumeParams {
     pvc_name: String,
     #[serde(rename = "csi.storage.k8s.io/pvc/namespace")]
     pvc_namespace: String,
+}
+
+#[derive(Snafu, Debug)]
+#[snafu(module)]
+enum CreateVolumeError {
+    DecodeRequestParams {
+        source: serde::de::value::Error,
+    },
+    GetPvc {
+        source: stackable_operator::error::Error,
+        pvc: ObjectRef<PersistentVolumeClaim>,
+    },
+    DecodeVolumeContext {
+        source: serde::de::value::Error,
+    },
+    GetLoadBalancer {
+        source: stackable_operator::error::Error,
+        lb: ObjectRef<LoadBalancer>,
+    },
+    NoLoadBalancerClass {
+        lb: ObjectRef<LoadBalancer>,
+    },
+    GetLoadBalancerClass {
+        source: stackable_operator::error::Error,
+        lb_class: ObjectRef<LoadBalancerClass>,
+    },
+}
+
+impl From<CreateVolumeError> for Status {
+    fn from(err: CreateVolumeError) -> Self {
+        let full_msg = error_full_message(&err);
+        // Convert to an appropriate tonic::Status representation and include full error message
+        match err {
+            CreateVolumeError::DecodeRequestParams { .. } => Status::invalid_argument(full_msg),
+            CreateVolumeError::DecodeVolumeContext { .. } => Status::invalid_argument(full_msg),
+            CreateVolumeError::NoLoadBalancerClass { .. } => Status::invalid_argument(full_msg),
+            CreateVolumeError::GetPvc { .. } => Status::unavailable(full_msg),
+            CreateVolumeError::GetLoadBalancer { .. } => Status::unavailable(full_msg),
+            CreateVolumeError::GetLoadBalancerClass { .. } => Status::unavailable(full_msg),
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -49,34 +94,42 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
             pvc_name,
             pvc_namespace: ns,
         } = ControllerVolumeParams::deserialize(request.parameters.into_deserializer())
-            .map_err(|e: serde::de::value::Error| e)
-            .unwrap();
+            .context(create_volume_error::DecodeRequestParamsSnafu)?;
         let pvc = self
             .client
             .get::<PersistentVolumeClaim>(&pvc_name, Some(&ns))
             .await
-            .unwrap();
+            .with_context(|_| create_volume_error::GetPvcSnafu {
+                pvc: ObjectRef::new(&pvc_name).within(&ns),
+            })?;
         let raw_volume_context = pvc.metadata.annotations.unwrap_or_default();
         let LbVolumeContext { lb_selector } =
             LbVolumeContext::deserialize(raw_volume_context.clone().into_deserializer())
-                .map_err(|e: serde::de::value::Error| e)
-                .unwrap();
+                .context(create_volume_error::DecodeVolumeContextSnafu)?;
         let lb_class_name = match lb_selector {
-            LbSelector::Lb(lb_name) => self
-                .client
-                .get::<LoadBalancer>(&lb_name, Some(&ns))
-                .await
-                .unwrap()
-                .spec
-                .class_name
-                .unwrap(),
+            LbSelector::Lb(lb_name) => {
+                let lb = self
+                    .client
+                    .get::<LoadBalancer>(&lb_name, Some(&ns))
+                    .await
+                    .with_context(|_| create_volume_error::GetLoadBalancerSnafu {
+                        lb: ObjectRef::new(&lb_name).within(&ns),
+                    })?;
+                lb.spec.class_name.clone().with_context(|| {
+                    create_volume_error::NoLoadBalancerClassSnafu {
+                        lb: ObjectRef::from_obj(&lb),
+                    }
+                })?
+            }
             LbSelector::LbClass(lb_class) => lb_class,
         };
         let lb_class = self
             .client
             .get::<LoadBalancerClass>(&lb_class_name, None)
             .await
-            .unwrap();
+            .with_context(|_| create_volume_error::GetLoadBalancerClassSnafu {
+                lb_class: ObjectRef::new(&lb_class_name).within(&ns),
+            })?;
         Ok(Response::new(csi::v1::CreateVolumeResponse {
             volume: Some(csi::v1::Volume {
                 capacity_bytes: 0,
@@ -84,13 +137,13 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                 volume_context: raw_volume_context.into_iter().collect(),
                 content_source: None,
                 accessible_topology: match lb_class.spec.service_type {
-                    ServiceType::NodePort => vec![request
+                    ServiceType::NodePort => request
                         .accessibility_requirements
                         .unwrap_or_default()
                         .preferred
-                        .first()
-                        .unwrap()
-                        .clone()],
+                        .into_iter()
+                        .take(1)
+                        .collect(),
                     ServiceType::LoadBalancer => Vec::new(),
                 },
             }),
