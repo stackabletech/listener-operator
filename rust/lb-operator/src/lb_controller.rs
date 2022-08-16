@@ -3,7 +3,7 @@ use crate::crd::{
     LoadBalancerStatus, ServiceType,
 };
 use futures::{future::try_join_all, StreamExt};
-use snafu::{ResultExt, Snafu};
+use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
@@ -61,10 +61,27 @@ pub struct Ctx {
 
 #[derive(Debug, Snafu, IntoStaticStr)]
 pub enum Error {
+    #[snafu(display("object has no namespace"))]
+    NoNs,
+    #[snafu(display("object has no name"))]
+    NoName,
+    #[snafu(display("object has no LoadBalancerClass (.spec.class_name)"))]
+    NoLbClass,
+    #[snafu(display("failed to get {obj}"))]
+    GetObject {
+        source: stackable_operator::error::Error,
+        obj: ObjectRef<DynamicObject>,
+    },
+    #[snafu(display("failed to build owner reference to LoadBalancer"))]
+    BuildLbOwnerRef {
+        source: stackable_operator::error::Error,
+    },
+    #[snafu(display("failed to apply {svc}"))]
     ApplyService {
         source: stackable_operator::error::Error,
         svc: ObjectRef<Service>,
     },
+    #[snafu(display("failed to apply status for LoadBalancer"))]
     ApplyStatus {
         source: stackable_operator::error::Error,
     },
@@ -76,6 +93,11 @@ impl ReconcilerError for Error {
 
     fn secondary_object(&self) -> Option<ObjectRef<DynamicObject>> {
         match self {
+            Self::NoNs => None,
+            Self::NoName => None,
+            Self::NoLbClass => None,
+            Self::GetObject { source: _, obj } => Some(obj.clone()),
+            Self::BuildLbOwnerRef { .. } => None,
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
             Self::ApplyStatus { source: _ } => None,
         }
@@ -83,12 +105,15 @@ impl ReconcilerError for Error {
 }
 
 pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controller::Action, Error> {
-    let ns = lb.metadata.namespace.clone().unwrap();
+    let ns = lb.metadata.namespace.clone().context(NoNsSnafu)?;
+    let lb_class_name = lb.spec.class_name.as_deref().context(NoLbClassSnafu)?;
     let lb_class = ctx
         .client
-        .get::<LoadBalancerClass>(lb.spec.class_name.as_deref().unwrap(), None)
+        .get::<LoadBalancerClass>(lb_class_name, None)
         .await
-        .unwrap();
+        .with_context(|_| GetObjectSnafu {
+            obj: ObjectRef::<LoadBalancerClass>::new(lb_class_name).erase(),
+        })?;
     let pod_ports = lb
         .spec
         .ports
@@ -113,14 +138,15 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
         )
         // Deduplicate ports by (protocol, name)
         .collect::<BTreeMap<_, ServicePort>>();
+    let svc_name = lb.metadata.name.clone().context(NoNameSnafu)?;
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.clone()),
-            name: lb.metadata.name.clone(),
+            name: Some(svc_name.clone()),
             owner_references: Some(vec![OwnerReferenceBuilder::new()
                 .initialize_from_resource(&*lb)
                 .build()
-                .unwrap()]),
+                .context(BuildLbOwnerRefSnafu)?]),
             ..Default::default()
         },
         spec: Some(ServiceSpec {
@@ -150,9 +176,12 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
         ServiceType::NodePort => {
             let endpoints = ctx
                 .client
-                .get_opt::<Endpoints>(svc.metadata.name.as_deref().unwrap(), Some(&ns))
+                .get_opt::<Endpoints>(&svc_name, Some(&ns))
                 .await
-                .unwrap()
+                .with_context(|_| GetObjectSnafu {
+                    obj: ObjectRef::<Endpoints>::new(&svc_name).within(&ns).erase(),
+                })?
+                // Endpoints object may not yet be created by its respective controller
                 .unwrap_or_default();
             let node_names = endpoints
                 .subsets
@@ -162,13 +191,15 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
                 .flatten()
                 .flat_map(|addr| addr.node_name)
                 .collect::<Vec<_>>();
-            let nodes = try_join_all(
-                node_names
-                    .iter()
-                    .map(|node_name| ctx.client.get::<Node>(node_name, None)),
-            )
-            .await
-            .unwrap();
+            let nodes = try_join_all(node_names.iter().map(|node_name| async {
+                ctx.client
+                    .get::<Node>(node_name, None)
+                    .await
+                    .context(GetObjectSnafu {
+                        obj: ObjectRef::<Node>::new(node_name).erase(),
+                    })
+            }))
+            .await?;
             addresses = nodes
                 .into_iter()
                 .flat_map(|node| {
@@ -184,12 +215,10 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
             ports = svc
                 .spec
                 .as_ref()
-                .unwrap()
-                .ports
-                .as_ref()
-                .unwrap()
-                .iter()
-                .map(|port| (port.name.clone().unwrap(), port.node_port.unwrap()))
+                .and_then(|s| s.ports.as_ref())
+                .into_iter()
+                .flatten()
+                .filter_map(|port| Some((port.name.clone()?, port.node_port?)))
                 .collect();
         }
         ServiceType::LoadBalancer => {
@@ -203,12 +232,10 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
             ports = svc
                 .spec
                 .as_ref()
-                .unwrap()
-                .ports
-                .as_ref()
-                .unwrap()
-                .iter()
-                .map(|port| (port.name.clone().unwrap(), port.port))
+                .and_then(|s| s.ports.as_ref())
+                .into_iter()
+                .flatten()
+                .filter_map(|port| Some((port.name.clone()?, port.port)))
                 .collect();
         }
     };
