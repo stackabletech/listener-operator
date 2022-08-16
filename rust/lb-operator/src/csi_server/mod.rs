@@ -17,3 +17,9 @@ struct LbVolumeContext {
     #[serde(flatten)]
     lb_selector: LbSelector,
 }
+
+fn tonic_unimplemented<T>() -> Result<T, tonic::Status> {
+    Err(tonic::Status::unimplemented(
+        "this endpoint is not implemented",
+    ))
+}

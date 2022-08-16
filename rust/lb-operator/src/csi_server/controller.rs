@@ -1,7 +1,8 @@
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    k8s_openapi::api::core::v1::PersistentVolumeClaim, kube::runtime::reflector::ObjectRef,
+    k8s_openapi::api::core::v1::PersistentVolumeClaim,
+    kube::{core::DynamicObject, runtime::reflector::ObjectRef},
 };
 use tonic::{Request, Response, Status};
 
@@ -11,7 +12,7 @@ use crate::{
     utils::error_full_message,
 };
 
-use super::{LbSelector, LbVolumeContext};
+use super::{tonic_unimplemented, LbSelector, LbVolumeContext};
 
 pub struct LbOperatorController {
     pub client: stackable_operator::client::Client,
@@ -28,26 +29,21 @@ struct ControllerVolumeParams {
 #[derive(Snafu, Debug)]
 #[snafu(module)]
 enum CreateVolumeError {
+    #[snafu(display("failed to decode request parameters"))]
     DecodeRequestParams {
         source: serde::de::value::Error,
     },
-    GetPvc {
+    #[snafu(display("failed to get {obj}"))]
+    GetObject {
         source: stackable_operator::error::Error,
-        pvc: ObjectRef<PersistentVolumeClaim>,
+        obj: Box<ObjectRef<DynamicObject>>,
     },
+    #[snafu(display("failed to decode volume context"))]
     DecodeVolumeContext {
         source: serde::de::value::Error,
     },
-    GetLoadBalancer {
-        source: stackable_operator::error::Error,
-        lb: ObjectRef<LoadBalancer>,
-    },
     NoLoadBalancerClass {
         lb: ObjectRef<LoadBalancer>,
-    },
-    GetLoadBalancerClass {
-        source: stackable_operator::error::Error,
-        lb_class: ObjectRef<LoadBalancerClass>,
     },
 }
 
@@ -59,9 +55,7 @@ impl From<CreateVolumeError> for Status {
             CreateVolumeError::DecodeRequestParams { .. } => Status::invalid_argument(full_msg),
             CreateVolumeError::DecodeVolumeContext { .. } => Status::invalid_argument(full_msg),
             CreateVolumeError::NoLoadBalancerClass { .. } => Status::invalid_argument(full_msg),
-            CreateVolumeError::GetPvc { .. } => Status::unavailable(full_msg),
-            CreateVolumeError::GetLoadBalancer { .. } => Status::unavailable(full_msg),
-            CreateVolumeError::GetLoadBalancerClass { .. } => Status::unavailable(full_msg),
+            CreateVolumeError::GetObject { .. } => Status::unavailable(full_msg),
         }
     }
 }
@@ -89,6 +83,7 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
         &self,
         request: Request<csi::v1::CreateVolumeRequest>,
     ) -> Result<Response<csi::v1::CreateVolumeResponse>, Status> {
+        use create_volume_error::*;
         let request = request.into_inner();
         let ControllerVolumeParams {
             pvc_name,
@@ -99,8 +94,10 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
             .client
             .get::<PersistentVolumeClaim>(&pvc_name, Some(&ns))
             .await
-            .with_context(|_| create_volume_error::GetPvcSnafu {
-                pvc: ObjectRef::new(&pvc_name).within(&ns),
+            .with_context(|_| GetObjectSnafu {
+                obj: ObjectRef::<PersistentVolumeClaim>::new(&pvc_name)
+                    .within(&ns)
+                    .erase(),
             })?;
         let raw_volume_context = pvc.metadata.annotations.unwrap_or_default();
         let LbVolumeContext { lb_selector } =
@@ -112,14 +109,15 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                     .client
                     .get::<LoadBalancer>(&lb_name, Some(&ns))
                     .await
-                    .with_context(|_| create_volume_error::GetLoadBalancerSnafu {
-                        lb: ObjectRef::new(&lb_name).within(&ns),
+                    .with_context(|_| GetObjectSnafu {
+                        obj: ObjectRef::<LoadBalancer>::new(&lb_name).within(&ns).erase(),
                     })?;
-                lb.spec.class_name.clone().with_context(|| {
-                    create_volume_error::NoLoadBalancerClassSnafu {
+                lb.spec
+                    .class_name
+                    .clone()
+                    .with_context(|| NoLoadBalancerClassSnafu {
                         lb: ObjectRef::from_obj(&lb),
-                    }
-                })?
+                    })?
             }
             LbSelector::LbClass(lb_class) => lb_class,
         };
@@ -127,8 +125,10 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
             .client
             .get::<LoadBalancerClass>(&lb_class_name, None)
             .await
-            .with_context(|_| create_volume_error::GetLoadBalancerClassSnafu {
-                lb_class: ObjectRef::new(&lb_class_name).within(&ns),
+            .with_context(|_| GetObjectSnafu {
+                obj: ObjectRef::<LoadBalancerClass>::new(&lb_class_name)
+                    .within(&ns)
+                    .erase(),
             })?;
         Ok(Response::new(csi::v1::CreateVolumeResponse {
             volume: Some(csi::v1::Volume {
@@ -152,78 +152,78 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
 
     async fn delete_volume(
         &self,
-        request: Request<csi::v1::DeleteVolumeRequest>,
+        _request: Request<csi::v1::DeleteVolumeRequest>,
     ) -> Result<Response<csi::v1::DeleteVolumeResponse>, Status> {
         Ok(Response::new(csi::v1::DeleteVolumeResponse {}))
     }
 
     async fn controller_publish_volume(
         &self,
-        request: Request<csi::v1::ControllerPublishVolumeRequest>,
+        _request: Request<csi::v1::ControllerPublishVolumeRequest>,
     ) -> Result<Response<csi::v1::ControllerPublishVolumeResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn controller_unpublish_volume(
         &self,
-        request: Request<csi::v1::ControllerUnpublishVolumeRequest>,
+        _request: Request<csi::v1::ControllerUnpublishVolumeRequest>,
     ) -> Result<Response<csi::v1::ControllerUnpublishVolumeResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn validate_volume_capabilities(
         &self,
-        request: Request<csi::v1::ValidateVolumeCapabilitiesRequest>,
+        _request: Request<csi::v1::ValidateVolumeCapabilitiesRequest>,
     ) -> Result<Response<csi::v1::ValidateVolumeCapabilitiesResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn list_volumes(
         &self,
-        request: Request<csi::v1::ListVolumesRequest>,
+        _request: Request<csi::v1::ListVolumesRequest>,
     ) -> Result<Response<csi::v1::ListVolumesResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn get_capacity(
         &self,
-        request: Request<csi::v1::GetCapacityRequest>,
+        _request: Request<csi::v1::GetCapacityRequest>,
     ) -> Result<Response<csi::v1::GetCapacityResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn create_snapshot(
         &self,
-        request: Request<csi::v1::CreateSnapshotRequest>,
+        _request: Request<csi::v1::CreateSnapshotRequest>,
     ) -> Result<Response<csi::v1::CreateSnapshotResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn delete_snapshot(
         &self,
-        request: Request<csi::v1::DeleteSnapshotRequest>,
+        _request: Request<csi::v1::DeleteSnapshotRequest>,
     ) -> Result<Response<csi::v1::DeleteSnapshotResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn list_snapshots(
         &self,
-        request: Request<csi::v1::ListSnapshotsRequest>,
+        _request: Request<csi::v1::ListSnapshotsRequest>,
     ) -> Result<Response<csi::v1::ListSnapshotsResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn controller_expand_volume(
         &self,
-        request: Request<csi::v1::ControllerExpandVolumeRequest>,
+        _request: Request<csi::v1::ControllerExpandVolumeRequest>,
     ) -> Result<Response<csi::v1::ControllerExpandVolumeResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 
     async fn controller_get_volume(
         &self,
-        request: Request<csi::v1::ControllerGetVolumeRequest>,
+        _request: Request<csi::v1::ControllerGetVolumeRequest>,
     ) -> Result<Response<csi::v1::ControllerGetVolumeResponse>, Status> {
-        todo!()
+        tonic_unimplemented()
     }
 }
