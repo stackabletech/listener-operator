@@ -1,6 +1,9 @@
-use crate::crd::{
-    LoadBalancer, LoadBalancerClass, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec,
-    LoadBalancerStatus, ServiceType,
+use crate::{
+    crd::{
+        LoadBalancer, LoadBalancerClass, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec,
+        LoadBalancerStatus, ServiceType,
+    },
+    utils::node_primary_address,
 };
 use futures::{future::try_join_all, StreamExt};
 use snafu::{OptionExt, ResultExt, Snafu};
@@ -202,15 +205,7 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
             .await?;
             addresses = nodes
                 .into_iter()
-                .flat_map(|node| {
-                    let addrs = node.status.and_then(|s| s.addresses).unwrap_or_default();
-                    addrs
-                        .iter()
-                        .find(|addr| addr.type_ == "ExternalIP")
-                        .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
-                        .or_else(|| addrs.iter().find(|addr| addr.type_ == "Hostname"))
-                        .map(|addr| addr.address.clone())
-                })
+                .flat_map(|node| node_primary_address(&node).map(str::to_string))
                 .collect();
             ports = svc
                 .spec

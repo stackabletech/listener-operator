@@ -7,7 +7,7 @@ use serde::{
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    k8s_openapi::api::core::v1::{PersistentVolume, Pod},
+    k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
     kube::{
         core::{DynamicObject, ObjectMeta},
         runtime::reflector::ObjectRef,
@@ -19,7 +19,7 @@ use tonic::{Request, Response, Status};
 use crate::{
     crd::{LoadBalancer, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec},
     grpc::csi::{self, v1::Topology},
-    utils::error_full_message,
+    utils::{error_full_message, node_primary_address},
 };
 
 use super::{tonic_unimplemented, LbSelector, LbVolumeContext};
@@ -153,7 +153,6 @@ impl csi::v1::node_server::Node for LbOperatorNode {
                 },
             })
         }
-        // let get_obj = |name: &str, ns: Option<&str>| self.client.get(name, ns);
 
         let request = request.into_inner();
         let LbNodeVolumeContext {
@@ -224,16 +223,21 @@ impl csi::v1::node_server::Node for LbOperatorNode {
             .as_ref()
             .and_then(|status| status.node_ports.clone())
         {
-            vec![LoadBalancerIngress {
-                address: pod
-                    .spec
-                    .as_ref()
-                    .and_then(|s| s.node_name.clone())
-                    .with_context(|| PodHasNoNodeSnafu {
-                        pod: ObjectRef::from_obj(&pod),
-                    })?,
-                ports: node_ports,
-            }]
+            let node_name = pod
+                .spec
+                .as_ref()
+                .and_then(|s| s.node_name.as_deref())
+                .with_context(|| PodHasNoNodeSnafu {
+                    pod: ObjectRef::from_obj(&pod),
+                })?;
+            let node = get_obj::<Node>(&self.client, node_name, None).await?;
+            node_primary_address(&node)
+                .map(|address| LoadBalancerIngress {
+                    address: address.to_string(),
+                    ports: node_ports,
+                })
+                .into_iter()
+                .collect()
         } else {
             lb.status
                 .as_ref()

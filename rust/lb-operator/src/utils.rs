@@ -2,6 +2,7 @@ use std::{fmt::LowerHex, os::unix::prelude::AsRawFd, path::Path};
 
 use pin_project::pin_project;
 use socket2::Socket;
+use stackable_operator::k8s_openapi::api::core::v1::Node;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::{UnixListener, UnixStream},
@@ -109,6 +110,27 @@ pub fn error_full_message(err: &dyn std::error::Error) -> String {
         curr_err = curr_source.source();
     }
     full_msg
+}
+
+pub fn node_primary_address(node: &Node) -> Option<&str> {
+    let addrs = node.status.as_ref().and_then(|s| s.addresses.as_ref());
+    addrs
+        .into_iter()
+        .flatten()
+        .find(|addr| addr.type_ == "ExternalIP")
+        .or_else(|| {
+            addrs
+                .into_iter()
+                .flatten()
+                .find(|addr| addr.type_ == "InternalIP")
+        })
+        .or_else(|| {
+            addrs
+                .into_iter()
+                .flatten()
+                .find(|addr| addr.type_ == "Hostname")
+        })
+        .map(|addr| addr.address.as_str())
 }
 
 #[cfg(test)]
