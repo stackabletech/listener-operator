@@ -1,0 +1,7 @@
+---
+apiVersion: lb.stackable.tech/v1alpha1
+kind: LoadBalancerClass
+metadata:
+  name: public
+spec:
+  serviceType: NodePort

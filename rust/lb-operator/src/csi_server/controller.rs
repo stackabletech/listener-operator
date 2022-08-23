@@ -137,6 +137,8 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                 volume_context: raw_volume_context.into_iter().collect(),
                 content_source: None,
                 accessible_topology: match lb_class.spec.service_type {
+                    // Pick the top node (as selected by the CSI client) and "stick" to that
+                    // Since we want clients to have a stable address to connect to
                     ServiceType::NodePort => request
                         .accessibility_requirements
                         .unwrap_or_default()
@@ -144,6 +146,7 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                         .into_iter()
                         .take(1)
                         .collect(),
+                    // Load balancers have no relationship to any particular node, so don't try to be sticky
                     ServiceType::LoadBalancer => Vec::new(),
                 },
             }),

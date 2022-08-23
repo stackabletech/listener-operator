@@ -1,0 +1,6 @@
+= Volume
+
+TODO: Expand severely.
+
+lb-operator acts as a CSI `PersistentVolume`, which helps it stabilize network addresses, inject pod metadata, and exposing individual pods.
+
