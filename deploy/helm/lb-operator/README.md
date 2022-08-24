@@ -1,13 +1,13 @@
 # Helm Chart for Stackable Operator for Stackable Load Balancer Operator
 
-This Helm Chart can be used to install Custom Resource Definitions and the Operator for Stackable Load Balancer Operator.
+This Helm Chart can be used to install Custom Resource Definitions and the Operator for Stackable Load Balancer Operator provided by Stackable.
 
 ## Requirements
 
 - Create a [Kubernetes Cluster](../Readme.md)
 - Install [Helm](https://helm.sh/docs/intro/install/)
 
-## Install the Stackable Operator for Stackable Secret Operator
+## Install the Stackable Operator for Stackable Load Balancer Operator
 
 ```bash
 # From the root of the operator repository
