@@ -6,7 +6,7 @@ It is developed against the latest stable Rust release, and we currently don't s
 
 However, the LB Operator is a https://github.com/container-storage-interface/spec/blob/master/spec.md[Container Storage Interface (CSI)] provider plugin
 for the local Kubelet, which means that it should only be executed inside of a Kubernetes `Pod`. We currently support two ways of building the
-Secret Operator: `docker build` and https://nixos.org/[Nix]. `docker build` is currently our primary deployment target, and our official images are built
+LB Operator: `docker build` and https://nixos.org/[Nix]. `docker build` is currently our primary deployment target, and our official images are built
 using it. However, Nix has much faster incremental build and deploy times, making it ideal for local development.
 
 == Docker
@@ -68,7 +68,7 @@ $ nix run -f . tilt up
 
 == K3d
 
-Secret-Operator, as with most CSI providers, requires the Kubernetes node's root folder to be mounted as `rshared`. K3d does not do this by default,
+LB-Operator, as with most CSI providers, requires the Kubernetes node's root folder to be mounted as `rshared`. K3d does not do this by default,
 but can be prodded into doing this by running `mount --make-rshared /` in each node container.
 
 To do this for each running node K3d node, run the following script:
