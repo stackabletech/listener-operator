@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: lb-operator
     app.kubernetes.io/instance: lb-operator
-    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/version: "0.1.0-nightly"
 spec:
   selector:
     matchLabels:
@@ -25,7 +25,7 @@ spec:
           securityContext:
             privileged: true
             runAsUser: 0
-          image: "docker.stackable.tech/stackable/lb-operator:0.1.0"
+          image: "docker.stackable.tech/stackable/lb-operator:0.1.0-nightly"
           imagePullPolicy: IfNotPresent
           resources: {}
           env:
