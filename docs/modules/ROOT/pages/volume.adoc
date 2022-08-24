@@ -4,3 +4,57 @@ TODO: Expand severely.
 
 lb-operator acts as a CSI `PersistentVolume`, which helps it stabilize network addresses, inject pod metadata, and exposing individual pods.
 
+== Stable addresses
+
+Some xref:loadbalancerclass.adoc[] strategies, such as `NodePort`, tie the public address to the Kubernetes node that the `Pod` is running on. When this address must be configured statically in clients
+(such as for HDFS NameNodes), then Kubernetes' default "floating" scheduling either requires all clients to be reconfigured every time something moves, or for all clients to proxy their traffic through
+a single static node, which then becomes a single point of failure (along with the node that the workload is running on).
+
+Mounting load balancers into Pods as `PersistentVolume` allows lb-operator to pin these workloads to one node. Note that this only happens for xref:loadbalancerclass.adoc[] es that actually benefit
+from pinning.
+
+== Pod metadata injection
+
+Some services (such as Kafka) need to know their external address, so that they can advertise it to their own replica discovery mechanism. xref:loadbalancer.adoc[] volumes contain a file tree that exposes
+this information:
+
+[source]
+----
+- `default-address/`- symlink to `addresses/\{primary address\}`
+- `addresses/` - Contains information about all addresses associated with this xref:loadbalancer.adoc[]
+  - `\{address\}/` - A folder is created for each address
+    - `address` - Contains the Pod's address (IP address or hostname)
+    - `ports/` - Contains port numbers for each named port
+      - `\{port name\}` - Contains the public port number for this named port
+----
+
+== Individual pod exposure
+
+Sometimes each replica much be exposed individually, for example because clients need to access data on a specific shard. `PersistentVolumeClaim` templates can be used to provision this automatically.
+
+=== `StatefulSet` `volumeClaimTemplates`
+
+`volumeClaimTemplates` allows volumes to be provisioned for each `StatefulSet` replica. These volumes are _persistent_, and will not be deleted when the `Pod` or `StatefulSet` is. This makes them
+useful for provisioning addresses that must be hard-coded into client configuration.
+
+=== Pod-scoped ephemeral volumes
+
+`Pod.spec.volumes[].ephemeral` allows volumes to be provisioned for each `Pod`. These volumes are tied to the lifetime of the `Pod` and will be deleted when it is. This makes them useful for provisioning
+temporary addresses that will be discovered out of band (such as for HDFS DataNodes).
+
+== Reference
+
+All configuration must be specified as `annotations` on the `PersistentVolumeClaim`. The following attributes are currently supported:
+
+=== `lb.stackable.tech/lb-name`
+
+*Required*: If `lb.stackable.tech/lb-class` is not specified
+
+Provisions metadata about an existing xref:loadbalancer.adoc[] that was created manually.
+
+=== `lb.stackable.tech/lb-class`
+
+*Required*: If `lb.stackable.tech/lb-name` is not specified
+
+Provisions a new xref:loadbalancer.adoc[] using the specified xref:loadbalancerclass.adoc[]. The created xref:loadbalancer.adoc[] will expose
+all of the `Pod` 's ports.
