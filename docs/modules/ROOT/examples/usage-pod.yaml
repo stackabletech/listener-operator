@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: example-secret-consumer
+  name: example-public-pod
 spec:
   volumes:
     - name: lb
