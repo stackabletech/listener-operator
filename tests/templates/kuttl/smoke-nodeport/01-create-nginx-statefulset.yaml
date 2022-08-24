@@ -39,9 +39,8 @@ spec:
           lb.stackable.tech/lb-class: lb-operator-test-smoke-nodeport
       spec:
         accessModes:
-        - ReadWriteMany
+          - ReadWriteMany
         storageClassName: lb.stackable.tech
         resources:
           requests:
             storage: 1
-
