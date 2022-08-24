@@ -1,0 +1,7 @@
+---
+apiVersion: lb.stackable.tech/v1alpha1
+kind: LoadBalancerClass
+metadata:
+  name: lb-operator-test-smoke-nodeport
+spec:
+  serviceType: NodePort
