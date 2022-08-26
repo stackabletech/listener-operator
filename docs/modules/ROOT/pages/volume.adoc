@@ -2,7 +2,7 @@
 
 TODO: Expand severely.
 
-lb-operator acts as a CSI `PersistentVolume`, which helps it stabilize network addresses, inject pod metadata, and exposing individual pods.
+The LB Operator acts as a CSI `PersistentVolume`, which helps it to stabilize network addresses, inject pod metadata and expose individual pods.
 
 == Stable addresses
 
@@ -20,7 +20,7 @@ this information:
 
 [source]
 ----
-- `default-address/`- symlink to `addresses/\{primary address\}`
+- `default-address/`- A symlink to `addresses/\{primary address\}`
 - `addresses/` - Contains information about all addresses associated with this xref:loadbalancer.adoc[]
   - `\{address\}/` - A folder is created for each address
     - `address` - Contains the Pod's address (IP address or hostname)
@@ -30,17 +30,15 @@ this information:
 
 == Individual pod exposure
 
-Sometimes each replica much be exposed individually, for example because clients need to access data on a specific shard. `PersistentVolumeClaim` templates can be used to provision this automatically.
+Sometimes each replica must be exposed individually, for example because clients need to access data on a specific shard. `PersistentVolumeClaim` templates can be used to provision this automatically.
 
 === `StatefulSet` `volumeClaimTemplates`
 
-`volumeClaimTemplates` allows volumes to be provisioned for each `StatefulSet` replica. These volumes are _persistent_, and will not be deleted when the `Pod` or `StatefulSet` is. This makes them
-useful for provisioning addresses that must be hard-coded into client configuration.
+The `volumeClaimTemplates` allow volumes to be provisioned for each `StatefulSet` replica. These volumes are _persistent_, and will not be deleted when the `Pod` or `StatefulSet` is. This makes them useful for provisioning addresses that must be hard-coded into client configuration.
 
 === Pod-scoped ephemeral volumes
 
-`Pod.spec.volumes[].ephemeral` allows volumes to be provisioned for each `Pod`. These volumes are tied to the lifetime of the `Pod` and will be deleted when it is. This makes them useful for provisioning
-temporary addresses that will be discovered out of band (such as for HDFS DataNodes).
+`Pod.spec.volumes[].ephemeral` allows volumes to be provisioned for each `Pod`. These volumes are tied to the lifetime of the `Pod` and will be deleted along with it. This makes them useful for provisioning temporary addresses that will be discovered out of band (such as for HDFS DataNodes).
 
 == Reference
 

@@ -5,28 +5,23 @@ features that are useful for the Stackable platform at large.
 
 == `LoadBalancerClass`
 
-The exact rules of pod exposure is dictated by the specified xref:loadbalancerclass.adoc[], which allows a single `LoadBalancer` definition
-to be reused exactly between many clusters, regardless of the Kubernetes distribution or cloud provider.
+The exact rules of pod exposure are dictated by the specified xref:loadbalancerclass.adoc[], which allow a single `LoadBalancer` definition to be reused in different clusters, regardless of the Kubernetes distribution or cloud provider.
 
 == Address API
 
-`LoadBalancer` writes back all addresses that it can be reached on to `LoadBalancer.status.ingress_addresses`, which can then be used to generate
-discovery information. Contrary to Kubernetes' `Service`, this is done regardless of the type of service, and transparently also contains information
-about remapped ports.
+A `LoadBalancer` writes back all addresses that it can be reached on to `LoadBalancer.status.ingress_addresses`, which can then be used to generate discovery information. Contrary to Kubernetes' `Service`, this is done regardless of the type of service, and transparently also contains information about remapped ports.
 
 == Address volume projection
 
-`LoadBalancer` objects can be mounted into a `Pod` as a `PersistentVolumeClaim`, which contains information about how the `Pod` should request that
-external clients refer to it.
+`LoadBalancer` objects can be mounted into a `Pod` as a `PersistentVolumeClaim`, which contains information about how the `Pod` should request that external clients refer to it.
 
-For example, if the volume is mounted to `/stackable/lb`, the primary address can be read from `/stackable/lb/default-address/address`, and the
-public `http` port number can be read from `/stackable/lb/default-address/ports/http`.
+For example, if the volume is mounted to `/stackable/lb`, the primary address can be read from  `/stackable/lb/default-address/address`, and the public `http` port number can be read from `/stackable/lb/default-address/ports/http`.
 
 == Per-replica LBs
 
 A `LoadBalancer` PVC can also specify a xref:loadbalancerclass.adoc[] rather than a `LoadBalancer`, in which case a `LoadBalancer` object is created
 automatically. These PVCs can automatically be created for each replica using either `StatefulSet` 's `volumeClaimTemplates` (for long-lived LBs that will
-be kept across replica restarts and upgrades) or `Pod` 's `volumes[].ephemeral` (for temporary LBs that will be deleted when their corresponding `Pod` is).
+be kept across replica restarts and upgrades) or `Pod` 's `volumes[].ephemeral` (for temporary LBs that are deleted when their corresponding `Pod` is deleted).
 
 == Sticky scheduling
 

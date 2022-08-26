@@ -19,8 +19,7 @@ of years. This might lead administrators of such systems to prefer exposing node
 include::example$lbclass-public-onprem.yaml[]
 ----
 
-Finally, it can be desirable to add additional annotations to a `Service`. For example, a user might want to only expose some services inside of a given
-cloud vendor VPC. How exactly this is accomplished depends on the cloud provider in question, but for GKE this requires the annotation `networking.gke.io/load-balancer-type`:
+Finally, it can be desirable to add additional annotations to a `Service`. For example, a user might want to only expose some services inside a given cloud vendor VPC. How exactly this is accomplished depends on the cloud provider in question, but for GKE this requires the annotation `networking.gke.io/load-balancer-type`:
 
 [source,yaml]
 ----
