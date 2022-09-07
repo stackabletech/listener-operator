@@ -37,7 +37,6 @@ struct LbNodeVolumeContext {
     pod_namespace: String,
     #[serde(rename = "csi.storage.k8s.io/pod.name")]
     pod_name: String,
-
     #[serde(flatten)]
     common: LbVolumeContext,
 }
