@@ -41,7 +41,7 @@ pub enum ServiceType {
 ///
 /// Essentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`LoadBalancer`] changes two things:
 /// 1. It uses a cluster-level policy object ([`LoadBalancerClass`]) to define how exactly the exposure works
-/// 2. It has a consistent API for reading back the exposed address(es) of the servuce
+/// 2. It has a consistent API for reading back the exposed address(es) of the service
 #[derive(CustomResource, Serialize, Deserialize, Clone, Debug, JsonSchema, Default)]
 #[kube(
     group = "lb.stackable.tech",
