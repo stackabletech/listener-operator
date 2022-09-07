@@ -306,8 +306,8 @@ mod pod_dir {
 
     #[derive(Snafu, Debug)]
     pub enum Error {
-        #[snafu(context(false))]
-        Fs { source: std::io::Error },
+        #[snafu(display("failed to write content"), context(false))]
+        WriteContent { source: std::io::Error },
         #[snafu(display("load balancer has no address yet"))]
         NoDefaultLb,
         #[snafu(display("default address folder is outside of the volume root"))]
