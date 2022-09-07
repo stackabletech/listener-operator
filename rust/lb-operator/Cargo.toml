@@ -1,9 +1,11 @@
 [package]
 name = "stackable-lb-operator"
+authors = ["Stackable GmbH <info@stackable.de>"]
+description = "Stackable Operator for load balancing"
+license = "OSL-3.0"
 version = "0.1.0-nightly"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/stackabletech/lb-operator"
 
 [dependencies]
 # Need to keep this in sync with our patched h2 build
