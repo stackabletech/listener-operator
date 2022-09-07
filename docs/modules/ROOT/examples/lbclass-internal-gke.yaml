@@ -1,0 +1,9 @@
+---
+apiVersion: lb.stackable.tech/v1alpha1
+kind: LoadBalancerClass
+metadata:
+  name: internal
+spec:
+  serviceType: LoadBalancer
+  serviceAnnotations:
+    networking.gke.io/load-balancer-type: Internal

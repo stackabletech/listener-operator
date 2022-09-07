@@ -1,0 +1,14 @@
+---
+apiVersion: lb.stackable.tech/v1alpha1
+kind: LoadBalancerClass
+metadata:
+  name: nodeport
+spec:
+  serviceType: NodePort
+---
+apiVersion: lb.stackable.tech/v1alpha1
+kind: LoadBalancerClass
+metadata:
+  name: lb-external
+spec:
+  serviceType: LoadBalancer

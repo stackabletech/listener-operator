@@ -1,0 +1,5 @@
+---
+dimensions: []
+tests:
+  - name: smoke-nodeport
+    dimensions: []

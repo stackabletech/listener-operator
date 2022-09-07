@@ -1,4 +1,15 @@
-/target
-/result
+tests/ansible/roles/
+tests/_work/
+debug/
+target/
+**/*.rs.bk
+
+.idea/
+*.iws
+*.iml
+
+*.tgz
+
 Cargo.nix
 crate-hashes.json
+result

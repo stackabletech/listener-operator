@@ -1,0 +1,7 @@
+---
+name: lb-operator
+version: "nightly"
+title: Stackable LB Operator
+nav:
+  - modules/ROOT/nav.adoc
+prerelease: true

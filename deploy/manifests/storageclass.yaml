@@ -1,0 +1,7 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lb.stackable.tech
+provisioner: lb.stackable.tech
+volumeBindingMode: WaitForFirstConsumer
