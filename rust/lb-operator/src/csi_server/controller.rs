@@ -30,21 +30,16 @@ struct ControllerVolumeParams {
 #[snafu(module)]
 enum CreateVolumeError {
     #[snafu(display("failed to decode request parameters"))]
-    DecodeRequestParams {
-        source: serde::de::value::Error,
-    },
+    DecodeRequestParams { source: serde::de::value::Error },
     #[snafu(display("failed to get {obj}"))]
     GetObject {
         source: stackable_operator::error::Error,
         obj: Box<ObjectRef<DynamicObject>>,
     },
     #[snafu(display("failed to decode volume context"))]
-    DecodeVolumeContext {
-        source: serde::de::value::Error,
-    },
-    NoLoadBalancerClass {
-        lb: ObjectRef<LoadBalancer>,
-    },
+    DecodeVolumeContext { source: serde::de::value::Error },
+    #[snafu(display("{lb} does not specify a load balancer class"))]
+    NoLoadBalancerClass { lb: ObjectRef<LoadBalancer> },
 }
 
 impl From<CreateVolumeError> for Status {
