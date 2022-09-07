@@ -112,24 +112,19 @@ pub fn error_full_message(err: &dyn std::error::Error) -> String {
     full_msg
 }
 
+/// Try to guess the primary address of a Node, which it is expected that external clients should be able to reach it on
 pub fn node_primary_address(node: &Node) -> Option<&str> {
-    let addrs = node.status.as_ref().and_then(|s| s.addresses.as_ref());
+    let addrs = node
+        .status
+        .as_ref()
+        .and_then(|s| s.addresses.as_deref())
+        .unwrap_or_default();
+    // IP addresses are currently preferred over hostnames since nodes don't always have resolvable hostnames
     addrs
-        .into_iter()
-        .flatten()
+        .iter()
         .find(|addr| addr.type_ == "ExternalIP")
-        .or_else(|| {
-            addrs
-                .into_iter()
-                .flatten()
-                .find(|addr| addr.type_ == "InternalIP")
-        })
-        .or_else(|| {
-            addrs
-                .into_iter()
-                .flatten()
-                .find(|addr| addr.type_ == "Hostname")
-        })
+        .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
+        .or_else(|| addrs.iter().find(|addr| addr.type_ == "Hostname"))
         .map(|addr| addr.address.as_str())
 }
 
