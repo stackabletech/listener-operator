@@ -216,7 +216,7 @@ impl csi::v1::node_server::Node for LbOperatorNode {
 
         // Prefer calculating a per-node address where possible, to ensure that the address at least tries to
         // connect to the pod in question.
-        // We also can't rely on `ingress_addresses` being set yet, since the pod won't not have an IP address yet
+        // We also can't rely on `ingress_addresses` being set yet, since the pod won't have an IP address yet
         // (and so can't be found in `Endpoints`)
         let lb_addrs = if let Some(node_ports) = lb
             .status
