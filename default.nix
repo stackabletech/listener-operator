@@ -10,19 +10,16 @@
       tonic-reflection = attrs: {
         buildInputs = [ pkgs.rustfmt ];
       };
-      stackable-lb-operator = attrs: {
-        buildInputs = [ pkgs.rustfmt ];
-      };
     };
   }
-, dockerName ? "docker.stackable.tech/sandbox/lb-operator"
+, dockerName ? "docker.stackable.tech/sandbox/listener-operator"
 , dockerTag ? null
 }:
 rec {
   build = cargo.rootCrate.build;
-  crds = pkgs.runCommand "lb-operator-crds.yaml" {}
+  crds = pkgs.runCommand "listener-operator-crds.yaml" {}
   ''
-    ${build}/bin/stackable-lb-operator crd > $out
+    ${build}/bin/stackable-listener-operator crd > $out
   '';
 
   dockerImage = pkgs.dockerTools.streamLayeredImage {
@@ -30,10 +27,10 @@ rec {
     tag = dockerTag;
     contents = [ pkgs.bashInteractive pkgs.coreutils pkgs.util-linuxMinimal ];
     config = {
-      Cmd = [ (build+"/bin/stackable-lb-operator") "run" ];
+      Cmd = [ (build+"/bin/stackable-listener-operator") "run" ];
     };
   };
-  docker = pkgs.linkFarm "lb-operator-docker" [
+  docker = pkgs.linkFarm "listener-operator-docker" [
     {
       name = "load-image";
       path = dockerImage;

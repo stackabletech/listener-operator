@@ -5,17 +5,17 @@ pub mod identity;
 pub mod node;
 
 #[derive(Deserialize)]
-enum LbSelector {
-    #[serde(rename = "lb.stackable.tech/lb-class")]
-    LbClass(String),
-    #[serde(rename = "lb.stackable.tech/lb-name")]
-    Lb(String),
+enum ListenerSelector {
+    #[serde(rename = "listeners.stackable.tech/listener-class")]
+    ListenerClass(String),
+    #[serde(rename = "listeners.stackable.tech/listener-name")]
+    Listener(String),
 }
 
 #[derive(Deserialize)]
-struct LbVolumeContext {
+struct ListenerVolumeContext {
     #[serde(flatten)]
-    lb_selector: LbSelector,
+    listener_selector: ListenerSelector,
 }
 
 fn tonic_unimplemented<T>() -> Result<T, tonic::Status> {

@@ -3,7 +3,7 @@
 * xref:configuration.adoc[]
 * xref:usage.adoc[]
 * Concepts
-** xref:loadbalancer.adoc[]
-** xref:loadbalancerclass.adoc[]
+** xref:listener.adoc[]
+** xref:listener.adoc[]
 ** xref:volume.adoc[]
 

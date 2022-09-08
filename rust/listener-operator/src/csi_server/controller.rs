@@ -6,15 +6,11 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::{
-    crd::{LoadBalancer, LoadBalancerClass, ServiceType},
-    grpc::csi,
-    utils::error_full_message,
-};
+use crate::{crd::ServiceType, grpc::csi, utils::error_full_message};
 
-use super::{tonic_unimplemented, LbSelector, LbVolumeContext};
+use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 
-pub struct LbOperatorController {
+pub struct ListenerOperatorController {
     pub client: stackable_operator::client::Client,
 }
 
@@ -38,8 +34,10 @@ enum CreateVolumeError {
     },
     #[snafu(display("failed to decode volume context"))]
     DecodeVolumeContext { source: serde::de::value::Error },
-    #[snafu(display("{lb} does not specify a load balancer class"))]
-    NoLoadBalancerClass { lb: ObjectRef<LoadBalancer> },
+    #[snafu(display("{listener} does not specify a listener class"))]
+    NoListenerClass {
+        listener: ObjectRef<crate::crd::Listener>,
+    },
 }
 
 impl From<CreateVolumeError> for Status {
@@ -49,14 +47,14 @@ impl From<CreateVolumeError> for Status {
         match err {
             CreateVolumeError::DecodeRequestParams { .. } => Status::invalid_argument(full_msg),
             CreateVolumeError::DecodeVolumeContext { .. } => Status::invalid_argument(full_msg),
-            CreateVolumeError::NoLoadBalancerClass { .. } => Status::invalid_argument(full_msg),
+            CreateVolumeError::NoListenerClass { .. } => Status::invalid_argument(full_msg),
             CreateVolumeError::GetObject { .. } => Status::unavailable(full_msg),
         }
     }
 }
 
 #[tonic::async_trait]
-impl csi::v1::controller_server::Controller for LbOperatorController {
+impl csi::v1::controller_server::Controller for ListenerOperatorController {
     async fn controller_get_capabilities(
         &self,
         _request: Request<csi::v1::ControllerGetCapabilitiesRequest>,
@@ -95,33 +93,36 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                     .erase(),
             })?;
         let raw_volume_context = pvc.metadata.annotations.unwrap_or_default();
-        let LbVolumeContext { lb_selector } =
-            LbVolumeContext::deserialize(raw_volume_context.clone().into_deserializer())
+        let ListenerVolumeContext { listener_selector } =
+            ListenerVolumeContext::deserialize(raw_volume_context.clone().into_deserializer())
                 .context(create_volume_error::DecodeVolumeContextSnafu)?;
-        let lb_class_name = match lb_selector {
-            LbSelector::Lb(lb_name) => {
-                let lb = self
+        let listener_class_name = match listener_selector {
+            ListenerSelector::Listener(listener_name) => {
+                let listener = self
                     .client
-                    .get::<LoadBalancer>(&lb_name, Some(&ns))
+                    .get::<crate::crd::Listener>(&listener_name, Some(&ns))
                     .await
                     .with_context(|_| GetObjectSnafu {
-                        obj: ObjectRef::<LoadBalancer>::new(&lb_name).within(&ns).erase(),
+                        obj: ObjectRef::<crate::crd::Listener>::new(&listener_name)
+                            .within(&ns)
+                            .erase(),
                     })?;
-                lb.spec
+                listener
+                    .spec
                     .class_name
                     .clone()
-                    .with_context(|| NoLoadBalancerClassSnafu {
-                        lb: ObjectRef::from_obj(&lb),
+                    .with_context(|| NoListenerClassSnafu {
+                        listener: ObjectRef::from_obj(&listener),
                     })?
             }
-            LbSelector::LbClass(lb_class) => lb_class,
+            ListenerSelector::ListenerClass(listener_class) => listener_class,
         };
-        let lb_class = self
+        let listener_class = self
             .client
-            .get::<LoadBalancerClass>(&lb_class_name, None)
+            .get::<crate::crd::ListenerClass>(&listener_class_name, None)
             .await
             .with_context(|_| GetObjectSnafu {
-                obj: ObjectRef::<LoadBalancerClass>::new(&lb_class_name)
+                obj: ObjectRef::<crate::crd::ListenerClass>::new(&listener_class_name)
                     .within(&ns)
                     .erase(),
             })?;
@@ -131,7 +132,7 @@ impl csi::v1::controller_server::Controller for LbOperatorController {
                 volume_id: request.name,
                 volume_context: raw_volume_context.into_iter().collect(),
                 content_source: None,
-                accessible_topology: match lb_class.spec.service_type {
+                accessible_topology: match listener_class.spec.service_type {
                     // Pick the top node (as selected by the CSI client) and "stick" to that
                     // Since we want clients to have a stable address to connect to
                     ServiceType::NodePort => request

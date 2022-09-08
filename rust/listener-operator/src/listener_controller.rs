@@ -1,7 +1,7 @@
 use crate::{
     crd::{
-        LoadBalancer, LoadBalancerClass, LoadBalancerIngress, LoadBalancerPort, LoadBalancerSpec,
-        LoadBalancerStatus, ServiceType,
+        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, ListenerStatus,
+        ServiceType,
     },
     utils::node_primary_address,
 };
@@ -19,28 +19,29 @@ use stackable_operator::{
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use strum::IntoStaticStr;
 
-const FIELD_MANAGER_SCOPE: &str = "loadbalancer";
+const FIELD_MANAGER_SCOPE: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
     let controller =
-        controller::Controller::new(client.get_all_api::<LoadBalancer>(), ListParams::default());
-    let lb_store = controller.store();
+        controller::Controller::new(client.get_all_api::<Listener>(), ListParams::default());
+    let listener_store = controller.store();
     controller
         .owns(client.get_all_api::<Service>(), ListParams::default())
         .watches(
             client.get_all_api::<Endpoints>(),
             ListParams::default(),
             move |endpoints| {
-                lb_store
+                listener_store
                     .state()
                     .into_iter()
-                    .filter(move |lb| {
-                        lb.status
+                    .filter(move |listener| {
+                        listener
+                            .status
                             .as_ref()
-                            .and_then(|lbs| lbs.service_name.as_deref())
+                            .and_then(|s| s.service_name.as_deref())
                             == endpoints.metadata.name.as_deref()
                     })
-                    .map(|lb| ObjectRef::from_obj(&*lb))
+                    .map(|l| ObjectRef::from_obj(&*l))
             },
         )
         .shutdown_on_signal()
@@ -52,7 +53,7 @@ pub async fn run(client: stackable_operator::client::Client) {
             }),
         )
         .map(|res| {
-            report_controller_reconciled(&client, "loadbalancers.lb.stackable.tech", &res);
+            report_controller_reconciled(&client, "listener.listeners.stackable.tech", &res);
         })
         .collect::<()>()
         .await;
@@ -107,23 +108,30 @@ impl ReconcilerError for Error {
     }
 }
 
-pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controller::Action, Error> {
-    let ns = lb.metadata.namespace.clone().context(NoNsSnafu)?;
-    let lb_class_name = lb.spec.class_name.as_deref().context(NoLbClassSnafu)?;
-    let lb_class = ctx
+pub async fn reconcile(
+    listener: Arc<Listener>,
+    ctx: Arc<Ctx>,
+) -> Result<controller::Action, Error> {
+    let ns = listener.metadata.namespace.clone().context(NoNsSnafu)?;
+    let listener_class_name = listener
+        .spec
+        .class_name
+        .as_deref()
+        .context(NoLbClassSnafu)?;
+    let listener_class = ctx
         .client
-        .get::<LoadBalancerClass>(lb_class_name, None)
+        .get::<ListenerClass>(listener_class_name, None)
         .await
         .with_context(|_| GetObjectSnafu {
-            obj: ObjectRef::<LoadBalancerClass>::new(lb_class_name).erase(),
+            obj: ObjectRef::<ListenerClass>::new(listener_class_name).erase(),
         })?;
-    let pod_ports = lb
+    let pod_ports = listener
         .spec
         .ports
         .iter()
         .flatten()
         .map(
-            |LoadBalancerPort {
+            |ListenerPort {
                  name,
                  port,
                  protocol,
@@ -141,25 +149,25 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
         )
         // Deduplicate ports by (protocol, name)
         .collect::<BTreeMap<_, ServicePort>>();
-    let svc_name = lb.metadata.name.clone().context(NoNameSnafu)?;
+    let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.clone()),
             name: Some(svc_name.clone()),
             owner_references: Some(vec![OwnerReferenceBuilder::new()
-                .initialize_from_resource(&*lb)
+                .initialize_from_resource(&*listener)
                 .build()
                 .context(BuildLbOwnerRefSnafu)?]),
             ..Default::default()
         },
         spec: Some(ServiceSpec {
-            type_: Some(match lb_class.spec.service_type {
+            type_: Some(match listener_class.spec.service_type {
                 ServiceType::NodePort => "NodePort".to_string(),
                 ServiceType::LoadBalancer => "LoadBalancer".to_string(),
             }),
             ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy: Some("Local".to_string()),
-            selector: lb.spec.pod_selector.clone(),
+            selector: listener.spec.pod_selector.clone(),
             publish_not_ready_addresses: Some(true),
             ..Default::default()
         }),
@@ -175,7 +183,7 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
 
     let addresses: Vec<String>;
     let ports: BTreeMap<String, i32>;
-    match lb_class.spec.service_type {
+    match listener_class.spec.service_type {
         ServiceType::NodePort => {
             let endpoints = ctx
                 .client
@@ -235,31 +243,31 @@ pub async fn reconcile(lb: Arc<LoadBalancer>, ctx: Arc<Ctx>) -> Result<controlle
         }
     };
 
-    let lb_status_meta = LoadBalancer {
+    let listener_status_meta = Listener {
         metadata: ObjectMeta {
-            name: lb.metadata.name.clone(),
-            namespace: lb.metadata.namespace.clone(),
-            uid: lb.metadata.uid.clone(),
+            name: listener.metadata.name.clone(),
+            namespace: listener.metadata.namespace.clone(),
+            uid: listener.metadata.uid.clone(),
             ..Default::default()
         },
-        spec: LoadBalancerSpec::default(),
+        spec: ListenerSpec::default(),
         status: None,
     };
-    let lb_status = LoadBalancerStatus {
+    let listener_status = ListenerStatus {
         service_name: svc.metadata.name,
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|addr| LoadBalancerIngress {
+                .map(|addr| ListenerIngress {
                     address: addr,
                     ports: ports.clone(),
                 })
                 .collect(),
         ),
-        node_ports: (lb_class.spec.service_type == ServiceType::NodePort).then(|| ports),
+        node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then(|| ports),
     };
     ctx.client
-        .apply_patch_status(FIELD_MANAGER_SCOPE, &lb_status_meta, &lb_status)
+        .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)
         .await
         .context(ApplyStatusSnafu)?;
 

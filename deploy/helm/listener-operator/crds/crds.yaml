@@ -2,25 +2,24 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: loadbalancerclasses.lb.stackable.tech
+  name: listenerclasses.listeners.stackable.tech
   annotations:
     helm.sh/resource-policy: keep
 spec:
-  group: lb.stackable.tech
+  group: listeners.stackable.tech
   names:
     categories: []
-    kind: LoadBalancerClass
-    plural: loadbalancerclasses
-    shortNames:
-      - lbclass
-    singular: loadbalancerclass
+    kind: ListenerClass
+    plural: listenerclasses
+    shortNames: []
+    singular: listenerclass
   scope: Cluster
   versions:
     - additionalPrinterColumns: []
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Auto-generated derived type for LoadBalancerClassSpec via `CustomResource`"
+          description: "Auto-generated derived type for ListenerClassSpec via `CustomResource`"
           properties:
             spec:
               description: "Defines a policy for how [`LoadBalancer`]s should be exposed."
@@ -42,7 +41,7 @@ spec:
               type: object
           required:
             - spec
-          title: LoadBalancerClass
+          title: ListenerClass
           type: object
       served: true
       storage: true
@@ -51,25 +50,24 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: loadbalancers.lb.stackable.tech
+  name: listeners.listeners.stackable.tech
   annotations:
     helm.sh/resource-policy: keep
 spec:
-  group: lb.stackable.tech
+  group: listeners.stackable.tech
   names:
     categories: []
-    kind: LoadBalancer
-    plural: loadbalancers
-    shortNames:
-      - lb
-    singular: loadbalancer
+    kind: Listener
+    plural: listeners
+    shortNames: []
+    singular: listener
   scope: Namespaced
   versions:
     - additionalPrinterColumns: []
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Auto-generated derived type for LoadBalancerSpec via `CustomResource`"
+          description: "Auto-generated derived type for ListenerSpec via `CustomResource`"
           properties:
             spec:
               description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`LoadBalancer`] changes two things: 1. It uses a cluster-level policy object ([`LoadBalancerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service"
@@ -134,7 +132,7 @@ spec:
                   additionalProperties:
                     format: int32
                     type: integer
-                  description: "Port mappings for accessing the [`LoadBalancer`] on each [`Node`] that the [`Pod`]s are currently running on.\n\nThis is only intended for internal use by lb-operator itself. This will be left unset if using a [`LoadBalancerClass`] that does not require [`Node`]-local access."
+                  description: "Port mappings for accessing the [`LoadBalancer`] on each [`Node`] that the [`Pod`]s are currently running on.\n\nThis is only intended for internal use by listener-operator itself. This will be left unset if using a [`LoadBalancerClass`] that does not require [`Node`]-local access."
                   nullable: true
                   type: object
                 serviceName:
@@ -144,7 +142,7 @@ spec:
               type: object
           required:
             - spec
-          title: LoadBalancer
+          title: Listener
           type: object
       served: true
       storage: true

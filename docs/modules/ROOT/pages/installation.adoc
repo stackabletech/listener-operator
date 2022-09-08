@@ -1,6 +1,6 @@
 = Installation
 
-There are two ways to run the Stackable LB Operator:
+There are two ways to run the Stackable Listener Operator:
 
 1. Helm managed Docker container deployment on Kubernetes
 
@@ -15,11 +15,11 @@ Helm allows you to download and deploy Stackable operators on Kubernetes and is 
 $ helm repo add stackable https://repo.stackable.tech/repository/helm-stable/
 ----
 
-Then install the Stackable LB Operator
+Then install the Stackable Listener Operator
 
 [source,console]
 ----
-$ helm install lb-operator stackable/lb-operator
+$ helm install listener-operator stackable/listener-operator
 ----
 
 Helm will deploy the operator in Kubernetes containers and apply the CRDs. You're now ready to expose services!

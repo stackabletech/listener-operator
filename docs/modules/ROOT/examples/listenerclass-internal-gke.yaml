@@ -1,6 +1,6 @@
 ---
-apiVersion: lb.stackable.tech/v1alpha1
-kind: LoadBalancerClass
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
 metadata:
   name: internal
 spec:

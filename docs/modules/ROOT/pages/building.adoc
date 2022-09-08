@@ -25,14 +25,14 @@ $ git submodule update --recursive --init
 # Update the Chart metadata and CRD definitions
 $ make compile-chart
 # Create a unique image ID
-$ REPO=lb-operator
+$ REPO=listener-operator
 $ TAG="$(uuidgen)"
 # Build the image
 $ docker build . -f docker/Dockerfile -t "$REPO:$TAG"
 # Load the image onto the Kind nodes
 $ kind load docker-image "$REPO:$TAG"
 # Deploy
-$ helm upgrade lb-operator deploy/helm/lb-operator \
+$ helm upgrade listener-operator deploy/helm/listener-operator \
        --install \
        --set-string "image.repository=$REPO,image.tag=$TAG"
 ----
@@ -58,7 +58,7 @@ $ nix build -f . docker
 $ kind load image-archive <(./result/load-image)
 # Deploy
 $ kubectl apply -f result/crds.yaml -f provisioner.yaml
-$ kubectl rollout restart ds/lb-provisioner
+$ kubectl rollout restart ds/listener-provisioner
 ----
 
 You may need to add `extra-experimental-features = nix-command` to `/etc/nix/nix.conf`, or add `--experimental-features nix-command` to the Nix commands.

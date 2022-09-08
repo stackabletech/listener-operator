@@ -1,7 +1,7 @@
-# Default values for lb-operator.
+# Default values for listener-operator.
 ---
 image:
-  repository: docker.stackable.tech/stackable/lb-operator
+  repository: docker.stackable.tech/stackable/listener-operator
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -23,7 +23,7 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext:
-  # lb-operator requires root permissions
+  # listener-operator requires root permissions
   runAsUser: 0
   privileged: true
   # capabilities:

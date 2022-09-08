@@ -25,7 +25,7 @@ spec:
           securityContext:
             privileged: true
             runAsUser: 0
-          image: "docker.stackable.tech/stackable/lb-operator:0.1.0-nightly"
+          image: "docker.stackable.tech/stackable/listener-operator:0.1.0-nightly"
           imagePullPolicy: IfNotPresent
           resources: {}
           env:
@@ -55,7 +55,7 @@ spec:
           image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
           args:
             - --csi-address=/csi/csi.sock
-            - --kubelet-registration-path=/var/lib/kubelet/plugins/lb.stackable.tech/csi.sock
+            - --kubelet-registration-path=/var/lib/kubelet/plugins/listeners.stackable.tech/csi.sock
           volumeMounts:
             - name: registration-sock
               mountPath: /registration
@@ -64,10 +64,10 @@ spec:
       volumes:
         - name: registration-sock
           hostPath:
-            path: /var/lib/kubelet/plugins_registry/lb.stackable.tech-reg.sock
+            path: /var/lib/kubelet/plugins_registry/listeners.stackable.tech-reg.sock
         - name: csi
           hostPath:
-            path: /var/lib/kubelet/plugins/lb.stackable.tech/
+            path: /var/lib/kubelet/plugins/listeners.stackable.tech/
         - name: mountpoint
           hostPath:
             path: /var/lib/kubelet/pods/

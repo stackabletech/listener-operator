@@ -3,18 +3,18 @@ use std::collections::HashMap;
 use clap::crate_version;
 use tonic::{Request, Response, Status};
 
-use crate::grpc::csi;
+use crate::{grpc::csi, OPERATOR_KEY};
 
-pub struct LbOperatorIdentity;
+pub struct ListenerOperatorIdentity;
 
 #[tonic::async_trait]
-impl csi::v1::identity_server::Identity for LbOperatorIdentity {
+impl csi::v1::identity_server::Identity for ListenerOperatorIdentity {
     async fn get_plugin_info(
         &self,
         _request: Request<csi::v1::GetPluginInfoRequest>,
     ) -> Result<Response<csi::v1::GetPluginInfoResponse>, Status> {
         Ok(Response::new(csi::v1::GetPluginInfoResponse {
-            name: "lb.stackable.tech".to_string(),
+            name: OPERATOR_KEY.to_string(),
             vendor_version: crate_version!().to_string(),
             manifest: HashMap::new(),
         }))

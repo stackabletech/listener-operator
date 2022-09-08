@@ -2,7 +2,7 @@
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
-  name: lb.stackable.tech
+  name: listeners.stackable.tech
 spec:
   attachRequired: false
   podInfoOnMount: true

@@ -20,25 +20,25 @@ spec:
         - name: http
           containerPort: 80
         volumeMounts:
-        - name: lb
-          mountPath: /usr/share/nginx/html/lb
+        - name: listener
+          mountPath: /usr/share/nginx/html/listener
   volumeClaimTemplates:
   - metadata:
-      name: lb
+      name: listener
       annotations:
-        lb.stackable.tech/lb-name: exposed-nginx-preprovisioned-lb
+        listeners.stackable.tech/listener-name: exposed-nginx-preprovisioned-lb
     spec:
       accessModes:
       - ReadWriteMany
-      storageClassName: lb.stackable.tech
+      storageClassName: listeners.stackable.tech
       resources:
         requests:
           storage: 1
 ---
-apiVersion: lb.stackable.tech/v1alpha1
-kind: LoadBalancer
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
 metadata:
-  name: exposed-nginx-preprovisioned-lb
+  name: exposed-nginx-preprovisioned-listener
 spec:
   className: lb-external
   ports:

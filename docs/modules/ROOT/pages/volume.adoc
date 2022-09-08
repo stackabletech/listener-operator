@@ -6,22 +6,22 @@ The LB Operator acts as a CSI `PersistentVolume`, which helps it to stabilize ne
 
 == Stable addresses
 
-Some xref:loadbalancerclass.adoc[] strategies, such as `NodePort`, tie the public address to the Kubernetes node that the `Pod` is running on. When this address must be configured statically in clients
+Some xref:listenerclass.adoc[] strategies, such as `NodePort`, tie the public address to the Kubernetes node that the `Pod` is running on. When this address must be configured statically in clients
 (such as for HDFS NameNodes), then Kubernetes' default "floating" scheduling either requires all clients to be reconfigured every time something moves, or for all clients to proxy their traffic through
 a single static node, which then becomes a single point of failure (along with the node that the workload is running on).
 
-Mounting load balancers into Pods as `PersistentVolume` allows lb-operator to pin these workloads to one node. Note that this only happens for xref:loadbalancerclass.adoc[] es that actually benefit
+Mounting listeners into Pods as `PersistentVolume` allows the Listener Operator to pin these workloads to one node. Note that this only happens for xref:listenerclass.adoc[] es that actually benefit
 from pinning.
 
 == Pod metadata injection
 
-Some services (such as Kafka) need to know their external address, so that they can advertise it to their own replica discovery mechanism. xref:loadbalancer.adoc[] volumes contain a file tree that exposes
+Some services (such as Kafka) need to know their external address, so that they can advertise it to their own replica discovery mechanism. xref:listener.adoc[] volumes contain a file tree that exposes
 this information:
 
 [source]
 ----
 - `default-address/`- A symlink to `addresses/\{primary address\}`
-- `addresses/` - Contains information about all addresses associated with this xref:loadbalancer.adoc[]
+- `addresses/` - Contains information about all addresses associated with this xref:listener.adoc[]
   - `\{address\}/` - A folder is created for each address
     - `address` - Contains the Pod's address (IP address or hostname)
     - `ports/` - Contains port numbers for each named port
@@ -44,15 +44,15 @@ The `volumeClaimTemplates` allow volumes to be provisioned for each `StatefulSet
 
 All configuration must be specified as `annotations` on the `PersistentVolumeClaim`. The following attributes are currently supported:
 
-=== `lb.stackable.tech/lb-name`
+=== `listeners.stackable.tech/listener-name`
 
-*Required*: If `lb.stackable.tech/lb-class` is not specified
+*Required*: If `listeners.stackable.tech/listener-class` is not specified
 
-Provisions metadata about an existing xref:loadbalancer.adoc[] that was created manually.
+Provisions metadata about an existing xref:listener.adoc[] that was created manually.
 
-=== `lb.stackable.tech/lb-class`
+=== `listeners.stackable.tech/listener-class`
 
-*Required*: If `lb.stackable.tech/lb-name` is not specified
+*Required*: If `listeners.stackable.tech/listener-name` is not specified
 
-Provisions a new xref:loadbalancer.adoc[] using the specified xref:loadbalancerclass.adoc[]. The created xref:loadbalancer.adoc[] will expose
+Provisions a new xref:listener.adoc[] using the specified xref:listenerclass.adoc[]. The created xref:listener.adoc[] will expose
 all of the `Pod` 's ports.

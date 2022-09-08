@@ -5,14 +5,14 @@ metadata:
   name: example-public-pod
 spec:
   volumes:
-    - name: lb
+    - name: listener
       ephemeral: # <1>
         volumeClaimTemplate:
           metadata:
             annotations:
-              lb.stackable.tech/lb-class: public # <2>
+              listeners.stackable.tech/listener-class: public # <2>
           spec:
-            storageClassName: lb.stackable.tech
+            storageClassName: listeners.stackable.tech
             accessModes:
               - ReadWriteMany
             resources:
@@ -22,5 +22,5 @@ spec:
     - name: nginx
       image: nginx
       volumeMounts:
-        - name: lb
-          mountPath: /lb # <3>
+        - name: listener
+          mountPath: /listener # <3>

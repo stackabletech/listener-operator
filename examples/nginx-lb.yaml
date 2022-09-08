@@ -20,8 +20,8 @@ spec:
         - name: http
           containerPort: 9999
         volumeMounts:
-        - name: lb
-          mountPath: /usr/share/nginx/html/lb
+        - name: listener
+          mountPath: /usr/share/nginx/html/listener
         - name: config
           mountPath: /etc/nginx/templates
       volumes:
@@ -30,13 +30,13 @@ spec:
           name: exposed-nginx-lb-config
   volumeClaimTemplates:
   - metadata:
-      name: lb
+      name: listener
       annotations:
-        lb.stackable.tech/lb-class: lb-external
+        listeners.stackable.tech/listener-class: lb-external
     spec:
       accessModes:
       - ReadWriteMany
-      storageClassName: lb.stackable.tech
+      storageClassName: listeners.stackable.tech
       resources:
         requests:
           storage: 1

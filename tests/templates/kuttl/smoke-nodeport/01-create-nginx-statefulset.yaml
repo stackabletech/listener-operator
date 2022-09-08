@@ -21,8 +21,8 @@ spec:
             - name: http
               containerPort: 80
           volumeMounts:
-            - name: lb
-              mountPath: /lb
+            - name: listener
+              mountPath: /listener
             - name: metadata
               mountPath: /usr/share/nginx/html/
       volumes:
@@ -34,13 +34,13 @@ spec:
                   fieldPath: metadata.name
   volumeClaimTemplates:
     - metadata:
-        name: lb
+        name: listener
         annotations:
-          lb.stackable.tech/lb-class: lb-operator-test-smoke-nodeport
+          listeners.stackable.tech/listener-class: listener-operator-test-smoke-nodeport
       spec:
         accessModes:
           - ReadWriteMany
-        storageClassName: lb.stackable.tech
+        storageClassName: listeners.stackable.tech
         resources:
           requests:
             storage: 1

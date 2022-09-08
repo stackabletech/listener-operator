@@ -2,7 +2,8 @@ use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
 use clap::Parser;
 use csi_server::{
-    controller::LbOperatorController, identity::LbOperatorIdentity, node::LbOperatorNode,
+    controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
+    node::ListenerOperatorNode,
 };
 use futures::{pin_mut, FutureExt, TryStreamExt};
 use grpc::csi::v1::{
@@ -14,13 +15,15 @@ use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::{uds_bind_private, TonicUnixStream};
 
-use crate::crd::{LoadBalancer, LoadBalancerClass};
+use crate::crd::{Listener, ListenerClass};
 
 mod crd;
 mod csi_server;
 mod grpc;
-mod lb_controller;
+mod listener_controller;
 mod utils;
+
+const OPERATOR_KEY: &str = "listeners.stackable.tech";
 
 #[derive(clap::Parser)]
 #[clap(author, version)]
@@ -46,8 +49,8 @@ async fn main() -> anyhow::Result<()> {
         stackable_operator::cli::Command::Crd => {
             println!(
                 "{}{}",
-                serde_yaml::to_string(&LoadBalancerClass::crd()).unwrap(),
-                serde_yaml::to_string(&LoadBalancer::crd()).unwrap()
+                serde_yaml::to_string(&ListenerClass::crd()).unwrap(),
+                serde_yaml::to_string(&Listener::crd()).unwrap()
             );
         }
         stackable_operator::cli::Command::Run(LbOperatorRun {
@@ -56,13 +59,12 @@ async fn main() -> anyhow::Result<()> {
             tracing_target,
         }) => {
             stackable_operator::logging::initialize_logging(
-                "LB_OPERATOR_LOG",
-                "lb-operator",
+                "LISTENER_OPERATOR_LOG",
+                "listener-operator",
                 tracing_target,
             );
             let client =
-                stackable_operator::client::create_client(Some("lb.stackable.tech".to_string()))
-                    .await?;
+                stackable_operator::client::create_client(Some(OPERATOR_KEY.to_string())).await?;
             if csi_endpoint
                 .symlink_metadata()
                 .map_or(false, |meta| meta.file_type().is_socket())
@@ -77,11 +79,11 @@ async fn main() -> anyhow::Result<()> {
                         .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET_BYTES)
                         .build()?,
                 )
-                .add_service(IdentityServer::new(LbOperatorIdentity))
-                .add_service(ControllerServer::new(LbOperatorController {
+                .add_service(IdentityServer::new(ListenerOperatorIdentity))
+                .add_service(ControllerServer::new(ListenerOperatorController {
                     client: client.clone(),
                 }))
-                .add_service(NodeServer::new(LbOperatorNode {
+                .add_service(NodeServer::new(ListenerOperatorNode {
                     client: client.clone(),
                     node_name,
                 }))
@@ -90,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
                         .map_ok(TonicUnixStream),
                     sigterm.recv().map(|_| ()),
                 );
-            let controller = lb_controller::run(client);
+            let controller = listener_controller::run(client);
             pin_mut!(csi_server, controller);
             futures::future::select(csi_server, controller).await;
         }

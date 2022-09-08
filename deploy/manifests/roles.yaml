@@ -59,19 +59,19 @@ rules:
     verbs:
       - create
   - apiGroups:
-      - lb.stackable.tech
+      - listeners.stackable.tech
     resources:
-      - loadbalancerclasses
-      - loadbalancers
+      - listenerclasses
+      - listeners
     verbs:
       - get
       - list
       - watch
   - apiGroups:
-      - lb.stackable.tech
+      - listeners.stackable.tech
     resources:
-      - loadbalancers
-      - loadbalancers/status
+      - listeners
+      - listeners/status
     verbs:
       - patch
       - create
