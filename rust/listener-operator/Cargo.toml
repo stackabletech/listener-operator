@@ -31,4 +31,5 @@ snafu = "0.7.1"
 strum = "0.24.1"
 
 [build-dependencies]
+built = { version = "0.5.1", features = ["chrono", "git2"] }
 tonic-build = "0.7.2"

@@ -1,6 +1,6 @@
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
-use clap::Parser;
+use clap::{crate_description, crate_version, Parser};
 use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
     node::ListenerOperatorNode,
@@ -42,6 +42,11 @@ struct LbOperatorRun {
     tracing_target: TracingTarget,
 }
 
+mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+    pub const TARGET: Option<&str> = option_env!("TARGET");
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -62,6 +67,14 @@ async fn main() -> anyhow::Result<()> {
                 "LISTENER_OPERATOR_LOG",
                 "listener-operator",
                 tracing_target,
+            );
+            stackable_operator::utils::print_startup_string(
+                crate_description!(),
+                crate_version!(),
+                built_info::GIT_VERSION,
+                built_info::TARGET.unwrap_or("unknown target"),
+                built_info::BUILT_TIME_UTC,
+                built_info::RUSTC_VERSION,
             );
             let client =
                 stackable_operator::client::create_client(Some(OPERATOR_KEY.to_string())).await?;
