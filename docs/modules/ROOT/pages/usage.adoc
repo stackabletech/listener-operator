@@ -1,6 +1,6 @@
 = Usage
 
-The operator creates a xref:listener.adoc[] for each mounted CSI volume with `driver: listeners.stackable.tech`.
+The operator creates a xref:listener.adoc[] for each mounted CSI volume with `storageClassName: listeners.stackable.tech`.
 
 A minimal exposed `Pod` looks like this:
 
