@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**Which new version of Stackable Load Balancer Operator should we support?**
+**Which new version of Stackable Listener Operator should we support?**
 
 Please specify the version, version range or version numbers to support, please also add these to the issue title
 

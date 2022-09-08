@@ -3,8 +3,8 @@ apiVersion: v1
 data: {}
 kind: ConfigMap
 metadata:
-  name: lb-operator-configmap
+  name: listener-operator-configmap
   labels:
-    app.kubernetes.io/name: lb-operator
-    app.kubernetes.io/instance: lb-operator
+    app.kubernetes.io/name: listener-operator
+    app.kubernetes.io/instance: listener-operator
     app.kubernetes.io/version: "0.1.0-nightly"

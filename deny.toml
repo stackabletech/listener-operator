@@ -35,9 +35,9 @@ allow = [
 ]
 
 exceptions = [
-    { name = "stackable-lb-operator-crd", allow = ["OSL-3.0"] },
-    { name = "stackable-lb-operator", allow = ["OSL-3.0"] },
-    { name = "stackable-lb-operator-binary", allow = ["OSL-3.0"] },
+    { name = "stackable-listener-operator-crd", allow = ["OSL-3.0"] },
+    { name = "stackable-listener-operator", allow = ["OSL-3.0"] },
+    { name = "stackable-listener-operator-binary", allow = ["OSL-3.0"] },
     ]
 
 [[licenses.clarify]]

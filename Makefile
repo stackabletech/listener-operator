@@ -10,7 +10,7 @@
 
 TAG    := $(shell git rev-parse --short HEAD)
 
-VERSION := $(shell cargo metadata --format-version 1 | jq -r '.packages[] | select(.name=="stackable-lb-operator") | .version')
+VERSION := $(shell cargo metadata --format-version 1 | jq -r '.packages[] | select(.name=="stackable-listener-operator") | .version')
 IS_NIGHTLY := $(shell echo "${VERSION}" | grep -- '-nightly$$')
 # When rendering docs we want to simplify the version number slightly, only rendering "nightly" for nightly branches
 # (since we only render nightlies for the active development trunk anyway) and chopping off the semver patch version otherwise
@@ -21,15 +21,15 @@ SHELL=/usr/bin/env bash -euo pipefail
 
 ## Docker related targets
 docker-build:
-	docker build --force-rm --build-arg VERSION=${VERSION} -t "docker.stackable.tech/stackable/lb-operator:${VERSION}" -f docker/Dockerfile .
+	docker build --force-rm --build-arg VERSION=${VERSION} -t "docker.stackable.tech/stackable/listener-operator:${VERSION}" -f docker/Dockerfile .
 
 docker-build-latest: docker-build
-	docker tag "docker.stackable.tech/stackable/lb-operator:${VERSION}" \
-	           "docker.stackable.tech/stackable/lb-operator:latest"
+	docker tag "docker.stackable.tech/stackable/listener-operator:${VERSION}" \
+	           "docker.stackable.tech/stackable/listener-operator:latest"
 
 docker-publish:
 	echo "${NEXUS_PASSWORD}" | docker login --username github --password-stdin docker.stackable.tech
-	docker push --all-tags docker.stackable.tech/stackable/lb-operator
+	docker push --all-tags docker.stackable.tech/stackable/listener-operator
 
 docker: docker-build docker-publish
 
@@ -39,22 +39,22 @@ docker-release: docker-build-latest docker-publish
 compile-chart: version crds config
 
 chart-clean:
-	rm -rf deploy/helm/lb-operator/configs
-	rm -rf deploy/helm/lb-operator/crds
+	rm -rf deploy/helm/listener-operator/configs
+	rm -rf deploy/helm/listener-operator/crds
 
 version:
-	yq eval -i '.version = strenv(VERSION) | .appVersion = strenv(VERSION)' /dev/stdin < deploy/helm/lb-operator/Chart.yaml
+	yq eval -i '.version = strenv(VERSION) | .appVersion = strenv(VERSION)' /dev/stdin < deploy/helm/listener-operator/Chart.yaml
 	yq eval -i '.version = strenv(DOCS_VERSION) | .prerelease = strenv(IS_NIGHTLY) != ""' /dev/stdin < docs/antora.yml
 
 config:
 	if [ -d "deploy/config-spec/" ]; then\
-		mkdir -p deploy/helm/lb-operator/configs;\
-		cp -r deploy/config-spec/* deploy/helm/lb-operator/configs;\
+		mkdir -p deploy/helm/listener-operator/configs;\
+		cp -r deploy/config-spec/* deploy/helm/listener-operator/configs;\
 	fi
 
 crds:
-	mkdir -p deploy/helm/lb-operator/crds
-	cargo run --bin stackable-lb-operator -- crd | yq eval '.metadata.annotations["helm.sh/resource-policy"]="keep"' - > deploy/helm/lb-operator/crds/crds.yaml
+	mkdir -p deploy/helm/listener-operator/crds
+	cargo run --bin stackable-listener-operator -- crd | yq eval '.metadata.annotations["helm.sh/resource-policy"]="keep"' - > deploy/helm/listener-operator/crds/crds.yaml
 
 chart-lint: compile-chart
 	docker run -it -v $(shell pwd):/build/helm-charts -w /build/helm-charts quay.io/helmpack/chart-testing:v3.5.0  ct lint --config deploy/helm/ct.yaml

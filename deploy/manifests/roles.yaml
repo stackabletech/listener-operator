@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: lb-operator-clusterrole
+  name: listener-operator-clusterrole
 rules:
   - apiGroups:
       - ""

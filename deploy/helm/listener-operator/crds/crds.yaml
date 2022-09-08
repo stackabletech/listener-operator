@@ -72,7 +72,7 @@ spec:
           description: "Auto-generated derived type for LoadBalancerSpec via `CustomResource`"
           properties:
             spec:
-              description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`LoadBalancer`] changes two things: 1. It uses a cluster-level policy object ([`LoadBalancerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the servuce"
+              description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`LoadBalancer`] changes two things: 1. It uses a cluster-level policy object ([`LoadBalancerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service"
               properties:
                 className:
                   description: "The name of the [`LoadBalancerClass`]."

@@ -9,13 +9,13 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal AS operator
 ARG VERSION
 ARG RELEASE="1"
 
-LABEL name="Stackable Operator for Stackable Load Balancer Operator" \
+LABEL name="Stackable Operator for Stackable Listener Operator" \
   maintainer="info@stackable.de" \
   vendor="Stackable GmbH" \
   version="${VERSION}" \
   release="${RELEASE}" \
-  summary="Deploy and manage Stackable Load Balancer Operator clusters." \
-  description="Deploy and manage Stackable Load Balancer Operator clusters."
+  summary="Deploy and manage Stackable Listener Operator clusters." \
+  description="Deploy and manage Stackable Listener Operator clusters."
 
 # Update image
 RUN microdnf install -y yum \
@@ -25,11 +25,11 @@ RUN microdnf install -y yum \
 
 COPY LICENSE /licenses/LICENSE
 
-COPY --from=builder /app/stackable-lb-operator /
+COPY --from=builder /app/stackable-listener-operator /
 
 RUN groupadd -g 1000 stackable && adduser -u 1000 -g stackable -c 'Stackable Operator' stackable
 
 USER stackable:stackable
 
-ENTRYPOINT ["/stackable-lb-operator"]
+ENTRYPOINT ["/stackable-listener-operator"]
 CMD ["run"]

@@ -4,7 +4,8 @@ directory manually.
 
 The following files are ok to edit:
 
-- helm/lb-operator/templates/roles.yaml
+- helm/listener-operator/templates/roles.yaml
+- helm/listener-operator/values.yaml
 
 The details are in-motion but check this repository for a few details:
 <https://github.com/stackabletech/operator-templating>
