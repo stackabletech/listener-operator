@@ -23,7 +23,7 @@ spec:
           description: "Auto-generated derived type for ListenerClassSpec via `CustomResource`"
           properties:
             spec:
-              description: "Defines a policy for how [`LoadBalancer`]s should be exposed."
+              description: "Defines a policy for how [`Listener`]s should be exposed."
               properties:
                 serviceAnnotations:
                   additionalProperties:
@@ -71,10 +71,10 @@ spec:
           description: "Auto-generated derived type for ListenerSpec via `CustomResource`"
           properties:
             spec:
-              description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`LoadBalancer`] changes two things: 1. It uses a cluster-level policy object ([`LoadBalancerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service"
+              description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`Listener`] changes two things: 1. It uses a cluster-level policy object ([`ListenerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service"
               properties:
                 className:
-                  description: "The name of the [`LoadBalancerClass`]."
+                  description: "The name of the [`ListenerClass`]."
                   nullable: true
                   type: string
                 podSelector:
@@ -88,7 +88,7 @@ spec:
                   items:
                     properties:
                       name:
-                        description: "The name of the port.\n\nThe name of each port *must* be unique within a single [`LoadBalancer`]."
+                        description: "The name of the port.\n\nThe name of each port *must* be unique within a single [`Listener`]."
                         type: string
                       port:
                         description: The port number.
@@ -106,16 +106,16 @@ spec:
                   type: array
               type: object
             status:
-              description: "Informs users about how to reach the [`LoadBalancer`]."
+              description: "Informs users about how to reach the [`Listener`]."
               nullable: true
               properties:
                 ingressAddresses:
-                  description: "All addresses that the [`LoadBalancer`] is currently reachable from."
+                  description: "All addresses that the [`Listener`] is currently reachable from."
                   items:
-                    description: "One address that a [`LoadBalancer`] is accessible from."
+                    description: "One address that a [`Listener`] is accessible from."
                     properties:
                       address:
-                        description: "The hostname or IP address to the [`LoadBalancer`]."
+                        description: "The hostname or IP address to the [`Listener`]."
                         type: string
                       ports:
                         additionalProperties:
@@ -133,7 +133,7 @@ spec:
                   additionalProperties:
                     format: int32
                     type: integer
-                  description: "Port mappings for accessing the [`LoadBalancer`] on each [`Node`] that the [`Pod`]s are currently running on.\n\nThis is only intended for internal use by listener-operator itself. This will be left unset if using a [`LoadBalancerClass`] that does not require [`Node`]-local access."
+                  description: "Port mappings for accessing the [`Listener`] on each [`Node`] that the [`Pod`]s are currently running on.\n\nThis is only intended for internal use by listener-operator itself. This will be left unset if using a [`ListenerClass`] that does not require [`Node`]-local access."
                   nullable: true
                   type: object
                 serviceName:

@@ -69,15 +69,15 @@ pub enum Error {
     NoNs,
     #[snafu(display("object has no name"))]
     NoName,
-    #[snafu(display("object has no LoadBalancerClass (.spec.class_name)"))]
-    NoLbClass,
+    #[snafu(display("object has no ListenerClass (.spec.class_name)"))]
+    NoListenerClass,
     #[snafu(display("failed to get {obj}"))]
     GetObject {
         source: stackable_operator::error::Error,
         obj: ObjectRef<DynamicObject>,
     },
-    #[snafu(display("failed to build owner reference to LoadBalancer"))]
-    BuildLbOwnerRef {
+    #[snafu(display("failed to build owner reference to Listener"))]
+    BuildListenerOwnerRef {
         source: stackable_operator::error::Error,
     },
     #[snafu(display("failed to apply {svc}"))]
@@ -85,7 +85,7 @@ pub enum Error {
         source: stackable_operator::error::Error,
         svc: ObjectRef<Service>,
     },
-    #[snafu(display("failed to apply status for LoadBalancer"))]
+    #[snafu(display("failed to apply status for Listener"))]
     ApplyStatus {
         source: stackable_operator::error::Error,
     },
@@ -99,9 +99,9 @@ impl ReconcilerError for Error {
         match self {
             Self::NoNs => None,
             Self::NoName => None,
-            Self::NoLbClass => None,
+            Self::NoListenerClass => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
-            Self::BuildLbOwnerRef { .. } => None,
+            Self::BuildListenerOwnerRef { .. } => None,
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
             Self::ApplyStatus { source: _ } => None,
         }
@@ -117,7 +117,7 @@ pub async fn reconcile(
         .spec
         .class_name
         .as_deref()
-        .context(NoLbClassSnafu)?;
+        .context(NoListenerClassSnafu)?;
     let listener_class = ctx
         .client
         .get::<ListenerClass>(listener_class_name, None)
@@ -157,7 +157,7 @@ pub async fn reconcile(
             owner_references: Some(vec![OwnerReferenceBuilder::new()
                 .initialize_from_resource(&*listener)
                 .build()
-                .context(BuildLbOwnerRefSnafu)?]),
+                .context(BuildListenerOwnerRefSnafu)?]),
             ..Default::default()
         },
         spec: Some(ServiceSpec {

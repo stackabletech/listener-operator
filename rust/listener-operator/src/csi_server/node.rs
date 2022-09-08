@@ -53,7 +53,7 @@ enum PublishVolumeError {
     },
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
     PodHasNoNode { pod: ObjectRef<Pod> },
-    #[snafu(display("failed to build LoadBalancer's owner reference"))]
+    #[snafu(display("failed to build Listener's owner reference"))]
     BuildListenerOwnerRef {
         source: stackable_operator::error::Error,
     },
