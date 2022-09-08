@@ -1,11 +1,11 @@
 [package]
-name = "stackable-lb-operator"
+name = "stackable-listener-operator"
 authors = ["Stackable GmbH <info@stackable.de>"]
-description = "Stackable Operator for load balancing"
+description = "Stackable Operator for network listeners"
 license = "OSL-3.0"
 version = "0.1.0-nightly"
 edition = "2021"
-repository = "https://github.com/stackabletech/lb-operator"
+repository = "https://github.com/stackabletech/listener-operator"
 
 [dependencies]
 # Need to keep this in sync with our patched h2 build

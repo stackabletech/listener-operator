@@ -1,5 +1,5 @@
 [workspace]
-members = ["rust/lb-operator"]
+members = ["rust/listener-operator"]
 
 [patch.crates-io]
 # Workaround for https://github.com/hyperium/tonic/issues/243
