@@ -5,7 +5,7 @@ use stackable_operator::kube::CustomResource;
 use stackable_operator::schemars::{self, JsonSchema};
 
 #[cfg(rustdoc)]
-use stackable_operator::k8s_openapi::api::core::v1::{Pod, Service};
+use stackable_operator::k8s_openapi::api::core::v1::{Node, Pod, Service};
 
 /// Defines a policy for how [`LoadBalancer`]s should be exposed.
 #[derive(CustomResource, Serialize, Deserialize, Clone, Debug, JsonSchema)]
