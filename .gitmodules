@@ -1,3 +1,3 @@
-[submodule "rust/lb-operator/vendor/csi"]
+[submodule "rust/operator-binary/vendor/csi"]
 	path = rust/operator-binary/vendor/csi
 	url = https://github.com/container-storage-interface/spec
