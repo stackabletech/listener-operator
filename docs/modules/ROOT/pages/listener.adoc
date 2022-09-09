@@ -17,11 +17,11 @@ A `Listener` writes back all addresses that it can be reached on to `Listener.st
 
 For example, if the volume is mounted to `/stackable/listener`, the primary address can be read from  `/stackable/listener/default-address/address`, and the public `http` port number can be read from `/stackable/listener/default-address/ports/http`.
 
-== Per-replica LBs
+== Per-replica listeners
 
 A `Listener` PVC can also specify a xref:listenerclass.adoc[] rather than a `Listener`, in which case a `Listener` object is created
-automatically. These PVCs can automatically be created for each replica using either `StatefulSet` 's `volumeClaimTemplates` (for long-lived LBs that will
-be kept across replica restarts and upgrades) or `Pod` 's `volumes[].ephemeral` (for temporary LBs that are deleted when their corresponding `Pod` is deleted).
+automatically. These PVCs can automatically be created for each replica using either `StatefulSet` 's `volumeClaimTemplates` (for long-lived listeners that will
+be kept across replica restarts and upgrades) or `Pod` 's `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding `Pod` is deleted).
 
 == Sticky scheduling
 

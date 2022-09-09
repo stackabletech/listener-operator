@@ -29,11 +29,11 @@ const OPERATOR_KEY: &str = "listeners.stackable.tech";
 #[clap(author, version)]
 struct Opts {
     #[clap(subcommand)]
-    cmd: stackable_operator::cli::Command<LbOperatorRun>,
+    cmd: stackable_operator::cli::Command<ListenerOperatorRun>,
 }
 
 #[derive(clap::Parser)]
-struct LbOperatorRun {
+struct ListenerOperatorRun {
     #[clap(long, env)]
     csi_endpoint: PathBuf,
     #[clap(long, env)]
@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
                 serde_yaml::to_string(&Listener::crd()).unwrap()
             );
         }
-        stackable_operator::cli::Command::Run(LbOperatorRun {
+        stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,
             node_name,
             tracing_target,
