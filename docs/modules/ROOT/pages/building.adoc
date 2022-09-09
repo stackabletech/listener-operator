@@ -72,7 +72,7 @@ $ nix run -f . tilt up
 
 == K3d
 
-The LB Operator, as with most CSI providers, requires the Kubernetes node's root folder to be mounted as `rshared`. K3d does not do this by default,
+The Listener Operator, as with most CSI providers, requires the Kubernetes node's root folder to be mounted as `rshared`. K3d does not do this by default,
 but can be prodded into doing this by running `mount --make-rshared /` in each node container.
 
 To do this for each running K3d node, run the following script:
