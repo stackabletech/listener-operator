@@ -4,8 +4,8 @@ This operator is written in Rust.
 
 It is developed against the latest stable Rust release, and we currently don't support any older versions.
 
-The LB Operator is a https://github.com/container-storage-interface/spec/blob/master/spec.md[Container Storage Interface (CSI)] provider plugin
-for the local Kubelet, which means that it should only be executed inside a Kubernetes `Pod`. Currently, the following ways are supported to build the LB Operator:
+The Listener Operator is a https://github.com/container-storage-interface/spec/blob/master/spec.md[Container Storage Interface (CSI)] provider plugin
+for the local Kubelet, which means that it should only be executed inside a Kubernetes `Pod`. Currently, the following ways are supported to build the Listener Operator:
 
 * `docker build` 
 * https://nixos.org/[Nix]
