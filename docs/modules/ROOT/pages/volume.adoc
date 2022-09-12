@@ -1,6 +1,5 @@
 = Volume
 
-TODO: Expand severely.
 
 The Listener Operator acts as a CSI `PersistentVolume`, which helps it to stabilize network addresses, inject pod metadata and expose individual pods.
 
@@ -20,12 +19,12 @@ this information:
 
 [source]
 ----
-- `default-address/`- A symlink to `addresses/\{primary address\}`
+- `default-address/`- A symlink to `addresses/{primary address}`
 - `addresses/` - Contains information about all addresses associated with this xref:listener.adoc[]
-  - `\{address\}/` - A folder is created for each address
+  - `{address}/` - A folder is created for each address
     - `address` - Contains the Pod's address (IP address or hostname)
     - `ports/` - Contains port numbers for each named port
-      - `\{port name\}` - Contains the public port number for this named port
+      - `{port name}` - Contains the public port number for this named port
 ----
 
 == Individual pod exposure
