@@ -22,8 +22,6 @@ To build and deploy to the active Kind cluster, run:
 $ echo Building with Docker
 # Ensure that all submodules are up-to-date
 $ git submodule update --recursive --init
-# Update the Chart metadata and CRD definitions
-$ make compile-chart
 # Create a unique image ID
 $ REPO=listener-operator
 $ TAG="$(uuidgen)"
@@ -31,6 +29,8 @@ $ TAG="$(uuidgen)"
 $ docker build . -f docker/Dockerfile -t "$REPO:$TAG"
 # Load the image onto the Kind nodes
 $ kind load docker-image "$REPO:$TAG"
+# Deploy latest CRD
+$ docker run --rm "$REPO:$TAG" crd | kubectl apply -f-
 # Deploy
 $ helm upgrade listener-operator deploy/helm/listener-operator \
        --install \
