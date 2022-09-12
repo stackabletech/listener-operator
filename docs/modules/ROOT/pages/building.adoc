@@ -39,7 +39,7 @@ $ helm upgrade listener-operator deploy/helm/listener-operator \
 
 == Nix
 
-To build and deploy to the active Kind cluster, run the following bash script:
+To build and deploy to the active Kind cluster, run the following Bash commands:
 
 [source,console]
 ----
@@ -49,7 +49,7 @@ $ git submodule update --recursive --init
 # Use crate2nix (https://github.com/kolloch/crate2nix) to convert Cargo.lock into a Nix derivation
 $ nix run -f . crate2nix generate
 # Build the Docker images
-# A custom Docker repository can be specified by appending `--argstr dockerName my-custom-repository`
+# A custom Docker repository can be specified by appending `--argstr dockerName my-custom-registry/listener-operator`
 $ nix build -f . docker
 # Load the images onto the Kind nodes
 # Nix does not use the Docker daemon, instead it builds individual layers, as well as
