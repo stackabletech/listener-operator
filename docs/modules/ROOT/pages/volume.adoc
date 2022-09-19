@@ -17,15 +17,16 @@ from pinning.
 Some services (such as Kafka) need to know their external address, so that they can advertise it to their own replica discovery mechanism. xref:listener.adoc[] volumes contain a file tree that exposes
 this information:
 
-[source]
-----
-- `default-address/`- A symlink to `addresses/{primary address}`
-- `addresses/` - Contains information about all addresses associated with this xref:listener.adoc[]
-  - `{address}/` - A folder is created for each address
-    - `address` - Contains the Pod's address (IP address or hostname)
-    - `ports/` - Contains port numbers for each named port
-      - `{port name}` - Contains the public port number for this named port
-----
+[square]
+* `default-address/`- A symlink to `addresses/{primary address}`
+* `addresses/` - Contains information about all addresses associated with this xref:listener.adoc[]
+[square]
+** `{address}/` - A folder is created for each address
+[square]
+*** `address` - Contains the Pod's address (IP address or hostname)
+*** `ports/` - Contains port numbers for each named port
+[square]
+**** `{port name}` - Contains the public port number for this named port
 
 == Individual pod exposure
 
