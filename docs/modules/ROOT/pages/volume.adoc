@@ -21,7 +21,7 @@ this information:
 * `default-address/`- A symlink to `addresses/{primary address}`
 * `addresses/` - Contains information about all addresses associated with this xref:listener.adoc[]
 [square]
-** `{address}/` - A folder is created for each address
+** `\{address\}/` - A folder is created for each address
 [square]
 *** `address` - Contains the Pod's address (IP address or hostname)
 *** `ports/` - Contains port numbers for each named port
