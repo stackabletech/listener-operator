@@ -54,4 +54,4 @@ Provisions metadata about an existing xref:listener.adoc[] that was created manu
 *Required*: If `listeners.stackable.tech/listener-name` is not specified
 
 Provisions a new xref:listener.adoc[] using the specified xref:listenerclass.adoc[]. The created xref:listener.adoc[] will expose
-all of the `Pod` 's ports.
+all of the ``Pod``'s ports.
