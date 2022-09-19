@@ -10,8 +10,8 @@ for the local Kubelet, which means that it should only be executed inside a Kube
 * `docker build` 
 * https://nixos.org/[Nix]
 
-The `docker build`command is currently the primary deployment target, and the official images are built
-using it. However, Nix has much faster incremental build and deploy times, making it ideal for local development.
+The `docker build` command is currently the primary deployment target, and the official images are built
+using it. However, Nix has much faster incremental build and deployment times, making it ideal for local development.
 
 == Docker
 
