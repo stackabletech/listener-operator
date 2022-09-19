@@ -20,8 +20,8 @@ For example, if the volume is mounted to `/stackable/listener`, the primary addr
 == Per-replica listeners
 
 A `Listener` PVC can also specify a xref:listenerclass.adoc[] rather than a `Listener`, in which case a `Listener` object is created
-automatically. These PVCs can automatically be created for each replica using either `StatefulSet` 's `volumeClaimTemplates` (for long-lived listeners that will
-be kept across replica restarts and upgrades) or `Pod` 's `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding `Pod` is deleted).
+automatically. These PVCs can automatically be created for each replica using either ``StatefulSet``'s `volumeClaimTemplates` (for long-lived listeners that will
+be kept across replica restarts and upgrades) or ``Pod``'s `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding `Pod` is deleted).
 
 == Sticky scheduling
 
