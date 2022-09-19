@@ -1,6 +1,6 @@
 = `Listener`
 
-A `Listener` object exposes a set of `Pod`s according to the rules of a xref:listenerclass.adoc[], but it also adds a couple of other
+A `Listener` object exposes a set of ``Pod``s according to the rules of a xref:listenerclass.adoc[], but it also adds a couple of other
 features that are useful for the Stackable platform at large.
 
 == `ListenerClass`
