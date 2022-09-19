@@ -9,7 +9,7 @@ Some xref:listenerclass.adoc[] strategies, such as `NodePort`, tie the public ad
 (such as for HDFS NameNodes), then Kubernetes' default "floating" scheduling either requires all clients to be reconfigured every time something moves, or for all clients to proxy their traffic through
 a single static node, which then becomes a single point of failure (along with the node that the workload is running on).
 
-Mounting listeners into Pods as `PersistentVolume` allows the Listener Operator to pin these workloads to one node. Note that this only happens for xref:listenerclass.adoc[] es that actually benefit
+Mounting listeners into Pods as `PersistentVolume` allows the Listener Operator to pin these workloads to one node. Note that this only happens for xref:listenerclass.adoc[]es that actually benefit
 from pinning.
 
 == Pod metadata injection
