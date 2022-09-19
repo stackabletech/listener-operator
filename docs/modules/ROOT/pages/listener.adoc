@@ -28,5 +28,5 @@ be kept across replica restarts and upgrades) or ``Pod``'s `volumes[].ephemeral`
 When mounting a `Listener` PVC, it will be made "sticky" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node
 that the workload is running on.
 
-Keep in mind that this will only work correctly when using long-lived PVCs (such as via `StatefulSet` 's `volumeClaimTemplates`). Ephemeral PVCs
+Keep in mind that this will only work correctly when using long-lived PVCs (such as via ``StatefulSet``'s `volumeClaimTemplates`). Ephemeral PVCs
 will be "reset" for every pod that is created, even if they refer to a long-lived `Listener` object.
