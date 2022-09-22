@@ -1,4 +1,4 @@
-use std::{fmt::LowerHex, os::unix::prelude::AsRawFd, path::Path};
+use std::{os::unix::prelude::AsRawFd, path::Path};
 
 use pin_project::pin_project;
 use socket2::Socket;
@@ -87,17 +87,6 @@ pub fn uds_bind_private(path: impl AsRef<Path>) -> Result<UnixListener, std::io:
     UnixListener::from_std(socket.into())
 }
 
-/// Helper for formatting byte arrays
-pub struct FmtByteSlice<'a>(pub &'a [u8]);
-impl LowerHex for FmtByteSlice<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for byte in self.0 {
-            f.write_fmt(format_args!("{:02x}", byte))?;
-        }
-        Ok(())
-    }
-}
-
 /// Combines the messages of an error and its sources into a [`String`] of the form `"error: source 1: source 2: root error"`
 pub fn error_full_message(err: &dyn std::error::Error) -> String {
     use std::fmt::Write;
@@ -130,12 +119,7 @@ pub fn node_primary_address(node: &Node) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::{error_full_message, FmtByteSlice};
-
-    #[test]
-    fn fmt_hex_byte_slice() {
-        assert_eq!(format!("{:x}", FmtByteSlice(&[1, 2, 255, 128])), "0102ff80");
-    }
+    use crate::utils::error_full_message;
 
     #[test]
     fn error_messages() {
