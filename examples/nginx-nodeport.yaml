@@ -5,6 +5,7 @@ metadata:
   name: exposed-nginx-nodeport
 spec:
   replicas: 1
+  serviceName: ""
   selector:
     matchLabels:
       app: exposed-nginx-nodeport

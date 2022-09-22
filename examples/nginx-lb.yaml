@@ -5,6 +5,7 @@ metadata:
   name: exposed-nginx-lb
 spec:
   replicas: 1
+  serviceName: ""
   selector:
     matchLabels:
       app: exposed-nginx-lb
