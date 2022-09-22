@@ -355,6 +355,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "csi-grpc"
+version = "0.1.0"
+dependencies = [
+ "built",
+ "prost",
+ "prost-types",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "darling"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1890,12 +1901,12 @@ dependencies = [
  "anyhow",
  "built",
  "clap",
+ "csi-grpc",
  "futures",
  "h2",
  "libc",
  "pin-project",
  "prost",
- "prost-types",
  "serde",
  "snafu",
  "socket2",
@@ -1904,7 +1915,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
- "tonic-build",
  "tonic-reflection",
 ]
 

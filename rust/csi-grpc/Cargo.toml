@@ -1,0 +1,15 @@
+[package]
+name = "csi-grpc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+prost = "0.10.3"
+prost-types = "0.10.1"
+tonic = "0.7.2"
+
+[build-dependencies]
+built = { version = "0.5.1", features = ["chrono", "git2"] }
+tonic-build = "0.7.2"

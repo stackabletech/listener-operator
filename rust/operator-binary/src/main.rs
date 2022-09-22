@@ -1,14 +1,14 @@
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
 use clap::{crate_description, crate_version, Parser};
+use csi_grpc::v1::{
+    controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
+};
 use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
     node::ListenerOperatorNode,
 };
 use futures::{pin_mut, FutureExt, TryStreamExt};
-use grpc::csi::v1::{
-    controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
-};
 use stackable_operator::{
     commons::listener::{Listener, ListenerClass},
     logging::TracingTarget,
@@ -20,7 +20,6 @@ use tonic::transport::Server;
 use utils::{uds_bind_private, TonicUnixStream};
 
 mod csi_server;
-mod grpc;
 mod listener_controller;
 mod utils;
 
@@ -99,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
                 .add_service(
                     tonic_reflection::server::Builder::configure()
                         .include_reflection_service(true)
-                        .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET_BYTES)
+                        .register_encoded_file_descriptor_set(csi_grpc::FILE_DESCRIPTOR_SET_BYTES)
                         .build()?,
                 )
                 .add_service(IdentityServer::new(ListenerOperatorIdentity));

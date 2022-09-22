@@ -1,3 +1,4 @@
+use csi_grpc as csi;
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
@@ -7,7 +8,7 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::{grpc::csi, utils::error_full_message};
+use crate::utils::error_full_message;
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 

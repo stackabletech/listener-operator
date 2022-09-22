@@ -1,3 +1,3 @@
-[submodule "rust/operator-binary/vendor/csi"]
-	path = rust/operator-binary/vendor/csi
+[submodule "rust/csi-grpc/vendor/csi"]
+	path = rust/csi-grpc/vendor/csi
 	url = https://github.com/container-storage-interface/spec

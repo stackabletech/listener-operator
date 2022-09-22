@@ -5,8 +5,6 @@ pub static FILE_DESCRIPTOR_SET_BYTES: &[u8] =
 
 // Trivial warnings that come from prost-generated code
 #[allow(clippy::derive_partial_eq_without_eq)]
-pub mod csi {
-    pub mod v1 {
-        tonic::include_proto!("csi.v1");
-    }
+pub mod v1 {
+    tonic::include_proto!("csi.v1");
 }

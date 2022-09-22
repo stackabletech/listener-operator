@@ -1,5 +1,6 @@
 use std::{fmt::Debug, path::PathBuf};
 
+use csi_grpc::{self as csi, v1::Topology};
 use serde::{
     de::{DeserializeOwned, IntoDeserializer},
     Deserialize,
@@ -17,10 +18,7 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::{
-    grpc::csi::{self, v1::Topology},
-    utils::{error_full_message, node_primary_address},
-};
+use crate::utils::{error_full_message, node_primary_address};
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 

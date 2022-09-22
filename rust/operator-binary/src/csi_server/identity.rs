@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use clap::crate_version;
+use csi_grpc as csi;
 use tonic::{Request, Response, Status};
 
-use crate::{grpc::csi, OPERATOR_KEY};
+use crate::OPERATOR_KEY;
 
 pub struct ListenerOperatorIdentity;
 

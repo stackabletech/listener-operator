@@ -1,5 +1,5 @@
 [workspace]
-members = ["rust/operator-binary"]
+members = ["rust/operator-binary", "rust/csi-grpc"]
 
 [patch.crates-io]
 # Workaround for https://github.com/hyperium/tonic/issues/243

@@ -16,7 +16,6 @@ futures = "0.3.21"
 libc = "0.2.125"
 pin-project = "1.0.10"
 prost = "0.10.3"
-prost-types = "0.10.1"
 socket2 = { version = "0.4.4", features = ["all"] }
 stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "0.25.0" }
 tokio = { version = "1.18.2", features = ["full"] }
@@ -27,7 +26,7 @@ anyhow = "1.0.57"
 serde = "1.0.137"
 snafu = "0.7.1"
 strum = "0.24.1"
+csi-grpc = { path = "../csi-grpc" }
 
 [build-dependencies]
 built = { version = "0.5.1", features = ["chrono", "git2"] }
-tonic-build = "0.7.2"

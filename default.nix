@@ -16,7 +16,7 @@
 , dockerTag ? null
 }:
 rec {
-  build = cargo.rootCrate.build;
+  build = cargo.workspaceMembers.stackable-listener-operator.build;
   crds = pkgs.runCommand "listener-operator-crds.yaml" {}
   ''
     ${build}/bin/stackable-listener-operator crd > $out
