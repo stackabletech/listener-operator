@@ -20,16 +20,16 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Auto-generated derived type for ListenerClassSpec via `CustomResource`"
+          description: Auto-generated derived type for ListenerClassSpec via `CustomResource`
           properties:
             spec:
-              description: "Defines a policy for how [`Listener`]s should be exposed."
+              description: Defines a policy for how [`Listener`]s should be exposed.
               properties:
                 serviceAnnotations:
                   additionalProperties:
                     type: string
                   default: {}
-                  description: "Annotations that should be added to the [`Service`] object."
+                  description: Annotations that should be added to the [`Service`] object.
                   type: object
                 serviceType:
                   description: The method used to access the services.
@@ -68,19 +68,22 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Auto-generated derived type for ListenerSpec via `CustomResource`"
+          description: Auto-generated derived type for ListenerSpec via `CustomResource`
           properties:
             spec:
-              description: "Exposes a set of pods to the outside world.\n\nEssentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`Listener`] changes two things: 1. It uses a cluster-level policy object ([`ListenerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service"
+              description: |-
+                Exposes a set of pods to the outside world.
+
+                Essentially a Stackable extension of a Kubernetes [`Service`]. Compared to [`Service`], [`Listener`] changes two things: 1. It uses a cluster-level policy object ([`ListenerClass`]) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service
               properties:
                 className:
-                  description: "The name of the [`ListenerClass`]."
+                  description: The name of the [`ListenerClass`].
                   nullable: true
                   type: string
                 podSelector:
                   additionalProperties:
                     type: string
-                  description: "Labels that the [`Pod`]s must share in order to be exposed."
+                  description: Labels that the [`Pod`]s must share in order to be exposed.
                   nullable: true
                   type: object
                 ports:
@@ -88,14 +91,17 @@ spec:
                   items:
                     properties:
                       name:
-                        description: "The name of the port.\n\nThe name of each port *must* be unique within a single [`Listener`]."
+                        description: |-
+                          The name of the port.
+
+                          The name of each port *must* be unique within a single [`Listener`].
                         type: string
                       port:
                         description: The port number.
                         format: int32
                         type: integer
                       protocol:
-                        description: "The layer-4 protocol (`TCP` or `UDP`)."
+                        description: The layer-4 protocol (`TCP` or `UDP`).
                         nullable: true
                         type: string
                     required:
@@ -106,16 +112,16 @@ spec:
                   type: array
               type: object
             status:
-              description: "Informs users about how to reach the [`Listener`]."
+              description: Informs users about how to reach the [`Listener`].
               nullable: true
               properties:
                 ingressAddresses:
-                  description: "All addresses that the [`Listener`] is currently reachable from."
+                  description: All addresses that the [`Listener`] is currently reachable from.
                   items:
-                    description: "One address that a [`Listener`] is accessible from."
+                    description: One address that a [`Listener`] is accessible from.
                     properties:
                       address:
-                        description: "The hostname or IP address to the [`Listener`]."
+                        description: The hostname or IP address to the [`Listener`].
                         type: string
                       ports:
                         additionalProperties:
@@ -133,11 +139,14 @@ spec:
                   additionalProperties:
                     format: int32
                     type: integer
-                  description: "Port mappings for accessing the [`Listener`] on each [`Node`] that the [`Pod`]s are currently running on.\n\nThis is only intended for internal use by listener-operator itself. This will be left unset if using a [`ListenerClass`] that does not require [`Node`]-local access."
+                  description: |-
+                    Port mappings for accessing the [`Listener`] on each [`Node`] that the [`Pod`]s are currently running on.
+
+                    This is only intended for internal use by listener-operator itself. This will be left unset if using a [`ListenerClass`] that does not require [`Node`]-local access.
                   nullable: true
                   type: object
                 serviceName:
-                  description: "The backing Kubernetes [`Service`]."
+                  description: The backing Kubernetes [`Service`].
                   nullable: true
                   type: string
               type: object
