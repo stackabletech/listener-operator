@@ -46,15 +46,19 @@ To build and deploy to the active Kind cluster, run the following Bash commands:
 $ echo Building with Nix
 # Ensure that all submodules are up-to-date
 $ git submodule update --recursive --init
-# Use crate2nix (https://github.com/kolloch/crate2nix) to convert Cargo.lock into a Nix derivation
+# Use crate2nix (https://github.com/kolloch/crate2nix) to convert
+# Cargo.lock into a Nix derivation
 $ nix run -f . crate2nix generate
 # Build the Docker images
-# A custom Docker repository can be specified by appending `--argstr dockerName my-custom-registry/listener-operator`
+# A custom Docker repository can be specified by appending
+# `--argstr dockerName my-custom-registry/listener-operator`
 $ nix build -f . docker
 # Load the images onto the Kind nodes
-# Nix does not use the Docker daemon, instead it builds individual layers, as well as
-# a script (`result/load-image`) that combines them into a Docker image archive.
-# `load-image` can also be piped into `docker load` to prepare for pushing to a registry.
+# Nix does not use the Docker daemon, instead it builds individual
+# layers, as well as a script (`result/load-image`) that combines
+# them into a Docker image archive.
+# `load-image` can also be piped into `docker load` to prepare for
+# pushing to a registry.
 $ ./result/load-image > image.tar && kind load image-archive image.tar
 # On single-node kind clusters it is slightly more efficient to run
 # `./result/load-image | kind load image-archive /dev/stdin` instead.
