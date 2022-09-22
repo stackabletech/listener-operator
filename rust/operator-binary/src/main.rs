@@ -35,12 +35,22 @@ struct Opts {
 
 #[derive(clap::Parser)]
 struct ListenerOperatorRun {
-    #[clap(long, env)]
-    csi_endpoint: PathBuf,
-    #[clap(long, env)]
-    node_name: String,
     #[clap(long, env, default_value_t, arg_enum)]
     tracing_target: TracingTarget,
+    #[clap(long, env)]
+    csi_endpoint: PathBuf,
+
+    #[clap(subcommand)]
+    mode: RunMode,
+}
+
+#[derive(clap::Parser, strum::AsRefStr)]
+enum RunMode {
+    Controller,
+    Node {
+        #[clap(long, env)]
+        node_name: String,
+    },
 }
 
 mod built_info {
@@ -57,9 +67,9 @@ async fn main() -> anyhow::Result<()> {
             Listener::print_yaml_schema()?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
-            csi_endpoint,
-            node_name,
             tracing_target,
+            csi_endpoint,
+            mode,
         }) => {
             stackable_operator::logging::initialize_logging(
                 "LISTENER_OPERATOR_LOG",
@@ -67,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
                 tracing_target,
             );
             stackable_operator::utils::print_startup_string(
-                crate_description!(),
+                &format!("{} ({})", crate_description!(), mode.as_ref()),
                 crate_version!(),
                 built_info::GIT_VERSION,
                 built_info::TARGET.unwrap_or("unknown target"),
@@ -83,6 +93,8 @@ async fn main() -> anyhow::Result<()> {
                 let _ = std::fs::remove_file(&csi_endpoint);
             }
             let mut sigterm = signal(SignalKind::terminate())?;
+            let csi_listener =
+                UnixListenerStream::new(uds_bind_private(csi_endpoint)?).map_ok(TonicUnixStream);
             let csi_server = Server::builder()
                 .add_service(
                     tonic_reflection::server::Builder::configure()
@@ -90,22 +102,31 @@ async fn main() -> anyhow::Result<()> {
                         .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET_BYTES)
                         .build()?,
                 )
-                .add_service(IdentityServer::new(ListenerOperatorIdentity))
-                .add_service(ControllerServer::new(ListenerOperatorController {
-                    client: client.clone(),
-                }))
-                .add_service(NodeServer::new(ListenerOperatorNode {
-                    client: client.clone(),
-                    node_name,
-                }))
-                .serve_with_incoming_shutdown(
-                    UnixListenerStream::new(uds_bind_private(csi_endpoint)?)
-                        .map_ok(TonicUnixStream),
-                    sigterm.recv().map(|_| ()),
-                );
-            let controller = listener_controller::run(client);
-            pin_mut!(csi_server, controller);
-            futures::future::select(csi_server, controller).await;
+                .add_service(IdentityServer::new(ListenerOperatorIdentity));
+
+            match mode {
+                RunMode::Controller => {
+                    let csi_server = csi_server
+                        .add_service(ControllerServer::new(ListenerOperatorController {
+                            client: client.clone(),
+                        }))
+                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()));
+                    let controller = listener_controller::run(client).map(Ok);
+                    pin_mut!(csi_server, controller);
+                    futures::future::try_select(csi_server, controller)
+                        .await
+                        .map_err(|err| err.factor_first().0)?;
+                }
+                RunMode::Node { node_name } => {
+                    csi_server
+                        .add_service(NodeServer::new(ListenerOperatorNode {
+                            client: client.clone(),
+                            node_name,
+                        }))
+                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
+                        .await?;
+                }
+            }
         }
     }
     Ok(())

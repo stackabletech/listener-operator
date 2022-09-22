@@ -27,7 +27,8 @@ rec {
     tag = dockerTag;
     contents = [ pkgs.bashInteractive pkgs.coreutils pkgs.util-linuxMinimal ];
     config = {
-      Cmd = [ (build+"/bin/stackable-listener-operator") "run" ];
+      Entrypoint = [ (build+"/bin/stackable-listener-operator") ];
+      Cmd = [ "run" ];
     };
   };
   docker = pkgs.linkFarm "listener-operator-docker" [

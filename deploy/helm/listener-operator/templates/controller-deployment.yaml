@@ -1,13 +1,14 @@
 ---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-daemonset
+  name: {{ .Release.Name }}-controller-deployment
   labels:
     {{- include "operator.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/role: controller
       {{- include "operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
@@ -16,6 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        app.kubernetes.io/role: controller
         {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -33,20 +35,15 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          args:
+            - run
+            - controller
           env:
             - name: CSI_ENDPOINT
               value: /csi/csi.sock
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
           volumeMounts:
             - name: csi
               mountPath: /csi
-            - name: mountpoint
-              mountPath: /var/lib/kubelet/pods
-              mountPropagation: Bidirectional
         - name: external-provisioner
           image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
           args:
@@ -56,26 +53,9 @@ spec:
           volumeMounts:
             - name: csi
               mountPath: /csi
-        - name: node-driver-registrar
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
-          args:
-            - --csi-address=/csi/csi.sock
-            - --kubelet-registration-path=/var/lib/kubelet/plugins/listeners.stackable.tech/csi.sock
-          volumeMounts:
-            - name: registration-sock
-              mountPath: /registration
-            - name: csi
-              mountPath: /csi
       volumes:
-        - name: registration-sock
-          hostPath:
-            path: /var/lib/kubelet/plugins_registry/listeners.stackable.tech-reg.sock
         - name: csi
-          hostPath:
-            path: /var/lib/kubelet/plugins/listeners.stackable.tech/
-        - name: mountpoint
-          hostPath:
-            path: /var/lib/kubelet/pods/
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
