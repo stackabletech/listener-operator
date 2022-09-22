@@ -9,15 +9,16 @@ use futures::{pin_mut, FutureExt, TryStreamExt};
 use grpc::csi::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
 };
-use stackable_operator::{kube::CustomResourceExt, logging::TracingTarget};
+use stackable_operator::{
+    commons::listener::{Listener, ListenerClass},
+    logging::TracingTarget,
+    CustomResourceExt,
+};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::{uds_bind_private, TonicUnixStream};
 
-use crate::crd::{Listener, ListenerClass};
-
-mod crd;
 mod csi_server;
 mod grpc;
 mod listener_controller;
@@ -52,11 +53,8 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
-            println!(
-                "{}{}",
-                serde_yaml::to_string(&ListenerClass::crd()).unwrap(),
-                serde_yaml::to_string(&Listener::crd()).unwrap()
-            );
+            ListenerClass::print_yaml_schema()?;
+            Listener::print_yaml_schema()?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,

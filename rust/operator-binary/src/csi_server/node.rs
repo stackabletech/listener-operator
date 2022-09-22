@@ -7,6 +7,7 @@ use serde::{
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
+    commons::listener::{Listener, ListenerIngress, ListenerPort, ListenerSpec},
     k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
     kube::{
         core::{DynamicObject, ObjectMeta},
@@ -17,7 +18,6 @@ use stackable_operator::{
 use tonic::{Request, Response, Status};
 
 use crate::{
-    crd::{Listener, ListenerIngress, ListenerPort, ListenerSpec},
     grpc::csi::{self, v1::Topology},
     utils::{error_full_message, node_primary_address},
 };
@@ -60,7 +60,7 @@ enum PublishVolumeError {
     #[snafu(display("failed to apply {listener}"))]
     ApplyListener {
         source: stackable_operator::error::Error,
-        listener: ObjectRef<crate::crd::Listener>,
+        listener: ObjectRef<Listener>,
     },
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
@@ -166,7 +166,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 
         let listener = match listener_selector {
             ListenerSelector::Listener(listener_name) => {
-                get_obj::<crate::crd::Listener>(&self.client, &listener_name, Some(&ns)).await?
+                get_obj::<Listener>(&self.client, &listener_name, Some(&ns)).await?
             }
             ListenerSelector::ListenerClass(listener_class_name) => {
                 let listener = Listener {
@@ -302,8 +302,8 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 mod pod_dir {
     use std::path::Path;
 
-    use crate::crd::ListenerIngress;
     use snafu::{OptionExt, ResultExt, Snafu};
+    use stackable_operator::commons::listener::ListenerIngress;
 
     #[derive(Snafu, Debug)]
     pub enum Error {

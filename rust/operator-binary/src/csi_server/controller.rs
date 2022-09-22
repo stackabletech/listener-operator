@@ -1,12 +1,13 @@
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
+    commons::listener::{Listener, ListenerClass, ServiceType},
     k8s_openapi::api::core::v1::PersistentVolumeClaim,
     kube::{core::DynamicObject, runtime::reflector::ObjectRef},
 };
 use tonic::{Request, Response, Status};
 
-use crate::{crd::ServiceType, grpc::csi, utils::error_full_message};
+use crate::{grpc::csi, utils::error_full_message};
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 
@@ -35,9 +36,7 @@ enum CreateVolumeError {
     #[snafu(display("failed to decode volume context"))]
     DecodeVolumeContext { source: serde::de::value::Error },
     #[snafu(display("{listener} does not specify a listener class"))]
-    NoListenerClass {
-        listener: ObjectRef<crate::crd::Listener>,
-    },
+    NoListenerClass { listener: ObjectRef<Listener> },
 }
 
 impl From<CreateVolumeError> for Status {
@@ -100,10 +99,10 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
             ListenerSelector::Listener(listener_name) => {
                 let listener = self
                     .client
-                    .get::<crate::crd::Listener>(&listener_name, Some(&ns))
+                    .get::<Listener>(&listener_name, Some(&ns))
                     .await
                     .with_context(|_| GetObjectSnafu {
-                        obj: ObjectRef::<crate::crd::Listener>::new(&listener_name)
+                        obj: ObjectRef::<Listener>::new(&listener_name)
                             .within(&ns)
                             .erase(),
                     })?;
@@ -119,10 +118,10 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
         };
         let listener_class = self
             .client
-            .get::<crate::crd::ListenerClass>(&listener_class_name, None)
+            .get::<ListenerClass>(&listener_class_name, None)
             .await
             .with_context(|_| GetObjectSnafu {
-                obj: ObjectRef::<crate::crd::ListenerClass>::new(&listener_class_name)
+                obj: ObjectRef::<ListenerClass>::new(&listener_class_name)
                     .within(&ns)
                     .erase(),
             })?;

@@ -1,14 +1,12 @@
-use crate::{
-    crd::{
-        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, ListenerStatus,
-        ServiceType,
-    },
-    utils::node_primary_address,
-};
+use crate::utils::node_primary_address;
 use futures::{future::try_join_all, StreamExt};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
+    commons::listener::{
+        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, ListenerStatus,
+        ServiceType,
+    },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
         api::{DynamicObject, ListParams, ObjectMeta},
