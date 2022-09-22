@@ -1897,7 +1897,6 @@ dependencies = [
  "prost",
  "prost-types",
  "serde",
- "serde_json",
  "snafu",
  "socket2",
  "stackable-operator",
