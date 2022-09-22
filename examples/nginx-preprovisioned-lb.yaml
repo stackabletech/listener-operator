@@ -38,7 +38,7 @@ spec:
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: Listener
 metadata:
-  name: exposed-nginx-preprovisioned-listener
+  name: exposed-nginx-preprovisioned-lb
 spec:
   className: lb-external
   ports:
