@@ -18,7 +18,10 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::utils::{error_full_message, node_primary_address};
+use crate::{
+    listener_controller::listener_mounted_pod_label,
+    utils::{error_full_message, node_primary_address},
+};
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 
@@ -60,6 +63,11 @@ enum PublishVolumeError {
         source: stackable_operator::error::Error,
         listener: ObjectRef<Listener>,
     },
+    #[snafu(display("failed to add listener label to {pod}"))]
+    AddListenerLabelToPod {
+        source: stackable_operator::error::Error,
+        pod: ObjectRef<Pod>,
+    },
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
         source: pod_dir::Error,
@@ -77,6 +85,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
         }
     }
@@ -198,7 +207,8 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                                 })
                                 .collect(),
                         ),
-                        pod_selector: pod.metadata.labels.clone(),
+                        publish_not_ready_addresses: Some(true),
+                        ..Default::default()
                     },
                     status: None,
                 };
@@ -210,6 +220,26 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                     })?
             }
         };
+
+        // Add listener label to pod so that traffic can be directed to it
+        self.client
+            // IMPORTANT
+            // Use a merge patch rather than an apply so that we don't delete labels added by other listener volumes.
+            // Volumes aren't hot-swappable anyway, and all labels will be removed when the pod is deleted.
+            .merge_patch(
+                &pod,
+                &Pod {
+                    metadata: ObjectMeta {
+                        labels: Some([listener_mounted_pod_label(&listener)].into()),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .with_context(|_| AddListenerLabelToPodSnafu {
+                pod: ObjectRef::from_obj(&pod),
+            })?;
 
         // Prefer calculating a per-node address where possible, to ensure that the address at least tries to
         // connect to the pod in question.

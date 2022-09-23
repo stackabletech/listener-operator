@@ -148,6 +148,8 @@ pub async fn reconcile(
         // Deduplicate ports by (protocol, name)
         .collect::<BTreeMap<_, ServicePort>>();
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
+    let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
+    pod_selector.extend([listener_mounted_pod_label(&listener)]);
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.clone()),
@@ -165,8 +167,13 @@ pub async fn reconcile(
             }),
             ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy: Some("Local".to_string()),
-            selector: listener.spec.pod_selector.clone(),
-            publish_not_ready_addresses: Some(true),
+            selector: Some(pod_selector),
+            publish_not_ready_addresses: Some(
+                listener
+                    .spec
+                    .publish_not_ready_addresses
+                    .unwrap_or_default(),
+            ),
             ..Default::default()
         }),
         ..Default::default()
@@ -274,4 +281,17 @@ pub async fn reconcile(
 
 pub fn error_policy(_err: &Error, _ctx: Arc<Ctx>) -> controller::Action {
     controller::Action::requeue(Duration::from_secs(5))
+}
+
+/// A label that identifies [`Pod`]s that have mounted `listener`
+///
+/// Listener-Op's CSI Node driver is responsible for adding this to the relevant [`Pod`]s.
+pub fn listener_mounted_pod_label(listener: &Listener) -> (String, String) {
+    (
+        format!(
+            "listeners.stackable.tech/mounted-listener.{}",
+            listener.metadata.name.as_deref().unwrap_or_default()
+        ),
+        "true".to_string(),
+    )
 }
