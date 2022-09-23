@@ -333,7 +333,7 @@ mod pod_dir {
         tokio::fs::symlink(
             default_addr_dir
                 .context(NoDefaultAddressSnafu)?
-                .strip_prefix(&target_path)
+                .strip_prefix(target_path)
                 .context(DefaultAddrIsOutsideRootSnafu)?,
             target_path.join("default-address"),
         )
