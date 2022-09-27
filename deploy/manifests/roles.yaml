@@ -7,7 +7,6 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - secrets
       - events
       - services
     verbs:
