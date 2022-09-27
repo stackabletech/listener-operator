@@ -17,6 +17,9 @@ use stackable_operator::{
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use strum::IntoStaticStr;
 
+#[cfg(doc)]
+use stackable_operator::k8s_openapi::api::core::v1::Pod;
+
 const FIELD_MANAGER_SCOPE: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
