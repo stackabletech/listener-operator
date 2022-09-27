@@ -1,7 +1,11 @@
 [package]
 name = "csi-grpc"
-version = "0.1.0"
+authors = ["Stackable GmbH <info@stackable.de>"]
+description = "Rust bindings for the CSI GRPC API"
+license = "OSL-3.0"
+version = "0.1.0-nightly"
 edition = "2021"
+repository = "https://github.com/stackabletech/listener-operator"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
