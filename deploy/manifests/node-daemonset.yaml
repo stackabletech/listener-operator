@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: listener-operator-daemonset
+  name: listener-operator-node-daemonset
   labels:
     app.kubernetes.io/name: listener-operator
     app.kubernetes.io/instance: listener-operator
@@ -10,11 +10,13 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/role: node
       app.kubernetes.io/name: listener-operator
       app.kubernetes.io/instance: listener-operator
   template:
     metadata:
       labels:
+        app.kubernetes.io/role: node
         app.kubernetes.io/name: listener-operator
         app.kubernetes.io/instance: listener-operator
     spec:
@@ -28,6 +30,9 @@ spec:
           image: "docker.stackable.tech/stackable/listener-operator:0.1.0-nightly"
           imagePullPolicy: IfNotPresent
           resources: {}
+          args:
+            - run
+            - node
           env:
             - name: CSI_ENDPOINT
               value: /csi/csi.sock
@@ -42,15 +47,6 @@ spec:
             - name: mountpoint
               mountPath: /var/lib/kubelet/pods
               mountPropagation: Bidirectional
-        - name: external-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
-          args:
-            - --csi-address=/csi/csi.sock
-            - --feature-gates=Topology=true
-            - --extra-create-metadata
-          volumeMounts:
-            - name: csi
-              mountPath: /csi
         - name: node-driver-registrar
           image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
           args:
