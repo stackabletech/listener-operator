@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: listener-operator
+version: "0.1.0-nightly"
+appVersion: "0.1.0-nightly"
+description: The Stackable Operator for Stackable Listener Operator
+home: https://github.com/stackabletech/listener-operator
+maintainers:
+  - name: Stackable
+    url: https://www.stackable.tech

@@ -1,0 +1,7 @@
+---
+name: listener-operator
+version: "nightly"
+title: Stackable Listener Operator
+nav:
+  - modules/ROOT/nav.adoc
+prerelease: true

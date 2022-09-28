@@ -1,0 +1,27 @@
+= Usage
+
+The operator creates a xref:listener.adoc[] for each mounted CSI volume with `storageClassName: listeners.stackable.tech`.
+
+A minimal exposed `Pod` looks like this:
+
+[source,yaml]
+----
+include::example$usage-pod.yaml[]
+----
+<1> Defines an _ephemeral_ listener, meaning that it will automatically be deleted when the `Pod` is.
+<2> Defines that we want to expose this pod by automatically creating a service according to the xref:listenerclass.adoc[] `public`.
+<3> Mounts metadata about the `Listener` (such as the port mapping and IP address) into `/listener`. The volume *must* be mounted, even if this data is never used by the `Pod` itself.
+
+The exact xref:listenerclass.adoc[] is going to depend on the Kubernetes environment, but should often look like this for public clouds:
+
+[source,yaml]
+----
+include::example$listenerclass-public-gke.yaml[]
+----
+
+Or like this for on-premise environments:
+
+[source,yaml]
+----
+include::example$listenerclass-public-onprem.yaml[]
+----

@@ -1,0 +1,14 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: nodeport
+spec:
+  serviceType: NodePort
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: lb-external
+spec:
+  serviceType: LoadBalancer

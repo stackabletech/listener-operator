@@ -1,0 +1,3 @@
+[submodule "rust/csi-grpc/vendor/csi"]
+	path = rust/csi-grpc/vendor/csi
+	url = https://github.com/container-storage-interface/spec

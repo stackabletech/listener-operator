@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-public-pod
+spec:
+  volumes:
+    - name: listener
+      ephemeral: # <1>
+        volumeClaimTemplate:
+          metadata:
+            annotations:
+              listeners.stackable.tech/listener-class: public # <2>
+          spec:
+            storageClassName: listeners.stackable.tech
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: "1"
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+        - name: http
+          containerPort: 80
+      volumeMounts:
+        - name: listener
+          mountPath: /listener # <3>

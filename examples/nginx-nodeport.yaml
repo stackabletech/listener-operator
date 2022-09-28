@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: exposed-nginx-nodeport
+spec:
+  replicas: 1
+  serviceName: ""
+  selector:
+    matchLabels:
+      app: exposed-nginx-nodeport
+  template:
+    metadata:
+      labels:
+        app: exposed-nginx-nodeport
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - name: http
+          containerPort: 80
+        volumeMounts:
+        - name: listener
+          mountPath: /usr/share/nginx/html/listener
+  volumeClaimTemplates:
+  - metadata:
+      name: listener
+      annotations:
+        listeners.stackable.tech/listener-class: nodeport
+    spec:
+      accessModes:
+      - ReadWriteMany
+      storageClassName: listeners.stackable.tech
+      resources:
+        requests:
+          storage: 1

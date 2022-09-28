@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx
+spec:
+  serviceName: nginx
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.23.1
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: listener
+              mountPath: /listener
+            - name: metadata
+              mountPath: /usr/share/nginx/html/
+      volumes:
+        - name: metadata
+          downwardAPI:
+            items:
+              - path: pod-name
+                fieldRef:
+                  fieldPath: metadata.name
+  volumeClaimTemplates:
+    - metadata:
+        name: listener
+        annotations:
+          listeners.stackable.tech/listener-class: listener-operator-test-smoke-nodeport
+      spec:
+        accessModes:
+          - ReadWriteMany
+        storageClassName: listeners.stackable.tech
+        resources:
+          requests:
+            storage: 1

@@ -1,0 +1,9 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: internal
+spec:
+  serviceType: LoadBalancer
+  serviceAnnotations:
+    networking.gke.io/load-balancer-type: Internal
