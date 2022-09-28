@@ -2,7 +2,7 @@
 name = "csi-grpc"
 authors = ["Stackable GmbH <info@stackable.de>"]
 description = "Rust bindings for the CSI GRPC API"
-license = "OSL-3.0"
+license = "Apache-2.0"
 version = "0.1.0-nightly"
 edition = "2021"
 repository = "https://github.com/stackabletech/listener-operator"
