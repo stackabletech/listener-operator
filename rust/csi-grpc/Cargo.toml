@@ -6,6 +6,7 @@ license = "Apache-2.0"
 version = "0.1.0-nightly"
 edition = "2021"
 repository = "https://github.com/stackabletech/listener-operator"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

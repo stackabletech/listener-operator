@@ -6,6 +6,7 @@ license = "OSL-3.0"
 version = "0.1.0-nightly"
 edition = "2021"
 repository = "https://github.com/stackabletech/listener-operator"
+publish = false
 
 [dependencies]
 # Need to keep this in sync with our patched h2 build
