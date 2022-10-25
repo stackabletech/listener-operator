@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Helm installation on OpenShift ([#xxx]).
+- Helm installation on OpenShift ([#29]).
 
-[#xxx]: https://github.com/stackabletech/secret-operator/pull/xxx
+[#29]: https://github.com/stackabletech/secret-operator/pull/29
 
