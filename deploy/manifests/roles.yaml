@@ -74,13 +74,3 @@ rules:
     verbs:
       - patch
       - create
-{{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
-  - apiGroups:
-    - security.openshift.io
-    resourceNames:
-    - privileged
-    resources:
-    - securitycontextconstraints
-    verbs:
-    - use
-{{ end  }}
