@@ -27,8 +27,8 @@ You can follow this [tutorial](https://docs.stackable.tech/listener/stable/getti
 
 ## Documentation
 
-The stable documentation for this operator can be found [here](https://docs.stackable.tech/listener/stable/index.html).
-If you are interested in the most recent state of this repository, check out the [nightly docs](https://docs.stackable.tech/listener/nightly/index.html) instead.
+The stable documentation for this operator can be found [here](https://docs.stackable.tech/listener-operator/stable/index.html).
+If you are interested in the most recent state of this repository, check out the [nightly docs](https://docs.stackable.tech/listener-operator/nightly/index.html) instead.
 
 The documentation for all Stackable products can be found at [docs.stackable.tech](https://docs.stackable.tech).
 
