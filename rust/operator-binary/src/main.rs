@@ -34,7 +34,7 @@ struct Opts {
 
 #[derive(clap::Parser)]
 struct ListenerOperatorRun {
-    #[clap(long, env, default_value_t, arg_enum)]
+    #[arg(long, env, default_value_t, value_enum)]
     tracing_target: TracingTarget,
     #[clap(long, env)]
     csi_endpoint: PathBuf,

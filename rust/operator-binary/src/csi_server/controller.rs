@@ -85,7 +85,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
             .context(create_volume_error::DecodeRequestParamsSnafu)?;
         let pvc = self
             .client
-            .get::<PersistentVolumeClaim>(&pvc_name, Some(&ns))
+            .get::<PersistentVolumeClaim>(&pvc_name, &ns)
             .await
             .with_context(|_| GetObjectSnafu {
                 obj: ObjectRef::<PersistentVolumeClaim>::new(&pvc_name)
@@ -100,7 +100,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
             ListenerSelector::Listener(listener_name) => {
                 let listener = self
                     .client
-                    .get::<Listener>(&listener_name, Some(&ns))
+                    .get::<Listener>(&listener_name, &ns)
                     .await
                     .with_context(|_| GetObjectSnafu {
                         obj: ObjectRef::<Listener>::new(&listener_name)
@@ -119,7 +119,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
         };
         let listener_class = self
             .client
-            .get::<ListenerClass>(&listener_class_name, None)
+            .get::<ListenerClass>(&listener_class_name, &())
             .await
             .with_context(|_| GetObjectSnafu {
                 obj: ObjectRef::<ListenerClass>::new(&listener_class_name)
