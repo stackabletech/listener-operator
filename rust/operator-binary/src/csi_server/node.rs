@@ -264,10 +264,10 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 })?;
             let node = self
                 .client
-                .get::<Node>(&node_name, &())
+                .get::<Node>(node_name, &())
                 .await
                 .with_context(|_| GetObjectSnafu {
-                    obj: { ObjectRef::<Node>::new(&node_name).erase() },
+                    obj: { ObjectRef::<Node>::new(node_name).erase() },
                 })?;
 
             node_primary_address(&node)

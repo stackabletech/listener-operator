@@ -195,7 +195,7 @@ pub async fn reconcile(
         ServiceType::NodePort => {
             let endpoints = ctx
                 .client
-                .get_opt::<Endpoints>(&svc_name, &ns)
+                .get_opt::<Endpoints>(&svc_name, ns)
                 .await
                 .with_context(|_| GetObjectSnafu {
                     obj: ObjectRef::<Endpoints>::new(&svc_name).within(ns).erase(),
