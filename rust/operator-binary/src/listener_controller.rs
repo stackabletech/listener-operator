@@ -113,7 +113,7 @@ pub async fn reconcile(
     listener: Arc<Listener>,
     ctx: Arc<Ctx>,
 ) -> Result<controller::Action, Error> {
-    let ns = listener.metadata.namespace.clone().context(NoNsSnafu)?;
+    let ns = listener.metadata.namespace.as_deref().context(NoNsSnafu)?;
     let listener_class_name = listener
         .spec
         .class_name
@@ -121,7 +121,7 @@ pub async fn reconcile(
         .context(NoListenerClassSnafu)?;
     let listener_class = ctx
         .client
-        .get::<ListenerClass>(listener_class_name, None)
+        .get::<ListenerClass>(listener_class_name, &())
         .await
         .with_context(|_| GetObjectSnafu {
             obj: ObjectRef::<ListenerClass>::new(listener_class_name).erase(),
@@ -155,7 +155,7 @@ pub async fn reconcile(
     pod_selector.extend([listener_mounted_pod_label(&listener)]);
     let svc = Service {
         metadata: ObjectMeta {
-            namespace: Some(ns.clone()),
+            namespace: Some(ns.to_string()),
             name: Some(svc_name.clone()),
             owner_references: Some(vec![OwnerReferenceBuilder::new()
                 .initialize_from_resource(&*listener)
@@ -195,10 +195,10 @@ pub async fn reconcile(
         ServiceType::NodePort => {
             let endpoints = ctx
                 .client
-                .get_opt::<Endpoints>(&svc_name, Some(&ns))
+                .get_opt::<Endpoints>(&svc_name, &ns)
                 .await
                 .with_context(|_| GetObjectSnafu {
-                    obj: ObjectRef::<Endpoints>::new(&svc_name).within(&ns).erase(),
+                    obj: ObjectRef::<Endpoints>::new(&svc_name).within(ns).erase(),
                 })?
                 // Endpoints object may not yet be created by its respective controller
                 .unwrap_or_default();
@@ -212,7 +212,7 @@ pub async fn reconcile(
                 .collect::<Vec<_>>();
             let nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
-                    .get::<Node>(node_name, None)
+                    .get::<Node>(node_name, &())
                     .await
                     .context(GetObjectSnafu {
                         obj: ObjectRef::<Node>::new(node_name).erase(),
@@ -282,7 +282,7 @@ pub async fn reconcile(
     Ok(controller::Action::await_change())
 }
 
-pub fn error_policy(_err: &Error, _ctx: Arc<Ctx>) -> controller::Action {
+pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controller::Action {
     controller::Action::requeue(Duration::from_secs(5))
 }
 

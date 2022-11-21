@@ -1,10 +1,5 @@
-use std::{fmt::Debug, path::PathBuf};
-
 use csi_grpc::{self as csi, v1::Topology};
-use serde::{
-    de::{DeserializeOwned, IntoDeserializer},
-    Deserialize,
-};
+use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
@@ -13,9 +8,9 @@ use stackable_operator::{
     kube::{
         core::{DynamicObject, ObjectMeta},
         runtime::reflector::ObjectRef,
-        Resource,
     },
 };
+use std::{fmt::Debug, path::PathBuf};
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -144,21 +139,6 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         request: Request<csi::v1::NodePublishVolumeRequest>,
     ) -> Result<Response<csi::v1::NodePublishVolumeResponse>, Status> {
         use publish_volume_error::*;
-        async fn get_obj<K: Resource<DynamicType = ()> + DeserializeOwned + Clone + Debug>(
-            client: &stackable_operator::client::Client,
-            name: &str,
-            ns: Option<&str>,
-        ) -> Result<K, PublishVolumeError> {
-            client.get(name, ns).await.with_context(|_| GetObjectSnafu {
-                obj: {
-                    let mut obj = ObjectRef::<K>::new(name);
-                    if let Some(ns) = ns {
-                        obj = obj.within(ns);
-                    }
-                    obj.erase()
-                },
-            })
-        }
 
         let request = request.into_inner();
         let ListenerNodeVolumeContext {
@@ -168,13 +148,38 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         } = ListenerNodeVolumeContext::deserialize(request.volume_context.into_deserializer())
             .context(DecodeVolumeContextSnafu)?;
         let pv_name = &request.volume_id;
-        let pv = get_obj::<PersistentVolume>(&self.client, pv_name, None).await?;
-        let pod = get_obj::<Pod>(&self.client, &pod_name, Some(&ns)).await?;
+
+        let pv = self
+            .client
+            .get::<PersistentVolume>(pv_name, &())
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: {
+                    let obj = ObjectRef::<PersistentVolume>::new(pv_name);
+                    obj.erase()
+                },
+            })?;
+
+        let pod = self
+            .client
+            .get::<Pod>(&pod_name, &ns)
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: { ObjectRef::<Pod>::new(&pod_name).erase() },
+            })?;
 
         let listener = match listener_selector {
-            ListenerSelector::Listener(listener_name) => {
-                get_obj::<Listener>(&self.client, &listener_name, Some(&ns)).await?
-            }
+            ListenerSelector::Listener(listener_name) => self
+                .client
+                .get::<Listener>(&listener_name, &ns)
+                .await
+                .with_context(|_| GetObjectSnafu {
+                    obj: {
+                        ObjectRef::<Listener>::new(&listener_name)
+                            .within(&ns)
+                            .erase()
+                    },
+                })?,
             ListenerSelector::ListenerClass(listener_class_name) => {
                 let listener = Listener {
                     metadata: ObjectMeta {
@@ -257,7 +262,14 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 .with_context(|| PodHasNoNodeSnafu {
                     pod: ObjectRef::from_obj(&pod),
                 })?;
-            let node = get_obj::<Node>(&self.client, node_name, None).await?;
+            let node = self
+                .client
+                .get::<Node>(&node_name, &())
+                .await
+                .with_context(|_| GetObjectSnafu {
+                    obj: { ObjectRef::<Node>::new(&node_name).erase() },
+                })?;
+
             node_primary_address(&node)
                 .map(|address| ListenerIngress {
                     address: address.to_string(),
