@@ -22,7 +22,7 @@ stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git",
 tokio = { version = "1.18.2", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["net"] }
 tonic = "0.7.2"
-tonic-reflection = "0.4.0"
+tonic-reflection = "0.6.0"
 anyhow = "1.0.57"
 serde = "1.0.137"
 snafu = "0.7.1"
