@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [23.1.0] - 2023-01-23
+
 ### Changed
 
 - Helm installation on OpenShift ([#29]).
