@@ -1,6 +1,6 @@
 ---
 name: listener-operator
-version: "23.1.0"
+version: "23.1"
 title: Stackable Listener Operator
 nav:
   - modules/ROOT/nav.adoc
