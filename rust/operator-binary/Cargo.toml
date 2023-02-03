@@ -12,7 +12,7 @@ publish = false
 # Need to keep this in sync with our patched h2 build
 h2 = "=0.3.7"
 
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.1", features = ["derive"] }
 futures = "0.3.21"
 libc = "0.2.125"
 pin-project = "1.0.10"
