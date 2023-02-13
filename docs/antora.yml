@@ -1,7 +1,3 @@
 ---
-name: listener-operator
+name: home
 version: "23.1"
-title: Stackable Listener Operator
-nav:
-  - modules/ROOT/nav.adoc
-prerelease: false
