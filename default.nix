@@ -12,14 +12,16 @@
       };
     };
   }
-, dockerName ? "docker.stackable.tech/sandbox/listener-operator"
+, meta ? pkgs.lib.importJSON ./nix/meta.json
+, dockerName ? "docker.stackable.tech/sandbox/${meta.operator.name}"
 , dockerTag ? null
 }:
 rec {
-  build = cargo.workspaceMembers.stackable-listener-operator.build;
-  crds = pkgs.runCommand "listener-operator-crds.yaml" {}
+  build = cargo.allWorkspaceMembers;
+  entrypoint = build+"/bin/stackable-${meta.operator.name}";
+  crds = pkgs.runCommand "${meta.operator.name}-crds.yaml" {}
   ''
-    ${build}/bin/stackable-listener-operator crd > $out
+    ${entrypoint} crd > $out
   '';
 
   dockerImage = pkgs.dockerTools.streamLayeredImage {
@@ -27,7 +29,13 @@ rec {
     tag = dockerTag;
     contents = [ pkgs.bashInteractive pkgs.coreutils pkgs.util-linuxMinimal ];
     config = {
-      Entrypoint = [ (build+"/bin/stackable-listener-operator") ];
+    Env =
+      let
+        fileRefVars = {
+          PRODUCT_CONFIG = deploy/config-spec/properties.yaml;
+        };
+      in lib.concatLists (lib.mapAttrsToList (env: path: lib.optional (lib.pathExists path) "${env}=${path}") fileRefVars);
+      Entrypoint = [ entrypoint ];
       Cmd = [ "run" ];
     };
   };
@@ -55,6 +63,6 @@ rec {
   ];
 
   # need to use vendored crate2nix because of https://github.com/kolloch/crate2nix/issues/264
-  crate2nix = pkgs.callPackage sources.crate2nix {};
+  crate2nix = import sources.crate2nix {};
   tilt = pkgs.tilt;
 }
