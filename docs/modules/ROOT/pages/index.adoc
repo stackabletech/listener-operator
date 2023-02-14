@@ -1,0 +1,3 @@
+= Stackable Listener Operator
+
+The docs can now be found at: xref:home:listener-operator:index.adoc[]
