@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "csi-grpc"
-version = "0.1.0-nightly"
+version = "0.0.0-dev"
 dependencies = [
  "prost",
  "prost-types",
@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "stackable-listener-operator"
-version = "0.1.0-nightly"
+version = "0.0.0-dev"
 dependencies = [
  "anyhow",
  "built",
