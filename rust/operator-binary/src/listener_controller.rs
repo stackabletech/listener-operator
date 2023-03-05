@@ -164,13 +164,15 @@ pub async fn reconcile(
             ..Default::default()
         },
         spec: Some(ServiceSpec {
-            type_: Some(match listener_class.spec.service_type {
-                ServiceType::NodePort => "NodePort".to_string(),
-                ServiceType::LoadBalancer => "LoadBalancer".to_string(),
-            }),
-            ports: Some(pod_ports.into_values().collect()),
-            external_traffic_policy: Some("Local".to_string()),
+            type_: Some(listener_class.spec.service_type.to_kubernetes_literal()),
             selector: Some(pod_selector),
+            ports: Some(pod_ports.into_values().collect()),
+            external_traffic_policy: Some(
+                listener
+                    .spec
+                    .service_external_traffic_policy
+                    .to_kubernetes_literal(),
+            ),
             publish_not_ready_addresses: Some(
                 listener
                     .spec

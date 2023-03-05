@@ -114,6 +114,13 @@ spec:
                   description: Whether incoming traffic should also be directed to `Pod`s that are not `Ready`.
                   nullable: true
                   type: boolean
+                serviceExternalTrafficPolicy:
+                  default: Cluster
+                  description: '`externalTrafficPolicy` that should be set on the [`Service`] object.'
+                  enum:
+                    - Cluster
+                    - Local
+                  type: string
               type: object
             status:
               description: Informs users about how to reach the [`Listener`].
