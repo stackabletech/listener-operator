@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Allow configuring CSI docker images ([#61]).
+
+[#61]: https://github.com/stackabletech/listener-operator/pull/61
+
+## [23.1.0] - 2023-01-23
+
 ### Changed
 
 - Helm installation on OpenShift ([#29]).
