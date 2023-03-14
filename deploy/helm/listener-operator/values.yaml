@@ -3,6 +3,11 @@
 image:
   repository: docker.stackable.tech/stackable/listener-operator
   pullPolicy: IfNotPresent
+csiNodeDriverRegistrar:
+  image:
+    repository: docker.stackable.tech/k8s/sig-storage/csi-node-driver-registrar
+    tag: v2.5.0
+    pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
