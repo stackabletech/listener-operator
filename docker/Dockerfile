@@ -23,13 +23,16 @@ RUN microdnf install -y yum \
   && yum clean all \
   && microdnf clean all
 
+# Install kerberos client libraries
+RUN microdnf install -y krb5-libs libkadm5 && microdnf clean all
+
 COPY LICENSE /licenses/LICENSE
 
-COPY --from=builder /app/stackable-listener-operator /
+COPY --from=builder /app/* /usr/local/bin/
 
 RUN groupadd -g 1000 stackable && adduser -u 1000 -g stackable -c 'Stackable Operator' stackable
 
 USER stackable:stackable
 
-ENTRYPOINT ["/stackable-listener-operator"]
+ENTRYPOINT ["stackable-listener-operator"]
 CMD ["run"]
