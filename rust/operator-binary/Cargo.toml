@@ -30,4 +30,4 @@ strum = "0.24.1"
 csi-grpc = { path = "../csi-grpc" }
 
 [build-dependencies]
-built = { version = "0.5.1", features = ["chrono", "git2"] }
+built = { version = "0.6.0", features = ["chrono", "git2"] }
