@@ -10,7 +10,7 @@ publish = false
 
 [dependencies]
 # Need to keep this in sync with our patched h2 build
-h2 = "=0.3.7"
+h2 = "=0.3.18"
 
 clap = { version = "4.1", features = ["derive"] }
 futures = "0.3.21"
