@@ -13,7 +13,7 @@ publish = false
 [dependencies]
 prost = "0.10.3"
 prost-types = "0.10.1"
-tonic = "0.7.2"
+tonic = "0.8.3"
 
 [build-dependencies]
 tonic-build = "0.7.2"
