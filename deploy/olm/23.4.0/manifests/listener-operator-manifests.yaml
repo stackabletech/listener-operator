@@ -125,4 +125,3 @@ data:
       name: lb-external
     spec:
       serviceType: LoadBalancer
-
