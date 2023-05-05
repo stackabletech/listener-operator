@@ -116,6 +116,7 @@ data:
     kind: ListenerClass
     metadata:
       name: nodeport
+      namespace: stackable-operators
     spec:
       serviceType: NodePort
   listener-lb-external.yaml: |
@@ -123,5 +124,6 @@ data:
     kind: ListenerClass
     metadata:
       name: lb-external
+      namespace: stackable-operators
     spec:
       serviceType: LoadBalancer
