@@ -15,13 +15,12 @@ spec:
 
   displayName: Stackable Listener Operator
   description: |-
-    This is a Kubernetes operator to manage [Trino](https://trino.io/) ensembles. The Stackable Trino Operator
-    is part of the Stackable Data Platform, a curated selection of the best open source data apps like Kafka, Druid, Trino or Spark, all
-    working together seamlessly. Based on Kubernetes, it runs everywhere – on prem or in the cloud.
+    This is an operator for Kubernetes that provisions network listeners according to the cluster policy, and injects connection parameters into Pods.
+    The Stackable Listener Operator is part of the Stackable Data Platform, a curated selection of the best open source data apps like Kafka, Druid, Trino or
+    Spark, all working together seamlessly. Based on Kubernetes, it runs everywhere – on prem or in the cloud.
 
-    You can install the operator using [stackablectl or helm](https://docs.stackable.tech/trino/stable/getting_started/installation.html).
     See it in action in one of our [demos](https://stackable.tech/en/demos/) or follow this
-    [tutorial](https://docs.stackable.tech/trino/stable/getting_started/first_steps.html).
+    [usage overview](https://docs.stackable.tech/home/stable/listener-operator/usage.html).
 
     N.B. this operator requires the following Stackable internal operators to be installed as well:
 
