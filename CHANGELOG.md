@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Generate OLM bundle for Release 23.4.0 ([#74]).
+
+[#74]: https://github.com/stackabletech/listener-operator/pull/74
+
 ## [23.4.0] - 2023-04-17
 
 ### Added
