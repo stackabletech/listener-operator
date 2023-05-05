@@ -116,7 +116,11 @@ data:
     kind: ListenerClass
     metadata:
       name: nodeport
-      namespace: stackable-operators
+      ownerReferences:
+        - apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          name: "${LISTENER_OPERATOR_CLUSTERROLE_NAME}"
+          uid: "${LISTENER_OPERATOR_CLUSTERROLE_UID}"
     spec:
       serviceType: NodePort
   listener-lb-external.yaml: |
@@ -124,6 +128,10 @@ data:
     kind: ListenerClass
     metadata:
       name: lb-external
-      namespace: stackable-operators
+      ownerReferences:
+        - apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          name: "${LISTENER_OPERATOR_CLUSTERROLE_NAME}"
+          uid: "${LISTENER_OPERATOR_CLUSTERROLE_UID}"
     spec:
       serviceType: LoadBalancer

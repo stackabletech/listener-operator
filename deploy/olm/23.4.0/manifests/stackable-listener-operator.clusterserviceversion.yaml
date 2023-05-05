@@ -119,19 +119,9 @@ spec:
                 - delete
                 - patch
             - apiGroups:
-                - listeners.listeners.stackable.tech
+                - listeners.stackable.tech
               resources:
                 - listeners
-              verbs:
-                - get
-                - list
-                - watch
-                - create
-                - delete
-                - patch
-            - apiGroups:
-                - listenerclasses.listeners.stackable.tech
-              resources:
                 - listenerclasses
               verbs:
                 - get
