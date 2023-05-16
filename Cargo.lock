@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "csi-grpc"
-version = "23.4.0"
+version = "23.4.1"
 dependencies = [
  "prost",
  "prost-types",
@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "stackable-listener-operator"
-version = "23.4.0"
+version = "23.4.1"
 dependencies = [
  "anyhow",
  "built",
