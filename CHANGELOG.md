@@ -9,7 +9,12 @@ All notable changes to this project will be documented in this file.
 - Generate OLM bundle for Release 23.4.0 ([#74]).
 - Provide automatic migration 23.1 -> 23.4 ([#77]).
 
+### Changed
+
+- `operator-rs` `0.27.1` -> `0.41.0` ([#80]).
+
 [#74]: https://github.com/stackabletech/listener-operator/pull/74
+[#80]: https://github.com/stackabletech/listener-operator/pull/80
 
 ## [23.4.0] - 2023-04-17
 
