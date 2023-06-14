@@ -142,8 +142,8 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                         .into_iter()
                         .take(1)
                         .collect(),
-                    // Load balancers have no relationship to any particular node, so don't try to be sticky
-                    ServiceType::LoadBalancer => Vec::new(),
+                    // Load balancers and services of type ClusterIP have no relationship to any particular node, so don't try to be sticky
+                    ServiceType::LoadBalancer | ServiceType::ClusterIP => Vec::new(),
                 },
             }),
         }))
