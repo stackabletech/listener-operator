@@ -173,7 +173,7 @@ pub async fn reconcile(
             // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
             external_traffic_policy: match listener_class.spec.service_type {
                 ServiceType::NodePort | ServiceType::LoadBalancer => Some("Local".to_string()),
-                _ => None,
+                ServiceType::ClusterIP => None,
             },
             selector: Some(pod_selector),
             publish_not_ready_addresses: Some(
