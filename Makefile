@@ -13,11 +13,16 @@ TAG    := $(shell git rev-parse --short HEAD)
 OPERATOR_NAME := listener-operator
 VERSION := $(shell cargo metadata --format-version 1 | jq -r '.packages[] | select(.name=="stackable-${OPERATOR_NAME}") | .version')
 
-DOCKER_REPO := docker.stackable.tech
 ORGANIZATION := stackable
+DOCKER_REPO := docker.stackable.tech
+DOCKER_OCI_REGISTRY := broadminded-goldstine.container-registry.com
+DOCKER_OCI_REGISTRY_PROJECT := ${ORGANIZATION}
+HELM_OCI_REGISTRY := ${DOCKER_OCI_REGISTRY}
+HELM_OCI_REGISTRY_PROJECT := ${DOCKER_OCI_REGISTRY_PROJECT}
 # this will be overwritten by an environmental variable if called from the github action
 HELM_REPO := https://repo.stackable.tech/repository/helm-dev
-HELM_CHART_ARTIFACT := target/helm/${OPERATOR_NAME}-${VERSION}.tgz
+HELM_CHART_NAME := ${OPERATOR_NAME}
+HELM_CHART_ARTIFACT := target/helm/${HELM_CHART_NAME}-${VERSION}.tgz
 
 SHELL=/usr/bin/env bash -euo pipefail
 
@@ -26,11 +31,17 @@ render-readme:
 
 ## Docker related targets
 docker-build:
-	docker build --force-rm --build-arg VERSION=${VERSION} -t "${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}" -f docker/Dockerfile .
+	docker build --force-rm --build-arg VERSION=${VERSION} -t "${DOCKER_OCI_REGISTRY}/${DOCKER_OCI_REGISTRY_PROJECT}/${OPERATOR_NAME}:${VERSION}" -f docker/Dockerfile .
 
 docker-publish:
-	echo "${NEXUS_PASSWORD}" | docker login --username github --password-stdin "${DOCKER_REPO}"
-	docker push --all-tags "${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}"
+	echo "${HARBOR_RELEASE_PUSH_PASSWORD}" | docker login --username "${HARBOR_RELEASE_PUSH_USERNAME}" --password-stdin "${DOCKER_OCI_REGISTRY}"
+	docker push --all-tags "${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}"
+	REPO_ARTIFACT_BY_DIGEST=$$(docker inspect --format='{{range .RepoDigests}}{{ . }}{{end}}' "${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}" | grep -E "^${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}@sha256:[0-9a-f]{64}\$$" | head -n1);\
+	if [ -z "$$REPO_ARTIFACT_BY_DIGEST" ]; then\
+		echo "Could not find repo digest for container image: ${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}";\
+		exit 1;\
+	fi;\
+	cosign sign -y --key env://COSIGN_PRIVATE_KEY $$REPO_ARTIFACT_BY_DIGEST
 
 # TODO remove if not used/needed
 docker: docker-build docker-publish
@@ -39,7 +50,13 @@ print-docker-tag:
 	@echo "${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}"
 
 helm-publish:
-	curl --fail -u "github:${NEXUS_PASSWORD}" --upload-file "${HELM_CHART_ARTIFACT}" "${HELM_REPO}/"
+	echo "${HARBOR_RELEASE_PUSH_PASSWORD}" | helm registry login -u "${HARBOR_RELEASE_PUSH_USERNAME}" --password-stdin "https://${HELM_OCI_REGISTRY}"
+	REPO_DIGEST=$$(helm push ${HELM_CHART_ARTIFACT} oci://${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT} 2>&1 | awk '/^Digest: sha256:[0-9a-f]{64}$$/ { print $$2 }');\
+	if [ -z "$REPO_DIGEST" ]; then\
+		echo "Could not find repo digest for helm chart: ${HELM_CHART_NAME}";\
+		exit 1;\
+	fi;\
+	cosign sign -y --key env://COSIGN_PRIVATE_KEY ${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT}/${HELM_CHART_NAME}:@$$REPO_DIGEST
 
 helm-package:
 	mkdir -p target/helm && helm package --destination target/helm deploy/helm/${OPERATOR_NAME}
