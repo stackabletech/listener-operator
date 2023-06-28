@@ -43,7 +43,8 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-resources: {}
+controller:
+  resources: {}
   # We apply a set of default resource limits if nothing is configured here.
   # This is because in clusters with configured ResourceLimits containers without
   # Resources defined cannot be deployed.
@@ -58,7 +59,8 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-daemonsetResources: {}
+node:
+  resources: {}
   # We apply a set of default resource limits if nothing is configured here.
   # This is because in clusters with configured ResourceLimits containers without
   # Resources defined cannot be deployed.
