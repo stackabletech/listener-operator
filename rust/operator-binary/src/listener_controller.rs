@@ -9,8 +9,8 @@ use stackable_operator::{
     },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
-        api::{DynamicObject, ListParams, ObjectMeta},
-        runtime::{controller, reflector::ObjectRef},
+        api::{DynamicObject, ObjectMeta},
+        runtime::{controller, reflector::ObjectRef, watcher},
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
 };
@@ -24,13 +24,13 @@ const FIELD_MANAGER_SCOPE: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
     let controller =
-        controller::Controller::new(client.get_all_api::<Listener>(), ListParams::default());
+        controller::Controller::new(client.get_all_api::<Listener>(), watcher::Config::default());
     let listener_store = controller.store();
     controller
-        .owns(client.get_all_api::<Service>(), ListParams::default())
+        .owns(client.get_all_api::<Service>(), watcher::Config::default())
         .watches(
             client.get_all_api::<Endpoints>(),
-            ListParams::default(),
+            watcher::Config::default(),
             move |endpoints| {
                 listener_store
                     .state()
