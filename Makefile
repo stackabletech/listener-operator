@@ -41,7 +41,7 @@ docker-publish:
 		echo "Could not find repo digest for container image: ${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}";\
 		exit 1;\
 	fi;\
-	cosign sign -y --key env://COSIGN_PRIVATE_KEY $$REPO_ARTIFACT_BY_DIGEST
+	cosign sign -y $$REPO_ARTIFACT_BY_DIGEST
 
 # TODO remove if not used/needed
 docker: docker-build docker-publish
@@ -56,7 +56,7 @@ helm-publish:
 		echo "Could not find repo digest for helm chart: ${HELM_CHART_NAME}";\
 		exit 1;\
 	fi;\
-	cosign sign -y --key env://COSIGN_PRIVATE_KEY ${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT}/${HELM_CHART_NAME}:@$$REPO_DIGEST
+	cosign sign -y ${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT}/${HELM_CHART_NAME}:@$$REPO_DIGEST
 
 helm-package:
 	mkdir -p target/helm && helm package --destination target/helm deploy/helm/${OPERATOR_NAME}

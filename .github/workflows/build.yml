@@ -283,6 +283,8 @@ jobs:
       - tests_passed
       - select_helm_repo
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     env:
       NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
       HELM_REPO: ${{ needs.select_helm_repo.outputs.helm_repository }}
