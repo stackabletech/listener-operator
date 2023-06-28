@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- [BREAKING] Introduced new variable `daemonsetResources` in helm chart. Until now the Daemonset used the `resources` Paramater, users who have configured specific resource limits will need to configure this new parameter for the values to stay effective for both the Daemonset and Deployment ([#288]).
+
+[#288]: https://github.com/stackabletech/listener-operator/pull/288
+
 ## [23.4.0] - 2023-04-17
 
 ### Added
