@@ -43,15 +43,14 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-controller:
-  # Resource limits that are applied to the controller pod deployed by this helm chart
-  resources:
-    limits:
-      cpu: 100m
-      memory: 128Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
+resources:
+# Resource limits that are applied to the controller pod deployed by this helm chart
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 node:
   resources:
