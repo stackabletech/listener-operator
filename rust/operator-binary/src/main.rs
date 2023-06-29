@@ -59,6 +59,9 @@ mod built_info {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    if std::env::var("FOOBARBAZ").is_ok() {
+        println!("foo");
+    }
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
