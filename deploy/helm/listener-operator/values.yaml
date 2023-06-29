@@ -43,35 +43,25 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-resources: {}
-  # We apply a set of default resource limits if nothing is configured here.
-  # This is because in clusters with configured ResourceLimits containers without
-  # Resources defined cannot be deployed.
-  # The default values are the ones shown below, to overwrite these defaults uncomment
-  # the lines below and change as needed.
-  #
-  # This parameter applies to the controller pod the listener operator deploys.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+controller:
+  # Resource limits that are applied to the controller pod deployed by this helm chart
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
-daemonsetResources: {}
-  # We apply a set of default resource limits if nothing is configured here.
-  # This is because in clusters with configured ResourceLimits containers without
-  # Resources defined cannot be deployed.
-  # The default values are the ones shown below, to overwrite these defaults uncomment
-  # the lines below and change as needed.
-  #
-  # This parameter applies to the Daemonset the listener operator deploys.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+node:
+  resources:
+    # Resource limits that are applied to the daemonset deployed by this helm chart
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
 nodeSelector: {}
 
