@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
 
 [#74]: https://github.com/stackabletech/listener-operator/pull/74
 [#80]: https://github.com/stackabletech/listener-operator/pull/80
-[#288]: https://github.com/stackabletech/listener-operator/pull/85
+[#85]: https://github.com/stackabletech/listener-operator/pull/85
 
 ## [23.4.0] - 2023-04-17
 

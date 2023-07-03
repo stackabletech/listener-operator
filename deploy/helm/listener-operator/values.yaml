@@ -44,7 +44,7 @@ securityContext:
   # runAsUser: 1000
 
 resources:
-# Resource limits that are applied to the controller pod deployed by this helm chart
+  # Resource limits that are applied to the controller pod deployed by this helm chart
   limits:
     cpu: 100m
     memory: 128Mi
