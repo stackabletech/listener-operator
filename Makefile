@@ -15,10 +15,9 @@ VERSION := $(shell cargo metadata --format-version 1 | jq -r '.packages[] | sele
 
 ORGANIZATION := stackable
 DOCKER_REPO := docker.stackable.tech
-DOCKER_OCI_REGISTRY := broadminded-goldstine.container-registry.com
-DOCKER_OCI_REGISTRY_PROJECT := ${ORGANIZATION}
-HELM_OCI_REGISTRY := ${DOCKER_OCI_REGISTRY}
-HELM_OCI_REGISTRY_PROJECT := ${DOCKER_OCI_REGISTRY_PROJECT}
+OCI_REGISTRY_HOSTNAME := broadminded-goldstine.container-registry.com
+OCI_REGISTRY_PROJECT_IMAGES := ${ORGANIZATION}
+OCI_REGISTRY_PROJECT_CHARTS := ${OCI_REGISTRY_PROJECT_IMAGES}
 # this will be overwritten by an environmental variable if called from the github action
 HELM_REPO := https://repo.stackable.tech/repository/helm-dev
 HELM_CHART_NAME := ${OPERATOR_NAME}
@@ -31,14 +30,15 @@ render-readme:
 
 ## Docker related targets
 docker-build:
-	docker build --force-rm --build-arg VERSION=${VERSION} -t "${DOCKER_OCI_REGISTRY}/${DOCKER_OCI_REGISTRY_PROJECT}/${OPERATOR_NAME}:${VERSION}" -f docker/Dockerfile .
+	docker build --force-rm --build-arg VERSION=${VERSION} -t '${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_IMAGES}/${OPERATOR_NAME}:${VERSION}' -f docker/Dockerfile .
 
 docker-publish:
-	echo "${HARBOR_RELEASE_PUSH_PASSWORD}" | docker login --username "${HARBOR_RELEASE_PUSH_USERNAME}" --password-stdin "${DOCKER_OCI_REGISTRY}"
-	docker push --all-tags "${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}"
-	REPO_ARTIFACT_BY_DIGEST=$$(docker inspect --format='{{range .RepoDigests}}{{ . }}{{end}}' "${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}" | grep -E "^${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}@sha256:[0-9a-f]{64}\$$" | head -n1);\
+	# we need to use "value" here to prevent the variable from being recursively expanded by make (username contains a dollar sign)
+	docker login --username '${value OCI_REGISTRY_USERNAME}' --password '${OCI_REGISTRY_PASSWORD}' '${OCI_REGISTRY_HOSTNAME}'
+	docker push --all-tags '${OCI_REGISTRY_HOSTNAME}/${ORGANIZATION}/${OPERATOR_NAME}'
+	REPO_ARTIFACT_BY_DIGEST=$$(docker inspect --format='{{range .RepoDigests}}{{ . }}{{end}}' '${OCI_REGISTRY_HOSTNAME}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}' | grep -E '^${OCI_REGISTRY_HOSTNAME}/${ORGANIZATION}/${OPERATOR_NAME}@sha256:[0-9a-f]{64}$$' | head -n1);\
 	if [ -z "$$REPO_ARTIFACT_BY_DIGEST" ]; then\
-		echo "Could not find repo digest for container image: ${DOCKER_OCI_REGISTRY}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}";\
+		echo 'Could not find repo digest for container image: ${OCI_REGISTRY_HOSTNAME}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}';\
 		exit 1;\
 	fi;\
 	cosign sign -y $$REPO_ARTIFACT_BY_DIGEST
@@ -47,16 +47,17 @@ docker-publish:
 docker: docker-build docker-publish
 
 print-docker-tag:
-	@echo "${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}"
+	@echo '${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}'
 
 helm-publish:
-	echo "${HARBOR_RELEASE_PUSH_PASSWORD}" | helm registry login -u "${HARBOR_RELEASE_PUSH_USERNAME}" --password-stdin "https://${HELM_OCI_REGISTRY}"
-	REPO_DIGEST=$$(helm push ${HELM_CHART_ARTIFACT} oci://${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT} 2>&1 | awk '/^Digest: sha256:[0-9a-f]{64}$$/ { print $$2 }');\
-	if [ -z "$REPO_DIGEST" ]; then\
-		echo "Could not find repo digest for helm chart: ${HELM_CHART_NAME}";\
+	# we need to use "value" here to prevent the variable from being recursively expanded by make (username contains a dollar sign)
+	helm registry login --username '${value OCI_REGISTRY_USERNAME}' --password '${OCI_REGISTRY_PASSWORD}' '${OCI_REGISTRY_HOSTNAME}'
+	REPO_ARTIFACT_BY_DIGEST=$$(helm push ${HELM_CHART_ARTIFACT} oci://${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_CHARTS} 2>&1 | awk '/^Digest: sha256:[0-9a-f]{64}$$/ { print $$2 }');\
+	if [ -z "$$REPO_ARTIFACT_BY_DIGEST" ]; then\
+		echo 'Could not find repo digest for helm chart: ${HELM_CHART_NAME}';\
 		exit 1;\
 	fi;\
-	cosign sign -y ${HELM_OCI_REGISTRY}/${HELM_OCI_REGISTRY_PROJECT}/${HELM_CHART_NAME}:@$$REPO_DIGEST
+	cosign sign -y ${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_CHARTS}/${HELM_CHART_NAME}:@$$REPO_ARTIFACT_BY_DIGEST
 
 helm-package:
 	mkdir -p target/helm && helm package --destination target/helm deploy/helm/${OPERATOR_NAME}
