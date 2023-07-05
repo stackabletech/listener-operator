@@ -3,3 +3,5 @@ dimensions: []
 tests:
   - name: smoke-nodeport
     dimensions: []
+suites:
+  - name: nightly
