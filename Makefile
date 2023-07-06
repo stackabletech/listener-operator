@@ -14,7 +14,6 @@ OPERATOR_NAME := listener-operator
 VERSION := $(shell cargo metadata --format-version 1 | jq -r '.packages[] | select(.name=="stackable-${OPERATOR_NAME}") | .version')
 
 ORGANIZATION := stackable
-DOCKER_REPO := docker.stackable.tech
 OCI_REGISTRY_HOSTNAME := broadminded-goldstine.container-registry.com
 OCI_REGISTRY_PROJECT_IMAGES := ${ORGANIZATION}
 OCI_REGISTRY_PROJECT_CHARTS := ${OCI_REGISTRY_PROJECT_IMAGES}
@@ -47,9 +46,10 @@ docker-publish:
 docker: docker-build docker-publish
 
 print-docker-tag:
-	@echo '${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}'
+	@echo '${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_IMAGES}/${OPERATOR_NAME}:${VERSION}'
 
 helm-publish:
+	curl --fail -u "github:${NEXUS_PASSWORD}" --upload-file "${HELM_CHART_ARTIFACT}" "${HELM_REPO}/"
 	# we need to use "value" here to prevent the variable from being recursively expanded by make (username contains a dollar sign)
 	helm registry login --username '${value OCI_REGISTRY_USERNAME}' --password '${OCI_REGISTRY_PASSWORD}' '${OCI_REGISTRY_HOSTNAME}'
 	REPO_ARTIFACT_BY_DIGEST=$$(helm push ${HELM_CHART_ARTIFACT} oci://${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_CHARTS} 2>&1 | awk '/^Digest: sha256:[0-9a-f]{64}$$/ { print $$2 }');\
@@ -88,7 +88,7 @@ chart-lint: compile-chart
 
 clean: chart-clean
 	cargo clean
-	docker rmi --force "${DOCKER_REPO}/${ORGANIZATION}/${OPERATOR_NAME}:${VERSION}"
+	docker rmi --force '${OCI_REGISTRY_HOSTNAME}/${OCI_REGISTRY_PROJECT_IMAGES}/${OPERATOR_NAME}:${VERSION}'
 
 regenerate-charts: chart-clean compile-chart
 
