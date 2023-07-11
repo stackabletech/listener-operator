@@ -75,7 +75,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            {{ .Values.node.resources | toYaml | nindent 12 }}
+            {{ .Values.node.driver.resources | toYaml | nindent 12 }}
           command:
             - /bin/bash
             - -euo
