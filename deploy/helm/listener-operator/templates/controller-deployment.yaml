@@ -34,7 +34,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            {{ .Values.resources | toYaml | nindent 12 }}
+            {{ .Values.controller.resources | toYaml | nindent 12 }}
           args:
             - run
             - controller
@@ -48,7 +48,7 @@ spec:
           image: "{{ .Values.csiProvisioner.image.repository }}:{{ .Values.csiProvisioner.image.tag }}"
           imagePullPolicy: {{ .Values.csiProvisioner.image.pullPolicy }}
           resources:
-            {{ .Values.resources | toYaml | nindent 12 }}
+            {{ .Values.csiProvisioner.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
             - --feature-gates=Topology=true
