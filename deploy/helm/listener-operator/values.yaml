@@ -8,11 +8,25 @@ csiProvisioner:
     repository: docker.stackable.tech/k8s/sig-storage/csi-provisioner
     tag: v3.1.0
     pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 csiNodeDriverRegistrar:
   image:
     repository: docker.stackable.tech/k8s/sig-storage/csi-node-driver-registrar
     tag: v2.5.0
     pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
 imagePullSecrets: []
 nameOverride: ""
@@ -43,8 +57,9 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-resources:
-  # Resource limits that are applied to the controller pod deployed by this helm chart
+controller:
+  resources:
+  # Resource requests and limits for the per controller pod
   limits:
     cpu: 100m
     memory: 128Mi
@@ -53,14 +68,16 @@ resources:
     memory: 128Mi
 
 node:
-  resources:
-    # Resource limits that are applied to the daemonset deployed by this helm chart
+  driver:
+    resources:
+    # Resource requests and limits for the per node driver container
     limits:
       cpu: 100m
       memory: 128Mi
     requests:
       cpu: 100m
       memory: 128Mi
+
 
 nodeSelector: {}
 
