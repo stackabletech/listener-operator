@@ -15,9 +15,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - `operator-rs` `0.27.1` -> `0.41.0` ([#80]).
+- Defined resource limits for all Deployments and Daemonsets ([#85]).
 
 [#74]: https://github.com/stackabletech/listener-operator/pull/74
 [#80]: https://github.com/stackabletech/listener-operator/pull/80
+[#85]: https://github.com/stackabletech/listener-operator/pull/85
 
 ## [23.4.0] - 2023-04-17
 

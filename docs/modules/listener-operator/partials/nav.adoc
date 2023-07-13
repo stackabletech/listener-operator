@@ -5,4 +5,4 @@
 ** xref:listener-operator:listener.adoc[]
 ** xref:listener-operator:listenerclass.adoc[]
 ** xref:listener-operator:volume.adoc[]
-* xref:secret-operator:security.adoc[]
+* xref:listener-operator:security.adoc[]
