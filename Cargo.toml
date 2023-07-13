@@ -6,5 +6,5 @@ members = ["rust/operator-binary", "rust/csi-grpc"]
 h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds" }
 
 [patch."https://github.com/stackabletech/operator-rs.git"]
-# stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "feature/listener-implied-labels" }
+# stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "feat/listener-service-clusterip-mode" }
 # stackable-operator = { path = "../operator-rs" }

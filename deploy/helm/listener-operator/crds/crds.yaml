@@ -35,6 +35,7 @@ spec:
                   enum:
                     - NodePort
                     - LoadBalancer
+                    - ClusterIP
                   type: string
               required:
                 - serviceType

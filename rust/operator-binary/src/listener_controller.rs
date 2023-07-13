@@ -167,9 +167,14 @@ pub async fn reconcile(
             type_: Some(match listener_class.spec.service_type {
                 ServiceType::NodePort => "NodePort".to_string(),
                 ServiceType::LoadBalancer => "LoadBalancer".to_string(),
+                ServiceType::ClusterIP => "ClusterIP".to_string(),
             }),
             ports: Some(pod_ports.into_values().collect()),
-            external_traffic_policy: Some("Local".to_string()),
+            // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
+            external_traffic_policy: match listener_class.spec.service_type {
+                ServiceType::NodePort | ServiceType::LoadBalancer => Some("Local".to_string()),
+                ServiceType::ClusterIP => None,
+            },
             selector: Some(pod_selector),
             publish_not_ready_addresses: Some(
                 listener
@@ -240,6 +245,21 @@ pub async fn reconcile(
                 .flatten()
                 .flat_map(|ingress| ingress.hostname.clone().or_else(|| ingress.ip.clone()))
                 .collect();
+            ports = svc
+                .spec
+                .as_ref()
+                .and_then(|s| s.ports.as_ref())
+                .into_iter()
+                .flatten()
+                .filter_map(|port| Some((port.name.clone()?, port.port)))
+                .collect();
+        }
+        ServiceType::ClusterIP => {
+            addresses = svc
+                .spec
+                .as_ref()
+                .and_then(|s| s.cluster_ips.clone())
+                .unwrap_or_default();
             ports = svc
                 .spec
                 .as_ref()

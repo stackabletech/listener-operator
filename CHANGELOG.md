@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 
 - Generate OLM bundle for Release 23.4.0 ([#74]).
 - Provide automatic migration 23.1 -> 23.4 ([#77]).
+- Support ClusterIP service type ([#83])
+
+[#83]: https://github.com/stackabletech/listener-operator/pull/83
 
 ### Changed
 
