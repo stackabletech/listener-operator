@@ -4,19 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `operator-rs` `0.44.0` -> `0.45.1` ([#97]).
+
+[#97] https://github.com/stackabletech/listener-operator/pull/97
+
 ## [23.7.0] - 2023-07-14
 
 ### Added
 
 - Generate OLM bundle for Release 23.4.0 ([#74]).
 - Provide automatic migration 23.1 -> 23.4 ([#77]).
-- Support ClusterIP service type ([#83])
+- Support ClusterIP service type ([#83]).
 
 [#83]: https://github.com/stackabletech/listener-operator/pull/83
 
 ### Changed
 
-- `operator-rs` `0.27.1` -> `0.41.0` ([#80]).
+- `operator-rs` `0.27.1` -> `0.44.0` ([#80], [#83]).
 - Defined resource limits for all Deployments and Daemonsets ([#85]).
 
 [#74]: https://github.com/stackabletech/listener-operator/pull/74
