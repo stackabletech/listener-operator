@@ -194,7 +194,8 @@ pub async fn reconcile(
             svc: ObjectRef::from_obj(&svc),
         })?;
 
-    let addresses: Vec<String>;
+    let nodes: Vec<Node>;
+    let addresses: Vec<(Option<&Node>, String)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
@@ -215,7 +216,7 @@ pub async fn reconcile(
                 .flatten()
                 .flat_map(|addr| addr.node_name)
                 .collect::<Vec<_>>();
-            let nodes = try_join_all(node_names.iter().map(|node_name| async {
+            nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
                     .get::<Node>(node_name, &())
                     .await
@@ -225,9 +226,11 @@ pub async fn reconcile(
             }))
             .await?;
             addresses = nodes
-                .into_iter()
-                .flat_map(|node| node_primary_address(&node).map(str::to_string))
-                .collect();
+                .iter()
+                .flat_map(|node| {
+                    node_primary_address(node).map(|addr| (Some(node), addr.to_string()))
+                })
+                .collect::<Vec<_>>();
             ports = svc
                 .spec
                 .as_ref()
@@ -244,6 +247,7 @@ pub async fn reconcile(
                 .flat_map(|ss| ss.load_balancer.as_ref()?.ingress.as_ref())
                 .flatten()
                 .flat_map(|ingress| ingress.hostname.clone().or_else(|| ingress.ip.clone()))
+                .map(|addr| (None, addr))
                 .collect();
             ports = svc
                 .spec
@@ -258,8 +262,11 @@ pub async fn reconcile(
             addresses = svc
                 .spec
                 .as_ref()
-                .and_then(|s| s.cluster_ips.clone())
-                .unwrap_or_default();
+                .into_iter()
+                .flat_map(|s| &s.cluster_ips)
+                .flatten()
+                .map(|addr| (None, addr.clone()))
+                .collect::<Vec<_>>();
             ports = svc
                 .spec
                 .as_ref()
@@ -286,7 +293,8 @@ pub async fn reconcile(
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|addr| ListenerIngress {
+                .map(|(nodes, addr)| ListenerIngress {
+                    // nodes: nodes.map(|node| vec![node.metadata.name.clone().unwrap()]),
                     address: addr,
                     ports: ports.clone(),
                 })

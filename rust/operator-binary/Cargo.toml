@@ -26,7 +26,7 @@ tonic-reflection = "0.4.0"
 anyhow = "1.0.57"
 serde = "=1.0.171" # https://github.com/serde-rs/serde/issues/2538
 snafu = "0.7.4"
-strum = "0.24.1"
+strum = { version = "0.24.1", features = ["derive"] }
 csi-grpc = { path = "../csi-grpc" }
 
 [build-dependencies]

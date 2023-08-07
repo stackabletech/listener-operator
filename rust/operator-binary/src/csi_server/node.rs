@@ -246,46 +246,8 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 pod: ObjectRef::from_obj(&pod),
             })?;
 
-        // Prefer calculating a per-node address where possible, to ensure that the address at least tries to
-        // connect to the pod in question.
-        // We also can't rely on `ingress_addresses` being set yet, since the pod won't have an IP address yet
-        // (and so can't be found in `Endpoints`)
-        let listener_addrs = if let Some(node_ports) = listener
-            .status
-            .as_ref()
-            .and_then(|status| status.node_ports.clone())
-        {
-            let node_name = pod
-                .spec
-                .as_ref()
-                .and_then(|s| s.node_name.as_deref())
-                .with_context(|| PodHasNoNodeSnafu {
-                    pod: ObjectRef::from_obj(&pod),
-                })?;
-            let node = self
-                .client
-                .get::<Node>(node_name, &())
-                .await
-                .with_context(|_| GetObjectSnafu {
-                    obj: { ObjectRef::<Node>::new(node_name).erase() },
-                })?;
-
-            node_primary_address(&node)
-                .map(|address| ListenerIngress {
-                    address: address.to_string(),
-                    ports: node_ports,
-                })
-                .into_iter()
-                .collect()
-        } else {
-            listener
-                .status
-                .as_ref()
-                .and_then(|s| s.ingress_addresses.as_ref())
-                .cloned()
-                .unwrap_or_default()
-        };
-
+        let listener_addrs =
+            local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
         let target_path = PathBuf::from(request.target_path);
         pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
             .await
@@ -336,6 +298,57 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         _request: Request<csi::v1::NodeExpandVolumeRequest>,
     ) -> Result<Response<csi::v1::NodeExpandVolumeResponse>, Status> {
         tonic_unimplemented()
+    }
+}
+
+/// Get a list of as-local-as-possible listener addresses for a given pod.
+///
+/// We prefer calculating a per-node address, to ensure that the address at least tries to
+/// connect to the pod in question.
+///
+/// CSI providers also can't rely on `ingress_addresses` being set yet, since the pod won't have an IP address yet
+/// (and so can't be found in `Endpoints`).
+async fn local_listener_addresses_for_pod(
+    client: &stackable_operator::client::Client,
+    listener: &Listener,
+    pod: &Pod,
+) -> Result<Vec<ListenerIngress>, PublishVolumeError> {
+    use publish_volume_error::*;
+
+    if let Some(node_ports) = listener
+        .status
+        .as_ref()
+        .and_then(|status| status.node_ports.clone())
+    {
+        let node_name = pod
+            .spec
+            .as_ref()
+            .and_then(|s| s.node_name.as_deref())
+            .with_context(|| PodHasNoNodeSnafu {
+                pod: ObjectRef::from_obj(pod),
+            })?;
+        let node = client
+            .get::<Node>(node_name, &())
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: { ObjectRef::<Node>::new(node_name).erase() },
+            })?;
+
+        Ok(node_primary_address(&node)
+            .map(|address| ListenerIngress {
+                // nodes: Some(vec![node_name.to_string()]),
+                address: address.to_string(),
+                ports: node_ports,
+            })
+            .into_iter()
+            .collect())
+    } else {
+        Ok(listener
+            .status
+            .as_ref()
+            .and_then(|s| s.ingress_addresses.as_ref())
+            .cloned()
+            .unwrap_or_default())
     }
 }
 
