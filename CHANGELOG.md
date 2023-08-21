@@ -6,9 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- `operator-rs` `0.44.0` -> `0.45.1` ([#97]).
+- `operator-rs` `0.44.0` -> `0.46.0` ([#97], [#98]).
 
-[#97] https://github.com/stackabletech/listener-operator/pull/97
+[#97]: https://github.com/stackabletech/listener-operator/pull/97
+[#98]: https://github.com/stackabletech/listener-operator/pull/98
 
 ## [23.7.0] - 2023-07-14
 
