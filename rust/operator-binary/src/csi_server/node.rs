@@ -301,6 +301,43 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
     }
 }
 
+#[tonic::async_trait]
+impl csi::listop::v1::listener_node_server::ListenerNode for ListenerOperatorNode {
+    async fn get_local_listener_addresses_for_pod(
+        &self,
+        request: Request<csi::listop::v1::GetLocalListenerAddressesForPodRequest>,
+    ) -> Result<Response<csi::listop::v1::GetLocalListenerAddressesForPodResponse>, Status> {
+        let request = request.into_inner();
+        dbg!(&request);
+        let listener = self
+            .client
+            .get::<Listener>(
+                &format!("{}-{}", request.listener, request.pod),
+                &request.namespace,
+            )
+            .await
+            .unwrap();
+        dbg!(&listener);
+        let pod = self
+            .client
+            .get::<Pod>(&request.pod, &request.namespace)
+            .await
+            .unwrap();
+        dbg!(&pod);
+        let ingresses = local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
+        Ok(Response::new(
+            csi::listop::v1::GetLocalListenerAddressesForPodResponse {
+                ingresses: ingresses
+                    .into_iter()
+                    .map(|ingress| csi::listop::v1::ListenerIngress {
+                        address: ingress.address,
+                    })
+                    .collect(),
+            },
+        ))
+    }
+}
+
 /// Get a list of as-local-as-possible listener addresses for a given pod.
 ///
 /// We prefer calculating a per-node address, to ensure that the address at least tries to

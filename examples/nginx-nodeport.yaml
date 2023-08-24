@@ -23,6 +23,23 @@ spec:
         volumeMounts:
         - name: listener
           mountPath: /usr/share/nginx/html/listener
+        - name: tls
+          mountPath: /tls
+      volumes:
+        - name: tls
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                annotations:
+                  secrets.stackable.tech/class: tls
+                  secrets.stackable.tech/scope: listener=listener
+              spec:
+                storageClassName: secrets.stackable.tech
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: "1"
   volumeClaimTemplates:
   - metadata:
       name: listener

@@ -8,3 +8,9 @@ pub static FILE_DESCRIPTOR_SET_BYTES: &[u8] =
 pub mod v1 {
     tonic::include_proto!("csi.v1");
 }
+
+pub mod listop {
+    pub mod v1 {
+        tonic::include_proto!("listop.v1");
+    }
+}

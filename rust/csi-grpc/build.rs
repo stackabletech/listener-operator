@@ -6,6 +6,6 @@ fn main() {
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR is required"));
     tonic_build::configure()
         .file_descriptor_set_path(out_dir.join("file_descriptor_set.bin"))
-        .compile(&["csi.proto"], &["vendor/csi"])
+        .compile(&["csi.proto", "listop.proto"], &["vendor/csi", "."])
         .unwrap();
 }

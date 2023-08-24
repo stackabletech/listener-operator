@@ -1,8 +1,12 @@
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
 use clap::{crate_description, crate_version, Parser};
-use csi_grpc::v1::{
-    controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
+use csi_grpc::{
+    listop::v1::listener_node_server::ListenerNodeServer,
+    v1::{
+        controller_server::ControllerServer, identity_server::IdentityServer,
+        node_server::NodeServer,
+    },
 };
 use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
@@ -119,6 +123,10 @@ async fn main() -> anyhow::Result<()> {
                 RunMode::Node { node_name } => {
                     csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
+                            client: client.clone(),
+                            node_name: node_name.clone(),
+                        }))
+                        .add_service(ListenerNodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
                             node_name,
                         }))
