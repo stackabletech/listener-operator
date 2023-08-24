@@ -3,7 +3,9 @@ use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    commons::listener::{Listener, ListenerIngress, ListenerPort, ListenerSpec},
+    commons::listener::{
+        Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListeners, PodListenersSpec,
+    },
     k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
     kube::{
         core::{DynamicObject, ObjectMeta},
@@ -141,6 +143,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         use publish_volume_error::*;
 
         let request = request.into_inner();
+        dbg!(&request);
         let ListenerNodeVolumeContext {
             pod_namespace: ns,
             pod_name,
@@ -159,6 +162,10 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                     obj.erase()
                 },
             })?;
+        let pvc_name = pv
+            .spec
+            .as_ref()
+            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.as_deref());
 
         let pod = self
             .client
@@ -184,10 +191,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 let listener = Listener {
                     metadata: ObjectMeta {
                         namespace: Some(ns.clone()),
-                        name: pv
-                            .spec
-                            .as_ref()
-                            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.clone()),
+                        name: pvc_name.map(str::to_string),
                         owner_references: Some(vec![OwnerReferenceBuilder::new()
                             .initialize_from_resource(&pv)
                             .build()
@@ -248,6 +252,44 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 
         let listener_addrs =
             local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
+        let listener_pod_volume = pod
+            .spec
+            .as_ref()
+            .and_then(|ps| {
+                ps.volumes.as_ref()?.iter().find(|volume| {
+                    volume
+                        .persistent_volume_claim
+                        .as_ref()
+                        .map(|c| &*c.claim_name)
+                        == pvc_name
+                        || Some(&*format!("{pod_name}-{}", volume.name)) == pvc_name
+                })
+            })
+            .unwrap();
+        let pod_listeners = PodListeners {
+            metadata: ObjectMeta {
+                name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
+                namespace: pod.metadata.namespace.clone(),
+                owner_references: Some(vec![OwnerReferenceBuilder::new()
+                    .initialize_from_resource(&pod)
+                    .build()
+                    .context(BuildListenerOwnerRefSnafu)?]),
+                ..Default::default()
+            },
+            spec: PodListenersSpec {
+                listeners: [(listener_pod_volume.name.clone(), listener_addrs.clone())].into(),
+            },
+        };
+        // IMPORTANT
+        // Use a merge patch rather than apply to avoid removing other volumes.
+        // Merge doesn't create the object if missing, so try that first.
+        if let Err(create_err) = self.client.create(&pod_listeners).await {
+            self.client
+                .merge_patch(&pod_listeners, &pod_listeners)
+                .await
+                .unwrap();
+        }
+
         let target_path = PathBuf::from(request.target_path);
         pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
             .await

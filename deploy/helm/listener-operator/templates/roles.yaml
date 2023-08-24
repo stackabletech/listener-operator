@@ -71,6 +71,7 @@ rules:
     resources:
       - listeners
       - listeners/status
+      - podlistenerses
     verbs:
       - patch
       - create
