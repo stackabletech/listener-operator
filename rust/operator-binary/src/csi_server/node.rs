@@ -4,7 +4,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
     commons::listener::{
-        Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListeners, PodListenersSpec,
+        Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListener, PodListenerScope,
+        PodListeners, PodListenersSpec,
     },
     k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
     kube::{
@@ -277,7 +278,18 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 ..Default::default()
             },
             spec: PodListenersSpec {
-                listeners: [(listener_pod_volume.name.clone(), listener_addrs.clone())].into(),
+                listeners: [(
+                    listener_pod_volume.name.clone(),
+                    PodListener {
+                        scope: if listener.status.and_then(|s| s.node_ports).is_some() {
+                            PodListenerScope::Node
+                        } else {
+                            PodListenerScope::Cluster
+                        },
+                        ingress_addresses: Some(listener_addrs.clone()),
+                    },
+                )]
+                .into(),
             },
         };
         // IMPORTANT
