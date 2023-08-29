@@ -2,7 +2,7 @@ use std::{os::unix::prelude::AsRawFd, path::Path};
 
 use pin_project::pin_project;
 use socket2::Socket;
-use stackable_operator::k8s_openapi::api::core::v1::Node;
+use stackable_operator::{commons::listener::AddressType, k8s_openapi::api::core::v1::Node};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::{UnixListener, UnixStream},
@@ -102,7 +102,7 @@ pub fn error_full_message(err: &dyn std::error::Error) -> String {
 }
 
 /// Try to guess the primary address of a Node, which it is expected that external clients should be able to reach it on
-pub fn node_primary_address(node: &Node) -> Option<&str> {
+pub fn node_primary_address(node: &Node) -> Option<(&str, AddressType)> {
     let addrs = node
         .status
         .as_ref()
@@ -113,8 +113,14 @@ pub fn node_primary_address(node: &Node) -> Option<&str> {
         .iter()
         .find(|addr| addr.type_ == "ExternalIP")
         .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
-        .or_else(|| addrs.iter().find(|addr| addr.type_ == "Hostname"))
-        .map(|addr| addr.address.as_str())
+        .zip(Some(AddressType::Ip))
+        .or_else(|| {
+            addrs
+                .iter()
+                .find(|addr| addr.type_ == "Hostname")
+                .zip(Some(AddressType::Hostname))
+        })
+        .map(|(addr, ty)| (addr.address.as_str(), ty))
 }
 
 #[cfg(test)]

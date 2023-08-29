@@ -4,8 +4,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
     commons::listener::{
-        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, ListenerStatus,
-        ServiceType,
+        AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
+        ListenerStatus, ServiceType,
     },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
@@ -195,7 +195,7 @@ pub async fn reconcile(
         })?;
 
     let nodes: Vec<Node>;
-    let addresses: Vec<(Option<&Node>, String)>;
+    let addresses: Vec<(Option<&Node>, (&str, AddressType))>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
@@ -227,9 +227,7 @@ pub async fn reconcile(
             .await?;
             addresses = nodes
                 .iter()
-                .flat_map(|node| {
-                    node_primary_address(node).map(|addr| (Some(node), addr.to_string()))
-                })
+                .flat_map(|node| node_primary_address(node).map(|addr| (Some(node), addr)))
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -246,7 +244,13 @@ pub async fn reconcile(
                 .iter()
                 .flat_map(|ss| ss.load_balancer.as_ref()?.ingress.as_ref())
                 .flatten()
-                .flat_map(|ingress| ingress.hostname.clone().or_else(|| ingress.ip.clone()))
+                .flat_map(|ingress| {
+                    ingress
+                        .hostname
+                        .as_deref()
+                        .zip(Some(AddressType::Hostname))
+                        .or_else(|| ingress.ip.as_deref().zip(Some(AddressType::Ip)))
+                })
                 .map(|addr| (None, addr))
                 .collect();
             ports = svc
@@ -261,11 +265,10 @@ pub async fn reconcile(
         ServiceType::ClusterIP => {
             addresses = svc
                 .spec
-                .as_ref()
-                .into_iter()
+                .iter()
                 .flat_map(|s| &s.cluster_ips)
                 .flatten()
-                .map(|addr| (None, addr.clone()))
+                .map(|addr| (None, (&**addr, AddressType::Ip)))
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -293,9 +296,10 @@ pub async fn reconcile(
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|(nodes, addr)| ListenerIngress {
+                .map(|(nodes, (address, address_type))| ListenerIngress {
                     // nodes: nodes.map(|node| vec![node.metadata.name.clone().unwrap()]),
-                    address: addr,
+                    address: address.to_string(),
+                    address_type,
                     ports: ports.clone(),
                 })
                 .collect(),
@@ -303,7 +307,11 @@ pub async fn reconcile(
         node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then_some(ports),
     };
     ctx.client
-        .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)
+        .apply_patch_status(
+            FIELD_MANAGER_SCOPE,
+            &listener_status_meta,
+            dbg!(&listener_status),
+        )
         .await
         .context(ApplyStatusSnafu)?;
 

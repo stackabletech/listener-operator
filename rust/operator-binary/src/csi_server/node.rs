@@ -295,7 +295,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         // IMPORTANT
         // Use a merge patch rather than apply to avoid removing other volumes.
         // Merge doesn't create the object if missing, so try that first.
-        if let Err(create_err) = self.client.create(&pod_listeners).await {
+        if let Err(create_err) = self.client.create(dbg!(&pod_listeners)).await {
             self.client
                 .merge_patch(&pod_listeners, &pod_listeners)
                 .await
@@ -389,9 +389,10 @@ async fn local_listener_addresses_for_pod(
             })?;
 
         Ok(node_primary_address(&node)
-            .map(|address| ListenerIngress {
+            .map(|(address, address_type)| ListenerIngress {
                 // nodes: Some(vec![node_name.to_string()]),
                 address: address.to_string(),
+                address_type,
                 ports: node_ports,
             })
             .into_iter()
