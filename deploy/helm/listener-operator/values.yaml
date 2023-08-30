@@ -49,7 +49,6 @@ podSecurityContext: {}
 securityContext:
   # listener-operator requires root permissions
   runAsUser: 0
-  privileged: true
   # capabilities:
   #   drop:
   #   - ALL

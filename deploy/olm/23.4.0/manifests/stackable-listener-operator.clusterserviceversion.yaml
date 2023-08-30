@@ -196,7 +196,6 @@ spec:
                 containers:
                   - name: listener-operator
                     securityContext:
-                      privileged: true
                       runAsUser: 0
                     image: docker.stackable.tech/stackable/listener-operator:23.4.0
                     imagePullPolicy: IfNotPresent
