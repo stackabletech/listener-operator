@@ -46,9 +46,7 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext:
-  # listener-operator requires root permissions
-  runAsUser: 0
+securityContext: {}
   # capabilities:
   #   drop:
   #   - ALL
