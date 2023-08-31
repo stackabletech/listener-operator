@@ -65,6 +65,7 @@ data:
           containers:
           - name: listener-operator
             securityContext:
+              privileged: true
               runAsUser: 0
             args:
             - run
@@ -83,6 +84,7 @@ data:
             - mountPath: /csi
               name: csi
             - mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
               name: mountpoint
           - name: node-driver-registrar
             args:
