@@ -1,6 +1,12 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-commands:
-  - script: curl $(kubectl -n $NAMESPACE get listener/listener-nginx-0 -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name') | grep nginx-0
-  - script: curl $(kubectl -n $NAMESPACE get listener/listener-nginx-1 -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name') | grep nginx-1
+timeout: 300
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: checks
+status:
+  readyReplicas: 1
+  replicas: 1
