@@ -7,7 +7,7 @@ use stackable_operator::{
         Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListener, PodListenerScope,
         PodListeners, PodListenersSpec,
     },
-    k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
+    k8s_openapi::api::core::v1::{Node, PersistentVolume, PersistentVolumeClaim, Pod, Volume},
     kube::{
         core::{DynamicObject, ObjectMeta},
         runtime::reflector::ObjectRef,
@@ -50,6 +50,8 @@ enum PublishVolumeError {
         source: stackable_operator::error::Error,
         obj: ObjectRef<DynamicObject>,
     },
+    #[snafu(display("PersistentVolume has no corresponding PersistentVolumeClaim"))]
+    UnclaimedPv,
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
     PodHasNoNode { pod: ObjectRef<Pod> },
     #[snafu(display("failed to build Listener's owner reference"))]
@@ -71,6 +73,16 @@ enum PublishVolumeError {
         source: pod_dir::Error,
         target_path: PathBuf,
     },
+    #[snafu(display("failed to write {pod_listeners} (also tried to create: {create_error})"))]
+    WritePodListeners {
+        source: stackable_operator::error::Error,
+        create_error: stackable_operator::error::Error,
+        pod_listeners: ObjectRef<PodListeners>,
+    },
+    #[snafu(display("failed to find Pod volume corresponding for {pvc}"))]
+    FindPodVolumeForPvc {
+        pvc: ObjectRef<PersistentVolumeClaim>,
+    },
 }
 
 impl From<PublishVolumeError> for Status {
@@ -80,11 +92,14 @@ impl From<PublishVolumeError> for Status {
         match err {
             PublishVolumeError::DecodeVolumeContext { .. } => Status::invalid_argument(full_msg),
             PublishVolumeError::GetObject { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::UnclaimedPv => Status::unavailable(full_msg),
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
+            PublishVolumeError::WritePodListeners { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::FindPodVolumeForPvc { .. } => Status::failed_precondition(full_msg),
         }
     }
 }
@@ -144,7 +159,6 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         use publish_volume_error::*;
 
         let request = request.into_inner();
-        dbg!(&request);
         let ListenerNodeVolumeContext {
             pod_namespace: ns,
             pod_name,
@@ -166,7 +180,8 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         let pvc_name = pv
             .spec
             .as_ref()
-            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.as_deref());
+            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.as_deref())
+            .context(UnclaimedPvSnafu)?;
 
         let pod = self
             .client
@@ -192,7 +207,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 let listener = Listener {
                     metadata: ObjectMeta {
                         namespace: Some(ns.clone()),
-                        name: pvc_name.map(str::to_string),
+                        name: Some(pvc_name.to_string()),
                         owner_references: Some(vec![OwnerReferenceBuilder::new()
                             .initialize_from_resource(&pv)
                             .build()
@@ -257,16 +272,22 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             .spec
             .as_ref()
             .and_then(|ps| {
-                ps.volumes.as_ref()?.iter().find(|volume| {
-                    volume
-                        .persistent_volume_claim
-                        .as_ref()
-                        .map(|c| &*c.claim_name)
-                        == pvc_name
-                        || Some(&*format!("{pod_name}-{}", volume.name)) == pvc_name
+                ps.volumes.as_ref()?.iter().find(|volume| match volume {
+                    Volume {
+                        persistent_volume_claim: Some(v),
+                        ..
+                    } => pvc_name == v.claim_name,
+                    Volume {
+                        ephemeral: Some(_),
+                        name: v_name,
+                        ..
+                    } => pvc_name == format!("{pod_name}-{v_name}"),
+                    _ => false,
                 })
             })
-            .unwrap();
+            .with_context(|| FindPodVolumeForPvcSnafu {
+                pvc: ObjectRef::<PersistentVolumeClaim>::new(pvc_name),
+            })?;
         let pod_listeners = PodListeners {
             metadata: ObjectMeta {
                 name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
@@ -295,11 +316,14 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         // IMPORTANT
         // Use a merge patch rather than apply to avoid removing other volumes.
         // Merge doesn't create the object if missing, so try that first.
-        if let Err(create_err) = self.client.create(dbg!(&pod_listeners)).await {
+        if let Err(create_error) = self.client.create(&pod_listeners).await {
             self.client
                 .merge_patch(&pod_listeners, &pod_listeners)
                 .await
-                .unwrap();
+                .context(WritePodListenersSnafu {
+                    create_error,
+                    pod_listeners: ObjectRef::from_obj(&pod_listeners),
+                })?;
         }
 
         let target_path = PathBuf::from(request.target_path);

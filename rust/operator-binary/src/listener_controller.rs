@@ -307,11 +307,7 @@ pub async fn reconcile(
         node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then_some(ports),
     };
     ctx.client
-        .apply_patch_status(
-            FIELD_MANAGER_SCOPE,
-            &listener_status_meta,
-            dbg!(&listener_status),
-        )
+        .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)
         .await
         .context(ApplyStatusSnafu)?;
 
