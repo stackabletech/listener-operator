@@ -49,6 +49,10 @@ podSecurityContext: {}
 securityContext:
   # listener-operator requires root permissions
   runAsUser: 0
+  seLinuxOptions:
+    # Run as "Super Privileged Container" to be allowed to write into
+    # the Listener volumes
+    type: spc_t
   # capabilities:
   #   drop:
   #   - ALL

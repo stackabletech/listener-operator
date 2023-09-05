@@ -1,3 +1,46 @@
+{{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: listener-scc
+  annotations:
+    kubernetes.io/description:
+      listener-scc includes the minimum required privileges to run the listener-operator.
+    release.openshift.io/create-only: "true"
+
+allowHostDirVolumePlugin: true
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+groups: []
+priority: null
+readOnlyRootFilesystem: true
+requiredDropCapabilities:
+  - ALL
+runAsUser:
+  type: MustRunAs
+  uid: 0
+seLinuxContext:
+  # Permit access to the resources in all namespaces
+  type: RunAsAny
+seccompProfiles:
+  - runtime/default
+supplementalGroups:
+  type: RunAsAny
+users: []
+volumes:
+  - emptyDir
+  - hostPath
+  - projected
+{{ end  }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -78,7 +121,7 @@ rules:
   - apiGroups:
     - security.openshift.io
     resourceNames:
-    - hostmount-anyuid
+    - listener-scc
     resources:
     - securitycontextconstraints
     verbs:
