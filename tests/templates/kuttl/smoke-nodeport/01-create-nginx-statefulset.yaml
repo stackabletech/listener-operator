@@ -16,10 +16,10 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.23.1
+          image: nginxinc/nginx-unprivileged:1.25.2
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
           volumeMounts:
             - name: listener
               mountPath: /listener
