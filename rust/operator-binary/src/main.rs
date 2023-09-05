@@ -121,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
                     csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
-                            node_name: node_name.clone(),
+                            node_name,
                         }))
                         .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
                         .await?;
