@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: query-ingresses-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: query-ingresses-role
+rules:
+  - apiGroups:
+      - listeners.stackable.tech
+    resources:
+      - listeners
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: query-ingresses-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: query-ingresses-sa
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: query-ingresses-role
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: query-ingresses
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: query-ingresses-sa
+      containers:
+        - name: query-ingresses
+          image: docker.stackable.tech/stackable/testing-tools:0.2.0-stackable0.0.0-dev
+          command:
+            - sh
+            - -c
+            - |
+              for pod in nginx-0 nginx-1; do \
+                ADDR=$(kubectl get listener/listener-$pod \
+                  -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name' \
+                  -n $NAMESPACE); \
+                echo Requesting $ADDR should return $pod; \
+                curl -s $ADDR | grep $pod; \
+              done
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 200m
+              memory: 128Mi
