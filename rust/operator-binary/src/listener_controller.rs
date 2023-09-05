@@ -195,7 +195,7 @@ pub async fn reconcile(
         })?;
 
     let nodes: Vec<Node>;
-    let addresses: Vec<(Option<&Node>, (&str, AddressType))>;
+    let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
@@ -227,7 +227,7 @@ pub async fn reconcile(
             .await?;
             addresses = nodes
                 .iter()
-                .flat_map(|node| node_primary_address(node).map(|addr| (Some(node), addr)))
+                .flat_map(node_primary_address)
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -251,7 +251,6 @@ pub async fn reconcile(
                         .zip(Some(AddressType::Hostname))
                         .or_else(|| ingress.ip.as_deref().zip(Some(AddressType::Ip)))
                 })
-                .map(|addr| (None, addr))
                 .collect();
             ports = svc
                 .spec
@@ -268,7 +267,7 @@ pub async fn reconcile(
                 .iter()
                 .flat_map(|s| &s.cluster_ips)
                 .flatten()
-                .map(|addr| (None, (&**addr, AddressType::Ip)))
+                .map(|addr| (&**addr, AddressType::Ip))
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -296,8 +295,7 @@ pub async fn reconcile(
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|(nodes, (address, address_type))| ListenerIngress {
-                    // nodes: nodes.map(|node| vec![node.metadata.name.clone().unwrap()]),
+                .map(|(address, address_type)| ListenerIngress {
                     address: address.to_string(),
                     address_type,
                     ports: ports.clone(),
