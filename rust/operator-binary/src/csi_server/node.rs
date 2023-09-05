@@ -268,64 +268,15 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 
         let listener_addrs =
             local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
-        let listener_pod_volume = pod
-            .spec
-            .as_ref()
-            .and_then(|ps| {
-                ps.volumes.as_ref()?.iter().find(|volume| match volume {
-                    Volume {
-                        persistent_volume_claim: Some(v),
-                        ..
-                    } => pvc_name == v.claim_name,
-                    Volume {
-                        ephemeral: Some(_),
-                        name: v_name,
-                        ..
-                    } => pvc_name == format!("{pod_name}-{v_name}"),
-                    _ => false,
-                })
-            })
-            .with_context(|| FindPodVolumeForPvcSnafu {
-                pvc: ObjectRef::<PersistentVolumeClaim>::new(pvc_name),
-            })?;
-        let pod_listeners = PodListeners {
-            metadata: ObjectMeta {
-                name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
-                namespace: pod.metadata.namespace.clone(),
-                owner_references: Some(vec![OwnerReferenceBuilder::new()
-                    .initialize_from_resource(&pod)
-                    .build()
-                    .context(BuildListenerOwnerRefSnafu)?]),
-                ..Default::default()
-            },
-            spec: PodListenersSpec {
-                listeners: [(
-                    listener_pod_volume.name.clone(),
-                    PodListener {
-                        scope: if listener.status.and_then(|s| s.node_ports).is_some() {
-                            PodListenerScope::Node
-                        } else {
-                            PodListenerScope::Cluster
-                        },
-                        ingress_addresses: Some(listener_addrs.clone()),
-                    },
-                )]
-                .into(),
-            },
-        };
-        // IMPORTANT
-        // Use a merge patch rather than apply to avoid removing other volumes.
-        // Merge doesn't create the object if missing, so try that first.
-        if let Err(create_error) = self.client.create(&pod_listeners).await {
-            self.client
-                .merge_patch(&pod_listeners, &pod_listeners)
-                .await
-                .context(WritePodListenersSnafu {
-                    create_error,
-                    pod_listeners: ObjectRef::from_obj(&pod_listeners),
-                })?;
-        }
-
+        publish_pod_listener(
+            &self.client,
+            &pod,
+            &pod_name,
+            pvc_name,
+            &listener,
+            &listener_addrs,
+        )
+        .await?;
         let target_path = PathBuf::from(request.target_path);
         pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
             .await
@@ -429,6 +380,81 @@ async fn local_listener_addresses_for_pod(
             .cloned()
             .unwrap_or_default())
     }
+}
+
+/// Publish listener into a [`PodListeners`] Kubernetes object.
+async fn publish_pod_listener(
+    client: &stackable_operator::client::Client,
+    pod: &Pod,
+    pod_name: &str,
+    pvc_name: &str,
+    listener: &Listener,
+    listener_addresses: &[ListenerIngress],
+) -> Result<(), PublishVolumeError> {
+    use publish_volume_error::*;
+    let listener_pod_volume = pod
+        .spec
+        .as_ref()
+        .and_then(|ps| {
+            ps.volumes.as_ref()?.iter().find(|volume| match volume {
+                Volume {
+                    persistent_volume_claim: Some(v),
+                    ..
+                } => pvc_name == v.claim_name,
+                Volume {
+                    ephemeral: Some(_),
+                    name: v_name,
+                    ..
+                } => pvc_name == format!("{pod_name}-{v_name}"),
+                _ => false,
+            })
+        })
+        .with_context(|| FindPodVolumeForPvcSnafu {
+            pvc: ObjectRef::<PersistentVolumeClaim>::new(pvc_name),
+        })?;
+    let pod_listeners = PodListeners {
+        metadata: ObjectMeta {
+            name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
+            namespace: pod.metadata.namespace.clone(),
+            owner_references: Some(vec![OwnerReferenceBuilder::new()
+                .initialize_from_resource(pod)
+                .build()
+                .context(BuildListenerOwnerRefSnafu)?]),
+            ..Default::default()
+        },
+        spec: PodListenersSpec {
+            listeners: [(
+                listener_pod_volume.name.clone(),
+                PodListener {
+                    scope: if listener
+                        .status
+                        .as_ref()
+                        .and_then(|s| s.node_ports.as_ref())
+                        .is_some()
+                    {
+                        PodListenerScope::Node
+                    } else {
+                        PodListenerScope::Cluster
+                    },
+                    ingress_addresses: Some(listener_addresses.to_vec()),
+                },
+            )]
+            .into(),
+        },
+    };
+    // IMPORTANT
+    // Use a merge patch rather than apply to avoid removing other volumes.
+    // Merge doesn't create the object if missing, so try that first.
+    if let Err(create_error) = client.create(&pod_listeners).await {
+        client
+            .merge_patch(&pod_listeners, &pod_listeners)
+            .await
+            .context(WritePodListenersSnafu {
+                create_error,
+                pod_listeners: ObjectRef::from_obj(&pod_listeners),
+            })?;
+    }
+    Ok(())
 }
 
 mod pod_dir {
