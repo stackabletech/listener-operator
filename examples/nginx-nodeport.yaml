@@ -28,33 +28,33 @@ spec:
         - name: listener2
           mountPath: /usr/share/nginx/html/listener2
       volumes:
-        - name: tls
-          ephemeral:
-            volumeClaimTemplate:
-              metadata:
-                annotations:
-                  secrets.stackable.tech/class: tls
-                  secrets.stackable.tech/scope: listener=listener,listener=listener2
-              spec:
-                storageClassName: secrets.stackable.tech
-                accessModes:
-                  - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: "1"
-        - name: listener2
-          ephemeral:
-            volumeClaimTemplate:
-              metadata:
-                annotations:
-                  listeners.stackable.tech/listener-class: nodeport
-              spec:
-                accessModes:
-                - ReadWriteMany
-                storageClassName: listeners.stackable.tech
-                resources:
-                  requests:
-                    storage: 1
+      - name: tls
+        ephemeral:
+          volumeClaimTemplate:
+            metadata:
+              annotations:
+                secrets.stackable.tech/class: tls-manual
+                secrets.stackable.tech/scope: listener=listener,listener=listener2
+            spec:
+              storageClassName: secrets.stackable.tech
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: "1"
+      - name: listener2
+        ephemeral:
+          volumeClaimTemplate:
+            metadata:
+              annotations:
+                listeners.stackable.tech/listener-class: nodeport
+            spec:
+              accessModes:
+              - ReadWriteMany
+              storageClassName: listeners.stackable.tech
+              resources:
+                requests:
+                  storage: 1
   volumeClaimTemplates:
   - metadata:
       name: listener
