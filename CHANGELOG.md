@@ -4,12 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Write `PodListeners` objects for mounted listener volumes ([#100]).
+
 ### Changed
 
 - `operator-rs` `0.44.0` -> `0.46.0` ([#97], [#98]).
 
 [#97]: https://github.com/stackabletech/listener-operator/pull/97
 [#98]: https://github.com/stackabletech/listener-operator/pull/98
+[#100]: https://github.com/stackabletech/listener-operator/pull/100
 
 ## [23.7.0] - 2023-07-14
 
