@@ -7,7 +7,6 @@ metadata:
   annotations:
     kubernetes.io/description:
       listener-scc includes the minimum required privileges to run the listener-operator.
-    release.openshift.io/create-only: "true"
 
 allowHostDirVolumePlugin: true
 allowHostIPC: false
