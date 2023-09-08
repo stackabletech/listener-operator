@@ -51,7 +51,6 @@ spec:
               mountPath: /csi
             - name: mountpoint
               mountPath: {{ .Values.kubeletDir }}/pods
-              mountPropagation: Bidirectional
         - name: node-driver-registrar
           image: "{{ .Values.csiNodeDriverRegistrar.image.repository }}:{{ .Values.csiNodeDriverRegistrar.image.tag }}"
           imagePullPolicy: {{ .Values.csiNodeDriverRegistrar.image.pullPolicy }}
