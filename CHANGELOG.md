@@ -10,11 +10,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Remove the requirement for privileged mode ([#101]).
 - `operator-rs` `0.44.0` -> `0.48.0` ([#97], [#98], [#100]).
 
 [#97]: https://github.com/stackabletech/listener-operator/pull/97
 [#98]: https://github.com/stackabletech/listener-operator/pull/98
 [#100]: https://github.com/stackabletech/listener-operator/pull/100
+[#101]: https://github.com/stackabletech/listener-operator/pull/101
 
 ## [23.7.0] - 2023-07-14
 
