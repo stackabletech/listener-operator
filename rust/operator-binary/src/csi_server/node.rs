@@ -68,6 +68,8 @@ enum PublishVolumeError {
         source: stackable_operator::error::Error,
         pod: ObjectRef<Pod>,
     },
+    #[snafu(display("listener has no addresses yet"))]
+    NoAddresses,
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
         source: pod_dir::Error,
@@ -97,6 +99,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::NoAddresses { .. } => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
             PublishVolumeError::WritePodListeners { .. } => Status::unavailable(full_msg),
             PublishVolumeError::FindPodVolumeForPvc { .. } => Status::failed_precondition(full_msg),
@@ -268,6 +271,9 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 
         let listener_addrs =
             local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
+        if listener_addrs.is_empty() {
+            NoAddressesSnafu.fail()?
+        }
         publish_pod_listener(
             &self.client,
             &pod,
