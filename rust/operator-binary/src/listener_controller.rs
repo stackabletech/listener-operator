@@ -72,6 +72,10 @@ pub enum Error {
     NoName,
     #[snafu(display("object has no ListenerClass (.spec.class_name)"))]
     NoListenerClass,
+    #[snafu(display("failed to generate listener's pod selector"))]
+    ListenerPodSelector {
+        source: ListenerMountedPodLabelError,
+    },
     #[snafu(display("failed to get {obj}"))]
     GetObject {
         source: stackable_operator::error::Error,
@@ -91,6 +95,7 @@ pub enum Error {
         source: stackable_operator::error::Error,
     },
 }
+type Result<T, E = Error> = std::result::Result<T, E>;
 impl ReconcilerError for Error {
     fn category(&self) -> &'static str {
         self.into()
@@ -101,6 +106,7 @@ impl ReconcilerError for Error {
             Self::NoNs => None,
             Self::NoName => None,
             Self::NoListenerClass => None,
+            Self::ListenerPodSelector { source: _ } => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
             Self::BuildListenerOwnerRef { .. } => None,
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
@@ -109,10 +115,7 @@ impl ReconcilerError for Error {
     }
 }
 
-pub async fn reconcile(
-    listener: Arc<Listener>,
-    ctx: Arc<Ctx>,
-) -> Result<controller::Action, Error> {
+pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<controller::Action> {
     let ns = listener.metadata.namespace.as_deref().context(NoNsSnafu)?;
     let listener_class_name = listener
         .spec
@@ -152,7 +155,7 @@ pub async fn reconcile(
         .collect::<BTreeMap<_, ServicePort>>();
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
-    pod_selector.extend([listener_mounted_pod_label(&listener)]);
+    pod_selector.extend([listener_mounted_pod_label(&listener).context(ListenerPodSelectorSnafu)?]);
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.to_string()),
@@ -306,15 +309,25 @@ pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controll
     controller::Action::requeue(Duration::from_secs(5))
 }
 
+#[derive(Snafu, Debug)]
+#[snafu(module)]
+pub enum ListenerMountedPodLabelError {
+    #[snafu(display("object has no uid"))]
+    NoUid,
+}
+
 /// A label that identifies [`Pod`]s that have mounted `listener`
 ///
 /// Listener-Op's CSI Node driver is responsible for adding this to the relevant [`Pod`]s.
-pub fn listener_mounted_pod_label(listener: &Listener) -> (String, String) {
-    (
+pub fn listener_mounted_pod_label(
+    listener: &Listener,
+) -> Result<(String, String), ListenerMountedPodLabelError> {
+    use listener_mounted_pod_label_error::*;
+    Ok((
         format!(
             "listeners.stackable.tech/mounted-listener.{}",
             listener.metadata.name.as_deref().unwrap_or_default()
         ),
-        "true".to_string(),
-    )
+        listener.metadata.uid.as_ref().context(NoUidSnafu)?.clone(),
+    ))
 }
