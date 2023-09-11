@@ -32,18 +32,18 @@ The service type is defined by `ListenerClass.spec.serviceType`. The following s
 [#servicetype-clusterip]
 === `ClusterIP`
 
-The listener can be accessed from inside of the Kubernetes cluster. The listener addresses will direct clients to the cluster-internal address.
+The Listener can be accessed from inside the Kubernetes cluster. The Listener addresses will direct clients to the cluster-internal address.
 
 [#servicetype-nodeport]
 === `NodePort`
 
-The listener can be accessed from outside the Kubernetes cluster. The listener address will direct clients to connect to a randomĺy assigned port on the nodes running the pods.
+The Listener can be accessed from outside the Kubernetes cluster. This may include the internet, if the Nodes have public IP addresses. The Listener address will direct clients to connect to a randomly assigned port on the Nodes running the Pods.
 
-Additionally, pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific node. If this is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
+Additionally, Pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific Node. If this is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
 
 [#servicetype-loadbalancer]
 === `LoadBalancer`
 
-The listener can be accessed from outside the Kubernetes cluster. A dedicated address will be allocated for the listener, which any clients will be directed to connect to using.
+The Listener can be accessed from outside the Kubernetes cluster. This may include the internet, depending on the configuration of the Kubernetes cloud controller manager. A dedicated address will be allocated for the Listener.
 
-Compared to xref:#servicetype-nodeport[], this service type allows pods to be moved freely between nodes. However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers]. Additionally, many cloud providers charge for load-balanced traffic.
+Compared to xref:#servicetype-nodeport[], this service type allows Pods to be moved freely between Nodes. However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers]. Additionally, many cloud providers charge for load-balanced traffic.
