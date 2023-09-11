@@ -24,3 +24,26 @@ Finally, it can be desirable to add additional annotations to a `Service`. For e
 ----
 include::example$listenerclass-internal-gke.yaml[]
 ----
+
+== Service types
+
+The service type is defined by `ListenerClass.spec.serviceType`. The following service types are currently supported by the Stackable Listener Operator:
+
+[#servicetype-clusterip]
+=== `ClusterIP`
+
+The listener can be accessed from inside of the Kubernetes cluster. The listener addresses will direct clients to the cluster-internal address.
+
+[#servicetype-nodeport]
+=== `NodePort`
+
+The listener can be accessed from outside the Kubernetes cluster. The listener address will direct clients to connect to a randomĺy assigned port on the nodes running the pods.
+
+Additionally, pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific node. If this is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
+
+[#servicetype-loadbalancer]
+=== `LoadBalancer`
+
+The listener can be accessed from outside the Kubernetes cluster. A dedicated address will be allocated for the listener, which any clients will be directed to connect to using.
+
+Compared to xref:#servicetype-nodeport[], this service type allows pods to be moved freely between nodes. However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers]. Additionally, many cloud providers charge for load-balanced traffic.
