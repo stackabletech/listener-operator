@@ -314,6 +314,8 @@ pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controll
 pub enum ListenerMountedPodLabelError {
     #[snafu(display("object has no uid"))]
     NoUid,
+    #[snafu(display("object has no name"))]
+    NoName,
 }
 
 /// A label that identifies [`Pod`]s that have mounted `listener`
@@ -323,11 +325,14 @@ pub fn listener_mounted_pod_label(
     listener: &Listener,
 ) -> Result<(String, String), ListenerMountedPodLabelError> {
     use listener_mounted_pod_label_error::*;
+    let uid = listener.metadata.uid.as_deref().context(NoUidSnafu)?;
+    // Labels names are limited to 63 characters, prefix "listener.stackable.tech/mnt." takes 28 characters,
+    // A UUID is 36 characters (for a total of 64), but by stripping out the meaningless dashes we can squeeze into
+    // 60.
+    // We prefer uid over name because uids have a consistent length.
     Ok((
-        format!(
-            "listeners.stackable.tech/mounted-listener.{}",
-            listener.metadata.name.as_deref().unwrap_or_default()
-        ),
-        listener.metadata.uid.as_ref().context(NoUidSnafu)?.clone(),
+        format!("listener.stackable.tech/mnt.{}", uid.replace('-', "")),
+        // Arbitrary, but (hopefully) helps indicate to users which listener it applies to
+        listener.metadata.name.clone().context(NoNameSnafu)?,
     ))
 }
