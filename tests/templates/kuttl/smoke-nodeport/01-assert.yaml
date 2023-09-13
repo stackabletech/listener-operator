@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: nginx
+  name: nginx-long-name-approaching-k8s-limits
 status:
   readyReplicas: 2
   replicas: 2

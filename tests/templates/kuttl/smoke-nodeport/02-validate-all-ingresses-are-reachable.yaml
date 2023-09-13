@@ -41,10 +41,12 @@ spec:
         - name: query-ingresses
           image: docker.stackable.tech/stackable/testing-tools:0.2.0-stackable0.0.0-dev
           command:
-            - sh
+            - bash
+            - -euo
+            - pipefail
             - -c
             - |
-              for pod in nginx-0 nginx-1; do \
+              for pod in nginx-long-name-approaching-k8s-limits-{0,1}; do \
                 ADDR=$(kubectl get listener/listener-$pod \
                   -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name' \
                   -n $NAMESPACE); \
