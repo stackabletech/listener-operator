@@ -34,7 +34,7 @@ spec:
             metadata:
               annotations:
                 secrets.stackable.tech/class: tls-manual
-                secrets.stackable.tech/scope: listener=listener,listener=listener2
+                secrets.stackable.tech/scope: listener-volume=listener,listener-volume=listener2
             spec:
               storageClassName: secrets.stackable.tech
               accessModes:
