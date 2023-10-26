@@ -33,7 +33,7 @@ spec:
           volumeClaimTemplate:
             metadata:
               annotations:
-                secrets.stackable.tech/class: tls-manual
+                secrets.stackable.tech/class: tls
                 secrets.stackable.tech/scope: listener-volume=listener,listener-volume=listener2
             spec:
               storageClassName: secrets.stackable.tech
@@ -67,25 +67,3 @@ spec:
       resources:
         requests:
           storage: 1
----
-apiVersion: secrets.stackable.tech/v1alpha1
-kind: SecretClass
-metadata:
-  name: tls-manual
-spec:
-  backend:
-    k8sSearch:
-      searchNamespace:
-        pod: {}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: foo
-  labels:
-    secrets.stackable.tech/class: tls-manual
-    secrets.stackable.tech/node: kind-control-plane
-    secrets.stackable.tech/listener.0: listener-exposed-nginx-nodeport-0
-    secrets.stackable.tech/listener.1: exposed-nginx-nodeport-0-listener2
-stringData:
-  foo: bar
