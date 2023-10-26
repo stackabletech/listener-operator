@@ -2,7 +2,8 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: nginx
+  # Intentionally long name to trigger #110
+  name: nginx-long-name-approaching-k8s-limits
 spec:
   serviceName: nginx
   selector:

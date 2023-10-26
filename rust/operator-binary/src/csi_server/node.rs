@@ -17,7 +17,7 @@ use std::{fmt::Debug, path::PathBuf};
 use tonic::{Request, Response, Status};
 
 use crate::{
-    listener_controller::listener_mounted_pod_label,
+    listener_controller::{listener_mounted_pod_label, ListenerMountedPodLabelError},
     utils::{error_full_message, node_primary_address},
 };
 
@@ -52,6 +52,11 @@ enum PublishVolumeError {
     },
     #[snafu(display("PersistentVolume has no corresponding PersistentVolumeClaim"))]
     UnclaimedPv,
+    #[snafu(display("failed to generate {listener}'s pod selector"))]
+    ListenerPodSelector {
+        source: ListenerMountedPodLabelError,
+        listener: ObjectRef<Listener>,
+    },
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
     PodHasNoNode { pod: ObjectRef<Pod> },
     #[snafu(display("failed to build Listener's owner reference"))]
@@ -96,6 +101,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::GetObject { .. } => Status::unavailable(full_msg),
             PublishVolumeError::UnclaimedPv => Status::unavailable(full_msg),
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::ListenerPodSelector { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
@@ -258,7 +264,14 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 &pod,
                 &Pod {
                     metadata: ObjectMeta {
-                        labels: Some([listener_mounted_pod_label(&listener)].into()),
+                        labels: Some(
+                            [listener_mounted_pod_label(&listener).context(
+                                ListenerPodSelectorSnafu {
+                                    listener: ObjectRef::from_obj(&listener),
+                                },
+                            )?]
+                            .into(),
+                        ),
                         ..Default::default()
                     },
                     ..Default::default()

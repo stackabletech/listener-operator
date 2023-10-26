@@ -49,11 +49,13 @@ spec:
         - name: query-ingresses
           image: docker.stackable.tech/stackable/testing-tools:0.2.0-stackable0.0.0-dev
           command:
-            - sh
-            - -euc
+            - bash
+            - -euo
+            - pipefail
+            - -c
             - |
               echo Testing access via Listener.status
-              for pod in nginx-0 nginx-1; do
+              for pod in nginx-long-name-approaching-k8s-limits-{0,1}; do \
                 ADDR=$(kubectl get listener/listener-$pod \
                   -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name');
                 echo Requesting $ADDR should return $pod;
@@ -61,7 +63,7 @@ spec:
               done
 
               echo Testing access via PodListeners
-              for pod in nginx-0 nginx-1; do
+              for pod in nginx-long-name-approaching-k8s-limits-{0,1}; do
                 POD_UID=$(kubectl get pod/$pod -o jsonpath='{.metadata.uid}')
                 ADDR=$(kubectl get podlisteners/pod-$POD_UID \
                   -o jsonpath='http://{.spec.listeners.listener.ingressAddresses[0].address}:{.spec.listeners.listener.ingressAddresses[0].ports.http}/pod-name');

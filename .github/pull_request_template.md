@@ -13,6 +13,7 @@
 - [ ] CRD changes approved
 - [ ] Helm chart can be installed and deployed operator works
 - [ ] Integration tests passed (for non trivial changes)
+- [ ] Changes need to be "offline" compatible
 ```
 
 ```[tasklist]
