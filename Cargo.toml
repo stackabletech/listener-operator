@@ -20,7 +20,7 @@ prost = "0.11"
 prost-types = "0.11"
 serde = "1.0"
 snafu = "0.7"
-stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "0.48.0" }
+stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "0.55.0" }
 strum = { version = "0.25", features = ["derive"] }
 socket2 = { version = "0.5.3", features = ["all"] }
 tokio = { version = "1.29", features = ["full"] }
@@ -31,7 +31,7 @@ tonic-reflection = "0.9"
 
 [patch."https://github.com/stackabletech/operator-rs.git"]
 # stackable-operator = { path = "../operator-rs" }
-stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "feature/podlisteners" }
+# stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "feature/podlisteners" }
 
 [patch.crates-io]
 # Workaround for https://github.com/hyperium/tonic/issues/243
