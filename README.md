@@ -5,15 +5,18 @@
 <h1 align="center">Stackable Listener Operator</h1>
 
 
+
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/stackabletech/listener-operator/graphs/commit-activity)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://docs.stackable.tech/home/stable/contributor/index.html)
 [![License OSL3.0](https://img.shields.io/badge/license-OSL3.0-green)](./LICENSE)
 
 [Documentation](https://docs.stackable.tech/listener-operator/stable/index.html) | [Stackable Data Platform](https://stackable.tech/) | [Platform Docs](https://docs.stackable.tech/) | [Discussions](https://github.com/orgs/stackabletech/discussions) | [Discord](https://discord.gg/7kZ3BNnCAF)
 
+
 A CSI provider intended to provide an abstract way to expose a single Pod to the outside network, while hiding details about the cluster from the application developer.
 
 It is part of the Stackable Data Platform, a curated selection of the best open source data apps like Apache Kafka, Apache Druid, Trino or Apache Spark, [all](#our-operators) working together seamlessly. Based on Kubernetes, it runs everywhere – [on prem or in the cloud](#supported-platforms).
+
 
 ## Installation
 
@@ -33,6 +36,7 @@ If you are interested in the most recent state of this repository, check out the
 The documentation for all Stackable products can be found at [docs.stackable.tech](https://docs.stackable.tech).
 
 If you have a question about the Stackable Data Platform contact us via our [homepage](https://stackable.tech/) or ask a public questions in our [Discussions forum](https://github.com/orgs/stackabletech/discussions).
+
 
 
 ## About The Stackable Data Platform

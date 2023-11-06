@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Write `PodListeners` objects for mounted listener volumes ([#100]).
+
 ### Fixed
 
 - Fixed pods being unable to bind listeners with long names ([#111]).
@@ -11,11 +15,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Remove the requirement for privileged mode ([#101]).
-- `operator-rs` `0.44.0` -> `0.46.0` ([#97], [#98]).
 - Listener volume mounting is now enforced ([#105], [#111]).
 
-[#97]: https://github.com/stackabletech/listener-operator/pull/97
-[#98]: https://github.com/stackabletech/listener-operator/pull/98
+[#100]: https://github.com/stackabletech/listener-operator/pull/100
 [#101]: https://github.com/stackabletech/listener-operator/pull/101
 [#105]: https://github.com/stackabletech/listener-operator/pull/105
 [#111]: https://github.com/stackabletech/listener-operator/pull/111

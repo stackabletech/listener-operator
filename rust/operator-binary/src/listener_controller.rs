@@ -4,8 +4,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
     commons::listener::{
-        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, ListenerStatus,
-        ServiceType,
+        AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
+        ListenerStatus, ServiceType,
     },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
@@ -197,7 +197,8 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             svc: ObjectRef::from_obj(&svc),
         })?;
 
-    let addresses: Vec<String>;
+    let nodes: Vec<Node>;
+    let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
@@ -218,7 +219,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .flatten()
                 .flat_map(|addr| addr.node_name)
                 .collect::<Vec<_>>();
-            let nodes = try_join_all(node_names.iter().map(|node_name| async {
+            nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
                     .get::<Node>(node_name, &())
                     .await
@@ -228,9 +229,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             }))
             .await?;
             addresses = nodes
-                .into_iter()
-                .flat_map(|node| node_primary_address(&node).map(str::to_string))
-                .collect();
+                .iter()
+                .flat_map(node_primary_address)
+                .collect::<Vec<_>>();
             ports = svc
                 .spec
                 .as_ref()
@@ -246,7 +247,13 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .iter()
                 .flat_map(|ss| ss.load_balancer.as_ref()?.ingress.as_ref())
                 .flatten()
-                .flat_map(|ingress| ingress.hostname.clone().or_else(|| ingress.ip.clone()))
+                .flat_map(|ingress| {
+                    ingress
+                        .hostname
+                        .as_deref()
+                        .zip(Some(AddressType::Hostname))
+                        .or_else(|| ingress.ip.as_deref().zip(Some(AddressType::Ip)))
+                })
                 .collect();
             ports = svc
                 .spec
@@ -260,9 +267,11 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         ServiceType::ClusterIP => {
             addresses = svc
                 .spec
-                .as_ref()
-                .and_then(|s| s.cluster_ips.clone())
-                .unwrap_or_default();
+                .iter()
+                .flat_map(|s| &s.cluster_ips)
+                .flatten()
+                .map(|addr| (&**addr, AddressType::Ip))
+                .collect::<Vec<_>>();
             ports = svc
                 .spec
                 .as_ref()
@@ -289,8 +298,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|addr| ListenerIngress {
-                    address: addr,
+                .map(|(address, address_type)| ListenerIngress {
+                    address: address.to_string(),
+                    address_type,
                     ports: ports.clone(),
                 })
                 .collect(),

@@ -10,7 +10,7 @@ use csi_server::{
 };
 use futures::{pin_mut, FutureExt, TryStreamExt};
 use stackable_operator::{
-    commons::listener::{Listener, ListenerClass},
+    commons::listener::{Listener, ListenerClass, PodListeners},
     logging::TracingTarget,
     CustomResourceExt,
 };
@@ -64,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
         stackable_operator::cli::Command::Crd => {
             ListenerClass::print_yaml_schema()?;
             Listener::print_yaml_schema()?;
+            PodListeners::print_yaml_schema()?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             tracing_target,

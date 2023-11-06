@@ -3,8 +3,11 @@ use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::OwnerReferenceBuilder,
-    commons::listener::{Listener, ListenerIngress, ListenerPort, ListenerSpec},
-    k8s_openapi::api::core::v1::{Node, PersistentVolume, Pod},
+    commons::listener::{
+        Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListener, PodListenerScope,
+        PodListeners, PodListenersSpec,
+    },
+    k8s_openapi::api::core::v1::{Node, PersistentVolume, PersistentVolumeClaim, Pod, Volume},
     kube::{
         core::{DynamicObject, ObjectMeta},
         runtime::reflector::ObjectRef,
@@ -47,6 +50,8 @@ enum PublishVolumeError {
         source: stackable_operator::error::Error,
         obj: ObjectRef<DynamicObject>,
     },
+    #[snafu(display("PersistentVolume has no corresponding PersistentVolumeClaim"))]
+    UnclaimedPv,
     #[snafu(display("failed to generate {listener}'s pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
@@ -68,10 +73,22 @@ enum PublishVolumeError {
         source: stackable_operator::error::Error,
         pod: ObjectRef<Pod>,
     },
+    #[snafu(display("listener has no addresses yet"))]
+    NoAddresses,
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
         source: pod_dir::Error,
         target_path: PathBuf,
+    },
+    #[snafu(display("failed to write {pod_listeners} (also tried to create: {create_error})"))]
+    WritePodListeners {
+        source: stackable_operator::error::Error,
+        create_error: stackable_operator::error::Error,
+        pod_listeners: ObjectRef<PodListeners>,
+    },
+    #[snafu(display("failed to find Pod volume corresponding for {pvc}"))]
+    FindPodVolumeForPvc {
+        pvc: ObjectRef<PersistentVolumeClaim>,
     },
 }
 
@@ -82,12 +99,16 @@ impl From<PublishVolumeError> for Status {
         match err {
             PublishVolumeError::DecodeVolumeContext { .. } => Status::invalid_argument(full_msg),
             PublishVolumeError::GetObject { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::UnclaimedPv => Status::unavailable(full_msg),
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ListenerPodSelector { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::NoAddresses { .. } => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
+            PublishVolumeError::WritePodListeners { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::FindPodVolumeForPvc { .. } => Status::failed_precondition(full_msg),
         }
     }
 }
@@ -165,6 +186,11 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                     obj.erase()
                 },
             })?;
+        let pvc_name = pv
+            .spec
+            .as_ref()
+            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.as_deref())
+            .context(UnclaimedPvSnafu)?;
 
         let pod = self
             .client
@@ -190,10 +216,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 let listener = Listener {
                     metadata: ObjectMeta {
                         namespace: Some(ns.clone()),
-                        name: pv
-                            .spec
-                            .as_ref()
-                            .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.clone()),
+                        name: Some(pvc_name.to_string()),
                         owner_references: Some(vec![OwnerReferenceBuilder::new()
                             .initialize_from_resource(&pv)
                             .build()
@@ -259,46 +282,20 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                 pod: ObjectRef::from_obj(&pod),
             })?;
 
-        // Prefer calculating a per-node address where possible, to ensure that the address at least tries to
-        // connect to the pod in question.
-        // We also can't rely on `ingress_addresses` being set yet, since the pod won't have an IP address yet
-        // (and so can't be found in `Endpoints`)
-        let listener_addrs = if let Some(node_ports) = listener
-            .status
-            .as_ref()
-            .and_then(|status| status.node_ports.clone())
-        {
-            let node_name = pod
-                .spec
-                .as_ref()
-                .and_then(|s| s.node_name.as_deref())
-                .with_context(|| PodHasNoNodeSnafu {
-                    pod: ObjectRef::from_obj(&pod),
-                })?;
-            let node = self
-                .client
-                .get::<Node>(node_name, &())
-                .await
-                .with_context(|_| GetObjectSnafu {
-                    obj: { ObjectRef::<Node>::new(node_name).erase() },
-                })?;
-
-            node_primary_address(&node)
-                .map(|address| ListenerIngress {
-                    address: address.to_string(),
-                    ports: node_ports,
-                })
-                .into_iter()
-                .collect()
-        } else {
-            listener
-                .status
-                .as_ref()
-                .and_then(|s| s.ingress_addresses.as_ref())
-                .cloned()
-                .unwrap_or_default()
-        };
-
+        let listener_addrs =
+            local_listener_addresses_for_pod(&self.client, &listener, &pod).await?;
+        if listener_addrs.is_empty() {
+            NoAddressesSnafu.fail()?
+        }
+        publish_pod_listener(
+            &self.client,
+            &pod,
+            &pod_name,
+            pvc_name,
+            &listener,
+            &listener_addrs,
+        )
+        .await?;
         let target_path = PathBuf::from(request.target_path);
         pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
             .await
@@ -350,6 +347,133 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
     ) -> Result<Response<csi::v1::NodeExpandVolumeResponse>, Status> {
         tonic_unimplemented()
     }
+}
+
+/// Get a list of as-local-as-possible listener addresses for a given pod.
+///
+/// We prefer calculating a per-node address, to ensure that the address at least tries to
+/// connect to the pod in question.
+///
+/// CSI providers also can't rely on `ingress_addresses` being set yet, since the pod won't have an IP address yet
+/// (and so can't be found in `Endpoints`).
+async fn local_listener_addresses_for_pod(
+    client: &stackable_operator::client::Client,
+    listener: &Listener,
+    pod: &Pod,
+) -> Result<Vec<ListenerIngress>, PublishVolumeError> {
+    use publish_volume_error::*;
+
+    if let Some(node_ports) = listener
+        .status
+        .as_ref()
+        .and_then(|status| status.node_ports.clone())
+    {
+        let node_name = pod
+            .spec
+            .as_ref()
+            .and_then(|s| s.node_name.as_deref())
+            .with_context(|| PodHasNoNodeSnafu {
+                pod: ObjectRef::from_obj(pod),
+            })?;
+        let node = client
+            .get::<Node>(node_name, &())
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: { ObjectRef::<Node>::new(node_name).erase() },
+            })?;
+
+        Ok(node_primary_address(&node)
+            .map(|(address, address_type)| ListenerIngress {
+                // nodes: Some(vec![node_name.to_string()]),
+                address: address.to_string(),
+                address_type,
+                ports: node_ports,
+            })
+            .into_iter()
+            .collect())
+    } else {
+        Ok(listener
+            .status
+            .as_ref()
+            .and_then(|s| s.ingress_addresses.as_ref())
+            .cloned()
+            .unwrap_or_default())
+    }
+}
+
+/// Publish listener into a [`PodListeners`] Kubernetes object.
+async fn publish_pod_listener(
+    client: &stackable_operator::client::Client,
+    pod: &Pod,
+    pod_name: &str,
+    pvc_name: &str,
+    listener: &Listener,
+    listener_addresses: &[ListenerIngress],
+) -> Result<(), PublishVolumeError> {
+    use publish_volume_error::*;
+    let listener_pod_volume = pod
+        .spec
+        .as_ref()
+        .and_then(|ps| {
+            ps.volumes.as_ref()?.iter().find(|volume| match volume {
+                Volume {
+                    persistent_volume_claim: Some(v),
+                    ..
+                } => pvc_name == v.claim_name,
+                Volume {
+                    ephemeral: Some(_),
+                    name: v_name,
+                    ..
+                } => pvc_name == format!("{pod_name}-{v_name}"),
+                _ => false,
+            })
+        })
+        .with_context(|| FindPodVolumeForPvcSnafu {
+            pvc: ObjectRef::<PersistentVolumeClaim>::new(pvc_name),
+        })?;
+    let pod_listeners = PodListeners {
+        metadata: ObjectMeta {
+            name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
+            namespace: pod.metadata.namespace.clone(),
+            owner_references: Some(vec![OwnerReferenceBuilder::new()
+                .initialize_from_resource(pod)
+                .build()
+                .context(BuildListenerOwnerRefSnafu)?]),
+            ..Default::default()
+        },
+        spec: PodListenersSpec {
+            listeners: [(
+                listener_pod_volume.name.clone(),
+                PodListener {
+                    scope: if listener
+                        .status
+                        .as_ref()
+                        .and_then(|s| s.node_ports.as_ref())
+                        .is_some()
+                    {
+                        PodListenerScope::Node
+                    } else {
+                        PodListenerScope::Cluster
+                    },
+                    ingress_addresses: Some(listener_addresses.to_vec()),
+                },
+            )]
+            .into(),
+        },
+    };
+    // IMPORTANT
+    // Use a merge patch rather than apply to avoid removing other volumes.
+    // Merge doesn't create the object if missing, so try that first.
+    if let Err(create_error) = client.create(&pod_listeners).await {
+        client
+            .merge_patch(&pod_listeners, &pod_listeners)
+            .await
+            .context(WritePodListenersSnafu {
+                create_error,
+                pod_listeners: ObjectRef::from_obj(&pod_listeners),
+            })?;
+    }
+    Ok(())
 }
 
 mod pod_dir {

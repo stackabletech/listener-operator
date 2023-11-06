@@ -13,6 +13,13 @@ rules:
       - listeners.stackable.tech
     resources:
       - listeners
+      - podlisteners
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
     verbs:
       - get
 ---
@@ -33,9 +40,10 @@ kind: Job
 metadata:
   name: query-ingresses
 spec:
+  backoffLimit: 1
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       serviceAccountName: query-ingresses-sa
       containers:
         - name: query-ingresses
@@ -46,18 +54,22 @@ spec:
             - pipefail
             - -c
             - |
+              echo Testing access via Listener.status
               for pod in nginx-long-name-approaching-k8s-limits-{0,1}; do \
                 ADDR=$(kubectl get listener/listener-$pod \
-                  -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name' \
-                  -n $NAMESPACE); \
-                echo Requesting $ADDR should return $pod; \
-                curl -s $ADDR | grep $pod; \
+                  -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name');
+                echo Requesting $ADDR should return $pod;
+                curl -s $ADDR | grep $pod;
               done
-          env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+
+              echo Testing access via PodListeners
+              for pod in nginx-long-name-approaching-k8s-limits-{0,1}; do
+                POD_UID=$(kubectl get pod/$pod -o jsonpath='{.metadata.uid}')
+                ADDR=$(kubectl get podlisteners/pod-$POD_UID \
+                  -o jsonpath='http://{.spec.listeners.listener.ingressAddresses[0].address}:{.spec.listeners.listener.ingressAddresses[0].ports.http}/pod-name');
+                echo Requesting $ADDR should return $pod;
+                curl -s $ADDR | grep $pod;
+              done
           resources:
             limits:
               cpu: 500m

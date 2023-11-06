@@ -113,6 +113,7 @@ rules:
     resources:
       - listeners
       - listeners/status
+      - podlisteners
     verbs:
       - patch
       - create
