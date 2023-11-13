@@ -1,4 +1,5 @@
-use crate::utils::node_primary_address;
+use std::{collections::BTreeMap, sync::Arc};
+
 use futures::{future::try_join_all, StreamExt};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
@@ -13,9 +14,11 @@ use stackable_operator::{
         runtime::{controller, reflector::ObjectRef, watcher},
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
+    time::Duration,
 };
-use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use strum::IntoStaticStr;
+
+use crate::utils::node_primary_address;
 
 #[cfg(doc)]
 use stackable_operator::k8s_openapi::api::core::v1::Pod;
@@ -316,7 +319,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
 }
 
 pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controller::Action {
-    controller::Action::requeue(Duration::from_secs(5))
+    controller::Action::requeue(*Duration::from_secs(5))
 }
 
 #[derive(Snafu, Debug)]
