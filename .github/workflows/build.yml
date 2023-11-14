@@ -181,7 +181,7 @@ jobs:
 
   run_tests:
     name: Run Cargo Tests
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     steps:
       - name: Install host dependencies
         run: |
