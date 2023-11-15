@@ -33,7 +33,7 @@ spec:
   - metadata:
       name: listener
       annotations:
-        listeners.stackable.tech/listener-class: lb-external
+        listeners.stackable.tech/listener-class: external-stable
     spec:
       accessModes:
       - ReadWriteMany

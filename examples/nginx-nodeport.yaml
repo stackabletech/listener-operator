@@ -47,7 +47,7 @@ spec:
           volumeClaimTemplate:
             metadata:
               annotations:
-                listeners.stackable.tech/listener-class: nodeport
+                listeners.stackable.tech/listener-class: external-unstable
             spec:
               accessModes:
               - ReadWriteMany
@@ -59,7 +59,7 @@ spec:
   - metadata:
       name: listener
       annotations:
-        listeners.stackable.tech/listener-class: nodeport
+        listeners.stackable.tech/listener-class: external-unstable
     spec:
       accessModes:
       - ReadWriteMany
