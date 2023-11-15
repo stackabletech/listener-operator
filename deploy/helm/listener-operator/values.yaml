@@ -89,3 +89,9 @@ affinity: {}
 
 # Kubelet dir may vary in environments such as microk8s, see https://github.com/stackabletech/secret-operator/issues/229
 kubeletDir: /var/lib/kubelet
+
+# Options: none, vanilla, premium
+# none: No ListenerClasses are preinstalled, the administrator must supply them themself
+# pets: ListenerClasses are preinstalled that are suitable for on-prem/"pet" environments, assuming long-running Nodes but not requiring a LoadBalancer controller
+# cattle: ListenerClasses are preinstalled that are suitable for cloud/"cattle" environments, requiring a LoadBalancer controller but tolerating short-lived Nodes
+preset: pets

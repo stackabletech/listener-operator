@@ -1,14 +1,49 @@
+{{ if eq .Values.preset "none" }}
+{{ else if eq .Values.preset "cattle" }}
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
 metadata:
-  name: nodeport
+  name: cluster-internal
 spec:
   serviceType: NodePort
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
 metadata:
-  name: lb-external
+  name: external-unstable
+spec:
+  serviceType: NodePort
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-stable
 spec:
   serviceType: LoadBalancer
+{{ else if eq .Values.preset "pets" }}
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: cluster-internal
+spec:
+  serviceType: NodePort
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-unstable
+spec:
+  serviceType: NodePort
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-stable
+spec:
+  # NodePort services imply are as "sticky" as the listener is
+  serviceType: NodePort
+{{ else }}
+{{ fail "An invalid preset was configured" }}
+{{ end }}
