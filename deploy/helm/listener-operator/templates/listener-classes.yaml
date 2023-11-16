@@ -6,7 +6,7 @@ kind: ListenerClass
 metadata:
   name: cluster-internal
 spec:
-  serviceType: NodePort
+  serviceType: ClusterIP
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
