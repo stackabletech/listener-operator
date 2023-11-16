@@ -42,7 +42,14 @@ kind: ListenerClass
 metadata:
   name: external-stable
 spec:
-  # NodePort services are as "sticky" as the listener is.
+  # To support environments that don't have LoadBalancer support, we fall back to using NodePort Services for "stable addresses".
+  # To ensure that these addresses are actually stable, the Listener Operator will "bind" such Listeners to only run on the Node that
+  # they were originally scheduled to (as controlled by the lifetime of the PersistentVolume). The downside here is that we prevent Kubernetes
+  # from migrating that workload to a different Node (such as if it goes down).
+  #
+  # This is useful for cloud environments with no Cloud Controller Manager (or one which doesn't support LoadBalancers),
+  # or on-premise environments that don't support external LoadBalancer peering (such as Calico (https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips)
+  # or MetalLB (https://metallb.org/)).
   serviceType: NodePort
 {{ else }}
 {{ fail "An invalid preset was configured" }}
