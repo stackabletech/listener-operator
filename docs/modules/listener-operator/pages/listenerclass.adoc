@@ -54,7 +54,7 @@ The Stackable Data Platform assumes the existence of a few predefined ListenerCl
 
 `cluster-internal`:: Used for listeners that are only accessible internally from the cluster. For example: communication between ZooKeeper nodes.
 `external-unstable`:: Used for listeners that are accessible from outside of the cluster, but which do not require a stable address. For example: individual Kafka brokers.
-`external-stable`:: Used for listener that are accessible from outside of the cluster, and do require a stable address. For example: Kafka bootstrap.
+`external-stable`:: Used for listeners that are accessible from outside the cluster, and do require a stable address. For example: Kafka bootstrap.
 
 === Presets
 
