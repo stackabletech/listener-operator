@@ -1,5 +1,5 @@
 {{ if eq .Values.preset "none" }}
-{{ else if eq .Values.preset "cattle" }}
+{{ else if eq .Values.preset "ephemeral-nodes" }}
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
@@ -21,7 +21,7 @@ metadata:
   name: external-stable
 spec:
   serviceType: LoadBalancer
-{{ else if eq .Values.preset "pets" }}
+{{ else if eq .Values.preset "stable-nodes" }}
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass

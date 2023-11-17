@@ -60,10 +60,10 @@ The Stackable Data Platform assumes the existence of a few predefined ListenerCl
 
 To help users get started, the Stackable Listener Operator ships different ListenerClass _presets_ for different environments. These are configured using the `preset` Helm value.
 
-[#preset-pets]
-==== `pets`
+[#preset-stable-nodes]
+==== `stable-nodes`
 
-The `pets` preset installs ListenerClasses appropriate for Kubernetes clusters that use long-lived "pet nodes". This does _not_ require any particular networking setup, but makes pods that require
+The `stable-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use long-lived "pet nodes". This does _not_ require any particular networking setup, but makes pods that require
 stable addresses "sticky" to the Kubernetes Node that they were scheduled to. In addition, downstream operators may generate configurations that refer to particular nodes by name.
 
 The following ListenerClasses are installed:
@@ -72,15 +72,15 @@ The following ListenerClasses are installed:
 `external-unstable`:: xref:#servicetype-nodeport[]
 `external-stable`:: xref:#servicetype-nodeport[]
 
-[#preset-cattle]
-==== `cattle`
+[#preset-ephemeral-nodes]
+==== `ephemeral-nodes`
 
-The `cattle` preset installs ListenerClasses appropriate for Kubernetes clusters that use short-lived "cattle nodes". This makes them appropriate for managed cloud environments, but requires that
+The `ephemeral-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use short-lived "cattle nodes". This makes them appropriate for managed cloud environments, but requires that
 a LoadBalancer controller is present in the cluster.
 
 Managed cloud environments should generally already provide an integrated LoadBalancer controller. For on-premise environments, an external implementation such as https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips[Calico] or https://metallb.org/[MetalLB] can be used.
 
-NOTE: K3s' built-in https://docs.k3s.io/networking#service-load-balancer[ServiceLB] (Klipper) is _not_ recommended, because it doesn't allow multiple Services to bind the same Port. If you use ServiceLB, use the xref:#preset-pets[] preset instead.
+NOTE: K3s' built-in https://docs.k3s.io/networking#service-load-balancer[ServiceLB] (Klipper) is _not_ recommended, because it doesn't allow multiple Services to bind the same Port. If you use ServiceLB, use the xref:#preset-stable-nodes[] preset instead.
 
 The following ListenerClasses are installed:
 
