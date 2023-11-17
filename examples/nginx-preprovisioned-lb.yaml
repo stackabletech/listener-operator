@@ -41,7 +41,7 @@ kind: Listener
 metadata:
   name: exposed-nginx-preprovisioned-lb
 spec:
-  className: lb-external
+  className: external-stable
   ports:
   - name: http
     port: 9998

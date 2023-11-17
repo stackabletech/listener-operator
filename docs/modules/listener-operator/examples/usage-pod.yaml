@@ -10,7 +10,7 @@ spec:
         volumeClaimTemplate:
           metadata:
             annotations:
-              listeners.stackable.tech/listener-class: public # <2>
+              listeners.stackable.tech/listener-class: external-stable # <2>
           spec:
             storageClassName: listeners.stackable.tech
             accessModes:

@@ -1,14 +1,56 @@
+{{ if eq .Values.preset "none" }}
+{{ else if eq .Values.preset "ephemeral-nodes" }}
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
 metadata:
-  name: nodeport
+  name: cluster-internal
+spec:
+  serviceType: ClusterIP
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-unstable
 spec:
   serviceType: NodePort
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
 metadata:
-  name: lb-external
+  name: external-stable
 spec:
   serviceType: LoadBalancer
+{{ else if eq .Values.preset "stable-nodes" }}
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: cluster-internal
+spec:
+  serviceType: ClusterIP
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-unstable
+spec:
+  serviceType: NodePort
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-stable
+spec:
+  # To support environments that don't have LoadBalancer support, we fall back to using NodePort Services for "stable addresses".
+  # To ensure that these addresses are actually stable, the Listener Operator will "bind" such Listeners to only run on the Node that
+  # they were originally scheduled to (as controlled by the lifetime of the PersistentVolume). The downside here is that we prevent Kubernetes
+  # from migrating that workload to a different Node (such as if it goes down).
+  #
+  # This is useful for cloud environments with no Cloud Controller Manager (or one which doesn't support LoadBalancers),
+  # or on-premise environments that don't support external LoadBalancer peering (such as Calico (https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips)
+  # or MetalLB (https://metallb.org/)).
+  serviceType: NodePort
+{{ else }}
+{{ fail "An invalid preset was configured" }}
+{{ end }}
