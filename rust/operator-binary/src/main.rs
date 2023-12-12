@@ -55,6 +55,7 @@ enum RunMode {
 mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
     pub const TARGET: Option<&str> = option_env!("TARGET");
+    pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 }
 
 #[tokio::main]
@@ -62,9 +63,9 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
-            ListenerClass::print_yaml_schema()?;
-            Listener::print_yaml_schema()?;
-            PodListeners::print_yaml_schema()?;
+            ListenerClass::print_yaml_schema(built_info::CARGO_PKG_VERSION)?;
+            Listener::print_yaml_schema(built_info::CARGO_PKG_VERSION)?;
+            PodListeners::print_yaml_schema(built_info::CARGO_PKG_VERSION)?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             tracing_target,
