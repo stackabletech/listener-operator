@@ -74,7 +74,7 @@ spec:
               description: |-
                 Exposes a set of pods to the outside world.
 
-                Essentially a Stackable extension of a Kubernetes Service. Compared to Service, Listener changes three things: 1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service 3. The Pod must mount a Volume referring to the Listener, which also allows us to control stickiness.
+                Essentially a Stackable extension of a Kubernetes Service. Compared to a Service, a Listener changes three things: 1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service 3. The Pod must mount a Volume referring to the Listener, which also allows ["sticky" scheduling](https://docs.stackable.tech/home/nightly/listener-operator/listener#_sticky_scheduling).
 
                 Learn more in the [Listener documentation](https://docs.stackable.tech/home/nightly/listener-operator/listener).
               properties:
@@ -119,7 +119,7 @@ spec:
                   type: boolean
               type: object
             status:
-              description: Informs users about how to reach the [`Listener`].
+              description: Informs users about how to reach the Listener.
               nullable: true
               properties:
                 ingressAddresses:
@@ -197,7 +197,7 @@ spec:
           properties:
             spec:
               description: |-
-                Informs users about [`Listener`]s that are bound by a given [`Pod`].
+                Informs users about Listeners that are bound by a given Pod.
 
                 This is not expected to be created or modified by users. It will be created by the Stackable Listener Operator when mounting the listener volume, and is always named `pod-{pod.metadata.uid}`.
               properties:
@@ -246,7 +246,7 @@ spec:
                       - scope
                     type: object
                   description: |-
-                    All listeners currently bound by the Pod.
+                    All Listeners currently bound by the Pod.
 
                     Indexed by Volume name (not PersistentVolume or PersistentVolumeClaim).
                   type: object
