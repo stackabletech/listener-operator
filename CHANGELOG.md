@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Replace "Release.Name" with "operator.fullname" in Helm resource names ([#128])
+- Replace "Release.Name" with "operator.fullname" in Helm resource names ([#131])
 
-[#128]: https://github.com/stackabletech/listener-operator/pull/128
+[#131]: https://github.com/stackabletech/listener-operator/pull/131
 
 ## [23.11.0] - 2023-11-24
 
