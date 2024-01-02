@@ -6,3 +6,8 @@
 ** xref:listener-operator:listenerclass.adoc[]
 ** xref:listener-operator:volume.adoc[]
 * xref:listener-operator:security.adoc[]
+* xref:listener-operator:reference/index.adoc[]
+** xref:listener-operator:reference/crds.adoc[]
+*** {crd-docs}/listeners.stackable.tech/listener/v1alpha1/[Listener {external-link-icon}^]
+*** {crd-docs}/listeners.stackable.tech/listenerclass/v1alpha1/[ListenerClass {external-link-icon}^]
+*** {crd-docs}/listeners.stackable.tech/podlisteners/v1alpha1/[PodListeners {external-link-icon}^]
