@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [23.11.0] - 2023-11-24
+### Fixed
+
+- Replace "Release.Name" with "operator.fullname" in Helm resource names ([#128])
+
+[#128]: https://github.com/stackabletech/listener-operator/pull/128
+
+[## [23.11.0] - 2023-11-24
 
 ### Added
 
