@@ -4,7 +4,6 @@
 
 <h1 align="center">Stackable Listener Operator</h1>
 
-
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/stackabletech/listener-operator/graphs/commit-activity)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://docs.stackable.tech/home/stable/contributor/index.html)
 [![License OSL3.0](https://img.shields.io/badge/license-OSL3.0-green)](./LICENSE)
@@ -33,7 +32,6 @@ If you are interested in the most recent state of this repository, check out the
 The documentation for all Stackable products can be found at [docs.stackable.tech](https://docs.stackable.tech).
 
 If you have a question about the Stackable Data Platform contact us via our [homepage](https://stackable.tech/) or ask a public questions in our [Discussions forum](https://github.com/orgs/stackabletech/discussions).
-
 
 ## About The Stackable Data Platform
 
