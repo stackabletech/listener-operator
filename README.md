@@ -16,7 +16,7 @@ It is part of the Stackable Data Platform, a curated selection of the best open 
 
 ## Installation
 
-You can install the operator using [stackablectl or helm](https://docs.stackable.tech/home/stable/listener-operator/getting_started/installation).
+You can install the operator using [stackablectl or helm](https://docs.stackable.tech/home/stable/{{operator_docs_slug}}/getting_started/installation).
 
 ## Documentation
 
