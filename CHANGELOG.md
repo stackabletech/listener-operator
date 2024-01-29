@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Helm: support labels in values.yaml ([#142]).
+
 ### Fixed
 
 - Replace "Release.Name" with "operator.fullname" in Helm resource names ([#131])
 
 [#131]: https://github.com/stackabletech/listener-operator/pull/131
+[#142]: https://github.com/stackabletech/listener-operator/pull/142
 
 ## [23.11.0] - 2023-11-24
 
