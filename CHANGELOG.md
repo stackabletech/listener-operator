@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Helm: support labels in values.yaml ([#142]).
+- Propagate labels from PVCs to Listener objects ([#XXX]).
 
 ### Fixed
 
