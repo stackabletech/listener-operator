@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Helm: support labels in values.yaml ([#142]).
+- Propagate labels from PVCs to Listener objects ([#158]).
 
 ### Fixed
 
@@ -14,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 [#131]: https://github.com/stackabletech/listener-operator/pull/131
 [#142]: https://github.com/stackabletech/listener-operator/pull/142
+[#158]: https://github.com/stackabletech/listener-operator/pull/158
 
 ## [23.11.0] - 2023-11-24
 

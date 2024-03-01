@@ -191,6 +191,13 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             .as_ref()
             .and_then(|pv_spec| pv_spec.claim_ref.as_ref()?.name.as_deref())
             .context(UnclaimedPvSnafu)?;
+        let pvc = self
+            .client
+            .get::<PersistentVolumeClaim>(pvc_name, &ns)
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: { ObjectRef::<PersistentVolumeClaim>::new(pvc_name).erase() },
+            })?;
 
         let pod = self
             .client
@@ -221,6 +228,9 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                             .initialize_from_resource(&pv)
                             .build()
                             .context(BuildListenerOwnerRefSnafu)?]),
+                        // Propagate the labels from the PVC to the Listener object, so it can be found easier, e.g. to
+                        // determine the endpoints of stacklets.
+                        labels: pvc.metadata.labels,
                         ..Default::default()
                     },
                     spec: ListenerSpec {
