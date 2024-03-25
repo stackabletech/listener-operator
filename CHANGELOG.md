@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Propagate labels from `Listener`s to the created `Service`s ([#XXX]).
+- Propagate labels from `Listener`s to the created `Service`s ([#169]).
+
+[#169]: https://github.com/stackabletech/listener-operator/pull/169
 
 ## [24.3.0] - 2024-03-20
 

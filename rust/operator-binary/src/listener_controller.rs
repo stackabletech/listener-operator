@@ -167,6 +167,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .initialize_from_resource(&*listener)
                 .build()
                 .context(BuildListenerOwnerRefSnafu)?]),
+            // Propagate the labels from the Listener object to the Service object, so it can be found easier
             labels: listener.metadata.labels.clone(),
             ..Default::default()
         },
