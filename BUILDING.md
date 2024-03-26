@@ -88,5 +88,5 @@ for i in $(k3d node list -o json | jq -r .[].name); do
 done
 ```
 
-[!IMPORTANT]
-This is _not_ persistent, and must be re-executed every time the cluster (or a node in it) is restarted.
+> [!IMPORTANT]
+> This is _not_ persistent, and must be re-executed every time the cluster (or a node in it) is restarted.
