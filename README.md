@@ -18,6 +18,10 @@ It is part of the Stackable Data Platform, a curated selection of the best open 
 
 You can install the operator using [stackablectl or helm](https://docs.stackable.tech/home/stable/listener-operator/getting_started/installation).
 
+## Building
+
+As a user you do not need to build the operator yourself, but for development purposes you can read the [build instructions](./BUILDING.md) to learn how to build the operator.
+
 ## Documentation
 
 The stable documentation for this operator can be found [here](https://docs.stackable.tech/home/stable/listener-operator).
