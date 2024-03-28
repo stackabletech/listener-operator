@@ -191,7 +191,7 @@ jobs:
 
   run_tests:
     name: Run Cargo Tests
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     steps:
       - name: Install host dependencies
         uses: awalsh128/cache-apt-pkgs-action@44c33b32f808cdddd5ac0366d70595ed63661ed8 # v1.3.1
