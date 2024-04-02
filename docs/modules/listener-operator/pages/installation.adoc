@@ -41,6 +41,3 @@ Helm will deploy the operator in Kubernetes containers and apply the CRDs. You'r
 Microk8s uses a non-standard Kubelet state directory. Installing listener-operator on Microk8s requires the argument
 `--set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet` to be added to the `helm install` command.
 
-== Building the operator from source
-
-See xref:building.adoc[] for more information.
