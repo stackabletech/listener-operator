@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 
 - Init container deployed by the Helm chart as part of the daemonset. It was added a an automatic migration between SDP versions and is not needed anymore  ([#174]).
 
+### Fixed
+
+- Propagate labels from `Listener`s to the created `Service`s ([#169]).
+
+[#169]: https://github.com/stackabletech/listener-operator/pull/169
 [#174]: https://github.com/stackabletech/listener-operator/pull/174
 
 ## [24.3.0] - 2024-03-20
