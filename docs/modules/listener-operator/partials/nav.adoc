@@ -1,4 +1,3 @@
-* xref:listener-operator:building.adoc[]
 * xref:listener-operator:installation.adoc[]
 * xref:listener-operator:usage.adoc[]
 * Concepts
