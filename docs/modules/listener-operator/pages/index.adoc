@@ -1,3 +1,9 @@
 = Stackable Listener Operator
+:github: https://github.com/stackabletech/listener-operator/
+:crd: {crd-docs-base-url}/listener-operator/{crd-docs-version}/
+
+[.link-bar]
+* {github}[GitHub {external-link-icon}^]
+* {crd}[CRD documentation {external-link-icon}^]
 
 This is an operator for Kubernetes that provisions network listeners according to the cluster policy, and injects connection parameters into Pods.
