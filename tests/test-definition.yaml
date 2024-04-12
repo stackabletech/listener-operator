@@ -1,7 +1,16 @@
 ---
-dimensions: []
+dimensions:
+  - name: openshift
+    values:
+      - "false"
 tests:
   - name: smoke-nodeport
-    dimensions: []
+    dimensions:
+      - openshift
 suites:
   - name: nightly
+  - name: openshift
+    patch:
+      - dimensions:
+          - name: openshift
+            expr: "true"
