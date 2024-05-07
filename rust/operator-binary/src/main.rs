@@ -54,7 +54,6 @@ enum RunMode {
 
 mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
-    pub const TARGET: Option<&str> = option_env!("TARGET");
     pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 }
 
@@ -81,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
                 &format!("{} ({})", crate_description!(), mode.as_ref()),
                 crate_version!(),
                 built_info::GIT_VERSION,
-                built_info::TARGET.unwrap_or("unknown target"),
+                built_info::TARGET,
                 built_info::BUILT_TIME_UTC,
                 built_info::RUSTC_VERSION,
             );
