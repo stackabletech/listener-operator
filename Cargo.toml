@@ -22,7 +22,7 @@ prost-types = "0.11"
 serde = "1.0"
 snafu = "0.7"
 stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "0.64.0" }
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 socket2 = { version = "0.5.3", features = ["all"] }
 tokio = { version = "1.29", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["net"] }
