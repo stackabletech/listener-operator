@@ -31,7 +31,7 @@ enum CreateVolumeError {
     DecodeRequestParams { source: serde::de::value::Error },
     #[snafu(display("failed to get {obj}"))]
     GetObject {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         obj: Box<ObjectRef<DynamicObject>>,
     },
     #[snafu(display("failed to decode volume context"))]
