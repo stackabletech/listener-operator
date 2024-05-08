@@ -750,8 +750,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 [[package]]
 name = "h2"
 version = "0.3.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
+source = "git+https://github.com/stackabletech/h2.git?branch=feature/grpc-uds-/v0.3.26#19ec427ad2f32593443462b5b65dac9d85482864"
 dependencies = [
  "bytes",
  "fnv",
@@ -3056,8 +3055,3 @@ name = "zeroize"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "525b4ec142c6b68a2d10f01f7bbf6755599ca3f81ea53b8431b7dd348f5fdb2d"
-
-[[patch.unused]]
-name = "h2"
-version = "0.3.18"
-source = "git+https://github.com/stackabletech/h2.git?branch=feature/grpc-uds#557dd1070dfc7ee5199a3efbaf66de4250c448b9"
