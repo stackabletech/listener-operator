@@ -10,7 +10,7 @@ publish = false
 
 [dependencies]
 # We need to keep this in sync with our patched h2 build
-h2 = "=0.3.18"
+h2 = "=0.3.26"
 
 csi-grpc = { path = "../csi-grpc" }
 
