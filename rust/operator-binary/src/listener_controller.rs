@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use futures::{future::try_join_all, StreamExt};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    builder::OwnerReferenceBuilder,
+    builder::meta::OwnerReferenceBuilder,
     commons::listener::{
         AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
         ListenerStatus, ServiceType,
@@ -81,21 +81,21 @@ pub enum Error {
     },
     #[snafu(display("failed to get {obj}"))]
     GetObject {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         obj: ObjectRef<DynamicObject>,
     },
     #[snafu(display("failed to build owner reference to Listener"))]
     BuildListenerOwnerRef {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::builder::meta::Error,
     },
     #[snafu(display("failed to apply {svc}"))]
     ApplyService {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         svc: ObjectRef<Service>,
     },
     #[snafu(display("failed to apply status for Listener"))]
     ApplyStatus {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
     },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;

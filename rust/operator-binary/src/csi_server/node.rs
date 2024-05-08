@@ -2,7 +2,7 @@ use csi_grpc::{self as csi, v1::Topology};
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    builder::OwnerReferenceBuilder,
+    builder::meta::OwnerReferenceBuilder,
     commons::listener::{
         Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListener, PodListenerScope,
         PodListeners, PodListenersSpec,
@@ -45,47 +45,58 @@ struct ListenerNodeVolumeContext {
 enum PublishVolumeError {
     #[snafu(display("failed to decode volume context"))]
     DecodeVolumeContext { source: serde::de::value::Error },
+
     #[snafu(display("failed to get {obj}"))]
     GetObject {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         obj: ObjectRef<DynamicObject>,
     },
+
     #[snafu(display("PersistentVolume has no corresponding PersistentVolumeClaim"))]
     UnclaimedPv,
+
     #[snafu(display("failed to generate {listener}'s pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
         listener: ObjectRef<Listener>,
     },
+
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
     PodHasNoNode { pod: ObjectRef<Pod> },
+
     #[snafu(display("failed to build Listener's owner reference"))]
     BuildListenerOwnerRef {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::builder::meta::Error,
     },
+
     #[snafu(display("failed to apply {listener}"))]
     ApplyListener {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         listener: ObjectRef<Listener>,
     },
+
     #[snafu(display("failed to add listener label to {pod}"))]
     AddListenerLabelToPod {
-        source: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
         pod: ObjectRef<Pod>,
     },
+
     #[snafu(display("listener has no addresses yet"))]
     NoAddresses,
+
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
         source: pod_dir::Error,
         target_path: PathBuf,
     },
+
     #[snafu(display("failed to write {pod_listeners} (also tried to create: {create_error})"))]
     WritePodListeners {
-        source: stackable_operator::error::Error,
-        create_error: stackable_operator::error::Error,
+        source: stackable_operator::client::Error,
+        create_error: stackable_operator::client::Error,
         pod_listeners: ObjectRef<PodListeners>,
     },
+
     #[snafu(display("failed to find Pod volume corresponding for {pvc}"))]
     FindPodVolumeForPvc {
         pvc: ObjectRef<PersistentVolumeClaim>,
