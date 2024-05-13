@@ -36,4 +36,4 @@ tonic-reflection = "0.9"
 [patch.crates-io]
 # Workaround for https://github.com/hyperium/tonic/issues/243
 # Can be removed once we no longer support K8s 1.25.x (and OpenShift 4.12.x)
-h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds-/v0.3.26" }
+h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds" }
