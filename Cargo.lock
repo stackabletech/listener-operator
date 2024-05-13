@@ -749,8 +749,8 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "h2"
-version = "0.3.18"
-source = "git+https://github.com/stackabletech/h2.git?branch=feature/grpc-uds#557dd1070dfc7ee5199a3efbaf66de4250c448b9"
+version = "0.3.26"
+source = "git+https://github.com/stackabletech/h2.git?branch=feature/grpc-uds#5438b66af85c7d871b32db8962bcd5bff849c824"
 dependencies = [
  "bytes",
  "fnv",
@@ -758,7 +758,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 1.9.3",
+ "indexmap 2.2.6",
  "slab",
  "tokio",
  "tokio-util",

@@ -14,7 +14,7 @@ anyhow = "1.0"
 built = { version = "0.7", features = ["chrono", "git2"] }
 clap = "4.3"
 futures = { version = "0.3", features = ["compat"] }
-h2 = "=0.3.18" # We need to keep this in sync with our patched h2 build
+h2 = "=0.3.26" # We need to keep this in sync with our patched h2 build
 libc = "0.2"
 pin-project = "1.1"
 prost = "0.11"
@@ -35,4 +35,5 @@ tonic-reflection = "0.9"
 
 [patch.crates-io]
 # Workaround for https://github.com/hyperium/tonic/issues/243
+# Can be removed once we no longer support K8s 1.25.x (and OpenShift 4.12.x)
 h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds" }

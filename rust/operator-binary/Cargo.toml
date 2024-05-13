@@ -9,9 +9,6 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-# We need to keep this in sync with our patched h2 build
-h2 = "=0.3.18"
-
 csi-grpc = { path = "../csi-grpc" }
 
 clap.workspace = true
@@ -29,6 +26,7 @@ anyhow.workspace = true
 serde.workspace = true
 snafu.workspace = true
 strum.workspace = true
+h2.workspace = true
 
 [build-dependencies]
 built.workspace = true
