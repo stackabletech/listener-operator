@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Update the image docker.stackable.tech/k8s/sig-storage/csi-provisioner
+  in the Helm values to v4.0.1 ([#194]).
+- Update the image docker.stackable.tech/k8s/sig-storage/csi-node-driver-registrar
+  in the Helm values to v2.10.1 ([#194]).
+
 ### Removed
 
 - Init container deployed by the Helm chart as part of the daemonset. It was added a an automatic migration between SDP versions and is not needed anymore  ([#174]).
@@ -14,6 +21,7 @@ All notable changes to this project will be documented in this file.
 
 [#169]: https://github.com/stackabletech/listener-operator/pull/169
 [#174]: https://github.com/stackabletech/listener-operator/pull/174
+[#194]: https://github.com/stackabletech/listener-operator/pull/194
 
 ## [24.3.0] - 2024-03-20
 
