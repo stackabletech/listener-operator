@@ -5,8 +5,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::meta::OwnerReferenceBuilder,
     commons::listener::{
-        AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
-        ListenerStatus, ServiceType,
+        AddressType, KubernetesServiceType, Listener, ListenerClass, ListenerIngress, ListenerPort,
+        ListenerSpec, ListenerStatus,
     },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
@@ -159,6 +159,18 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
     pod_selector.extend([listener_mounted_pod_label(&listener).context(ListenerPodSelectorSnafu)?]);
+
+    // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
+    let external_traffic_policy = match listener_class.spec.service_type {
+        KubernetesServiceType::NodePort | KubernetesServiceType::LoadBalancer => Some(
+            listener_class
+                .spec
+                .service_external_traffic_policy
+                .to_string(),
+        ),
+        KubernetesServiceType::ClusterIP => None,
+    };
+
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.to_string()),
@@ -172,17 +184,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             ..Default::default()
         },
         spec: Some(ServiceSpec {
-            type_: Some(match listener_class.spec.service_type {
-                ServiceType::NodePort => "NodePort".to_string(),
-                ServiceType::LoadBalancer => "LoadBalancer".to_string(),
-                ServiceType::ClusterIP => "ClusterIP".to_string(),
-            }),
+            type_: Some(listener_class.spec.service_type.to_string()),
             ports: Some(pod_ports.into_values().collect()),
-            // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
-            external_traffic_policy: match listener_class.spec.service_type {
-                ServiceType::NodePort | ServiceType::LoadBalancer => Some("Local".to_string()),
-                ServiceType::ClusterIP => None,
-            },
+            external_traffic_policy,
             selector: Some(pod_selector),
             publish_not_ready_addresses: Some(
                 listener
@@ -206,7 +210,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
-        ServiceType::NodePort => {
+        KubernetesServiceType::NodePort => {
             let endpoints = ctx
                 .client
                 .get_opt::<Endpoints>(&svc_name, ns)
@@ -246,7 +250,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .filter_map(|port| Some((port.name.clone()?, port.node_port?)))
                 .collect();
         }
-        ServiceType::LoadBalancer => {
+        KubernetesServiceType::LoadBalancer => {
             addresses = svc
                 .status
                 .iter()
@@ -269,7 +273,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .filter_map(|port| Some((port.name.clone()?, port.port)))
                 .collect();
         }
-        ServiceType::ClusterIP => {
+        KubernetesServiceType::ClusterIP => {
             addresses = svc
                 .spec
                 .iter()
@@ -310,7 +314,8 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 })
                 .collect(),
         ),
-        node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then_some(ports),
+        node_ports: (listener_class.spec.service_type == KubernetesServiceType::NodePort)
+            .then_some(ports),
     };
     ctx.client
         .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)

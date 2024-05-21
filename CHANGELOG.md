@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Propagate `external_traffic_policy` from ListenerClass to created Services ([#XXX]).
+
 ### Changed
 
 - Update the image docker.stackable.tech/k8s/sig-storage/csi-provisioner
