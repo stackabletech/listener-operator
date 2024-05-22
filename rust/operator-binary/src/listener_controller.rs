@@ -160,7 +160,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
     pod_selector.extend([listener_mounted_pod_label(&listener).context(ListenerPodSelectorSnafu)?]);
 
-    // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
+    // ClusterIP services have no external traffic to apply policies to
     let external_traffic_policy = match listener_class.spec.service_type {
         KubernetesServiceType::NodePort | KubernetesServiceType::LoadBalancer => Some(
             listener_class
