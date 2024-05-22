@@ -159,6 +159,18 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
     pod_selector.extend([listener_mounted_pod_label(&listener).context(ListenerPodSelectorSnafu)?]);
+
+    // ClusterIP services have no external traffic to apply policies to
+    let external_traffic_policy = match listener_class.spec.service_type {
+        ServiceType::NodePort | ServiceType::LoadBalancer => Some(
+            listener_class
+                .spec
+                .service_external_traffic_policy
+                .to_string(),
+        ),
+        ServiceType::ClusterIP => None,
+    };
+
     let svc = Service {
         metadata: ObjectMeta {
             namespace: Some(ns.to_string()),
@@ -172,17 +184,15 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             ..Default::default()
         },
         spec: Some(ServiceSpec {
+            // We explicitly match here and do not implement `ToString` as there might be more (non vanilla k8s Service
+            // types) in the future.
             type_: Some(match listener_class.spec.service_type {
                 ServiceType::NodePort => "NodePort".to_string(),
                 ServiceType::LoadBalancer => "LoadBalancer".to_string(),
                 ServiceType::ClusterIP => "ClusterIP".to_string(),
             }),
             ports: Some(pod_ports.into_values().collect()),
-            // `external_traffic_policy` may only be set when the service `type` is NodePort or LoadBalancer
-            external_traffic_policy: match listener_class.spec.service_type {
-                ServiceType::NodePort | ServiceType::LoadBalancer => Some("Local".to_string()),
-                ServiceType::ClusterIP => None,
-            },
+            external_traffic_policy,
             selector: Some(pod_selector),
             publish_not_ready_addresses: Some(
                 listener
