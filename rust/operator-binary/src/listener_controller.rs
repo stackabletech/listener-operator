@@ -184,7 +184,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             ..Default::default()
         },
         spec: Some(ServiceSpec {
-            // We explecielty match here and do not implement `ToString` as there might be more (non vanilla k8s Service
+            // We explicitly match here and do not implement `ToString` as there might be more (non vanilla k8s Service
             // types) in the future.
             type_: Some(match listener_class.spec.service_type {
                 ServiceType::NodePort => "NodePort".to_string(),
