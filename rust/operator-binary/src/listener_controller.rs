@@ -5,8 +5,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::meta::OwnerReferenceBuilder,
     commons::listener::{
-        AddressType, KubernetesServiceType, Listener, ListenerClass, ListenerIngress, ListenerPort,
-        ListenerSpec, ListenerStatus,
+        AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
+        ListenerStatus, ServiceType,
     },
     k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
     kube::{
@@ -162,13 +162,13 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
 
     // ClusterIP services have no external traffic to apply policies to
     let external_traffic_policy = match listener_class.spec.service_type {
-        KubernetesServiceType::NodePort | KubernetesServiceType::LoadBalancer => Some(
+        ServiceType::NodePort | ServiceType::LoadBalancer => Some(
             listener_class
                 .spec
                 .service_external_traffic_policy
                 .to_string(),
         ),
-        KubernetesServiceType::ClusterIP => None,
+        ServiceType::ClusterIP => None,
     };
 
     let svc = Service {
@@ -184,7 +184,13 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             ..Default::default()
         },
         spec: Some(ServiceSpec {
-            type_: Some(listener_class.spec.service_type.to_string()),
+            // We explecielty match here and do not implement `ToString` as there might be more (non k8s-service types)
+            // in the future.
+            type_: Some(match listener_class.spec.service_type {
+                ServiceType::NodePort => "NodePort".to_string(),
+                ServiceType::LoadBalancer => "LoadBalancer".to_string(),
+                ServiceType::ClusterIP => "ClusterIP".to_string(),
+            }),
             ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy,
             selector: Some(pod_selector),
@@ -210,7 +216,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
-        KubernetesServiceType::NodePort => {
+        ServiceType::NodePort => {
             let endpoints = ctx
                 .client
                 .get_opt::<Endpoints>(&svc_name, ns)
@@ -250,7 +256,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .filter_map(|port| Some((port.name.clone()?, port.node_port?)))
                 .collect();
         }
-        KubernetesServiceType::LoadBalancer => {
+        ServiceType::LoadBalancer => {
             addresses = svc
                 .status
                 .iter()
@@ -273,7 +279,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .filter_map(|port| Some((port.name.clone()?, port.port)))
                 .collect();
         }
-        KubernetesServiceType::ClusterIP => {
+        ServiceType::ClusterIP => {
             addresses = svc
                 .spec
                 .iter()
@@ -314,8 +320,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 })
                 .collect(),
         ),
-        node_ports: (listener_class.spec.service_type == KubernetesServiceType::NodePort)
-            .then_some(ports),
+        node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then_some(ports),
     };
     ctx.client
         .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)

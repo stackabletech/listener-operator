@@ -2,7 +2,7 @@ use csi_grpc as csi;
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    commons::listener::{KubernetesServiceType, Listener, ListenerClass},
+    commons::listener::{Listener, ListenerClass, ServiceType},
     k8s_openapi::api::core::v1::PersistentVolumeClaim,
     kube::{core::DynamicObject, runtime::reflector::ObjectRef},
 };
@@ -135,7 +135,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                 accessible_topology: match listener_class.spec.service_type {
                     // Pick the top node (as selected by the CSI client) and "stick" to that
                     // Since we want clients to have a stable address to connect to
-                    KubernetesServiceType::NodePort => request
+                    ServiceType::NodePort => request
                         .accessibility_requirements
                         .unwrap_or_default()
                         .preferred
@@ -143,9 +143,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                         .take(1)
                         .collect(),
                     // Load balancers and services of type ClusterIP have no relationship to any particular node, so don't try to be sticky
-                    KubernetesServiceType::LoadBalancer | KubernetesServiceType::ClusterIP => {
-                        Vec::new()
-                    }
+                    ServiceType::LoadBalancer | ServiceType::ClusterIP => Vec::new(),
                 },
             }),
         }))

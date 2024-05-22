@@ -22,7 +22,7 @@ prost-types = "0.11"
 serde = "1.0"
 snafu = "0.8"
 # I did not want to release op-rs 0.68.0 just for this change...
-stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", rev = "e93736000b4bcb3027550d2e0a52fafa345c050c" }
+stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", rev = "e111ae3c39b85aa56c3fe229d503a4032ce9d4fc" }
 strum = { version = "0.26", features = ["derive"] }
 socket2 = { version = "0.5", features = ["all"] }
 tokio = { version = "1.37", features = ["full"] }
