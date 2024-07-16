@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
   in the Helm values to v4.0.1 ([#194]).
 - Update the image docker.stackable.tech/k8s/sig-storage/csi-node-driver-registrar
   in the Helm values to v2.10.1 ([#194]).
+- Bump `stackable-operator` to `0.70.0`, and other dependencies ([#208]).
 
 ### Removed
 
@@ -27,6 +28,7 @@ All notable changes to this project will be documented in this file.
 [#174]: https://github.com/stackabletech/listener-operator/pull/174
 [#194]: https://github.com/stackabletech/listener-operator/pull/194
 [#196]: https://github.com/stackabletech/listener-operator/pull/196
+[#208]: https://github.com/stackabletech/listener-operator/pull/208
 
 ## [24.3.0] - 2024-03-20
 
