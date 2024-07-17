@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD034 -->
 # Helm Chart for Stackable Operator for Stackable Listener Operator
 
 This Helm Chart can be used to install Custom Resource Definitions and the Operator for Stackable Listener Operator provided by Stackable.
@@ -24,4 +25,4 @@ The operator has example requests included in the [`/examples`](https://github.c
 
 ## Links
 
-https://github.com/stackabletech/listener-operator
+<https://github.com/stackabletech/listener-operator>

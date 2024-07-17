@@ -1,8 +1,11 @@
+<!-- markdownlint-disable MD041 -->
 <p align="center">
   <img width="150" src="./.readme/static/borrowed/Icon_Stackable.svg" alt="Stackable Logo"/>
 </p>
 
 <h1 align="center">Stackable Listener Operator</h1>
+
+<!-- markdownlint-disable MD041 -->
 
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/stackabletech/listener-operator/graphs/commit-activity)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://docs.stackable.tech/home/stable/contributor/index.html)
@@ -12,6 +15,7 @@
 
 A CSI provider intended to provide an abstract way to expose a single Pod to the outside network, while hiding details about the cluster from the application developer.
 
+<!-- markdownlint-disable MD041 MD051 -->
 It is part of the Stackable Data Platform, a curated selection of the best open source data apps like Apache Kafka, Apache Druid, Trino or Apache Spark, [all](#other-operators) working together seamlessly. Based on Kubernetes, it runs everywhere – [on prem or in the cloud](#supported-platforms).
 
 ## Installation
@@ -22,6 +26,7 @@ You can install the operator using [stackablectl or helm](https://docs.stackable
 
 As a user you do not need to build the operator yourself, but for development purposes you can read the [build instructions](./BUILDING.md) to learn how to build the operator.
 
+<!-- markdownlint-disable MD041 -->
 ## Documentation
 
 The stable documentation for this operator can be found [here](https://docs.stackable.tech/home/stable/listener-operator).
@@ -31,6 +36,7 @@ The documentation for all Stackable products can be found at [docs.stackable.tec
 
 If you have a question about the Stackable Data Platform contact us via our [homepage](https://stackable.tech/) or ask a public questions in our [Discussions forum](https://github.com/orgs/stackabletech/discussions).
 
+<!-- markdownlint-disable MD041 -->
 ## About The Stackable Data Platform
 
 This operator is written and maintained by [Stackable](https://stackable.tech) and it is part of a larger data platform.
@@ -56,7 +62,6 @@ We develop and test our operators on the following cloud platforms:
 * K3s
 * Kubernetes (for an up to date list of supported versions please check the release notes in our [docs](https://docs.stackable.tech))
 * Red Hat OpenShift
-
 
 ## Other Operators
 
@@ -95,3 +100,5 @@ This is enforced automatically when you submit a Pull Request where a bot will g
 ## Support
 
 Get started with the community edition! If you want professional support, [we offer subscription plans and custom licensing](https://stackable.tech/en/plans/).
+
+<!-- markdownlint-disable MD041 MD022 MD032 -->
