@@ -7,7 +7,7 @@ image:
 
 csiProvisioner:
   image:
-    repository: docker.stackable.tech/k8s/csi-provisioner
+    repository: docker.stackable.tech/k8s/sig-storage/csi-provisioner
     tag: v5.0.1
     pullPolicy: IfNotPresent
   resources:
@@ -19,8 +19,8 @@ csiProvisioner:
       memory: 128Mi
 csiNodeDriverRegistrar:
   image:
-    repository: docker.stackable.tech/k8s/csi-node-driver-registrar
-    tag: v2.10.1
+    repository: docker.stackable.tech/k8s/sig-storage/csi-node-driver-registrar
+    tag: v2.11.1
     pullPolicy: IfNotPresent
   resources:
     requests:

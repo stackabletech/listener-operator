@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Propagate `external_traffic_policy` from ListenerClass to created Services ([#196]).
-- Fix csi-node-driver and csi-provisioner path in Helmchart ([#203])
+- Chore: Upgrade csi-provisioner to 5.0.1 and csi-node-driver-registrar to 2.11.1 ([#203])
 
 ### Changed
 
