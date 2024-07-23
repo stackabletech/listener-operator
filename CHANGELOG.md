@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Propagate `external_traffic_policy` from ListenerClass to created Services ([#196]).
+- Adding verb `patch` to persistentvolumes in roles.yaml to support update to csi-provisioner v5.x.x ([#203]).
 
 ### Changed
 
@@ -28,6 +29,7 @@ All notable changes to this project will be documented in this file.
 [#174]: https://github.com/stackabletech/listener-operator/pull/174
 [#194]: https://github.com/stackabletech/listener-operator/pull/194
 [#196]: https://github.com/stackabletech/listener-operator/pull/196
+[#203]: https://github.com/stackabletech/listener-operator/pull/203
 [#208]: https://github.com/stackabletech/listener-operator/pull/208
 
 ## [24.3.0] - 2024-03-20
