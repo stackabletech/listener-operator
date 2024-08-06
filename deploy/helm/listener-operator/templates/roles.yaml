@@ -122,6 +122,7 @@ rules:
     verbs:
       - patch
       - create
+      - delete
 {{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
   - apiGroups:
     - security.openshift.io
