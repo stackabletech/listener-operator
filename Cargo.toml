@@ -14,17 +14,17 @@ anyhow = "1.0"
 built = { version = "0.7", features = ["chrono", "git2"] }
 clap = "4.5"
 futures = { version = "0.3", features = ["compat"] }
-h2 = "=0.4.5" # We need to keep this in sync with our patched h2 build
+h2 = "0.4"
 libc = "0.2"
 pin-project = "1.1"
 prost = "0.13"
 prost-types = "0.13"
 serde = "1.0"
 snafu = "0.8"
-stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.73.0" }
+stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.74.0" }
 strum = { version = "0.26", features = ["derive"] }
 socket2 = { version = "0.5", features = ["all"] }
-tokio = { version = "1.39", features = ["full"] }
+tokio = { version = "1.40", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 tonic = "0.12"
 tonic-build = "0.12"
@@ -32,8 +32,3 @@ tonic-reflection = "0.12"
 
 # [patch."https://github.com/stackabletech/operator-rs.git"]
 # stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "main" }
-
-[patch.crates-io]
-# Workaround for https://github.com/hyperium/tonic/issues/243
-# Can be removed once we no longer support K8s 1.25.x (and OpenShift 4.12.x)
-h2 = { git = "https://github.com/stackabletech/h2.git", branch = "feature/grpc-uds-/0.4.5" }
