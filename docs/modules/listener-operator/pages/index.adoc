@@ -1,4 +1,5 @@
 = Stackable Listener Operator
+:description: The Stackable Listener Operator for Kubernetes provisions network listeners according to the cluster policy, and injects connection parameters into Pods.
 :github: https://github.com/stackabletech/listener-operator/
 :crd: {crd-docs-base-url}/listener-operator/{crd-docs-version}/
 
