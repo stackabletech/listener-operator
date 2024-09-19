@@ -1,12 +1,13 @@
 = Security
+:description: The Listener Operator requires root container privileges to create a Unix domain socket and write exposed address information to pod volumes.
 
 == Container privileges
 
-The Listener Operator runs as a set of root containers. This is needed for two reasons:
+The Listener Operator runs as a set of root containers.
+This is needed for two reasons:
 
-1. We need to run as root to have permission to create the Unix domain socket hosting the Container Storage interface (CSI)
-driver. The Kubelet communicates with the CSI driver over this socket.
-2. We need to run as root to have permission to write information about externally exposed addresses into the pods' volume paths, as directed
-by the CSI.
+1. The root user is needed for the permission to create the Unix domain socket hosting the Container Storage interface (CSI) driver.
+   The Kubelet communicates with the CSI driver over this socket.
+2. The root user is needed for the permission to write information about externally exposed addresses into the pods' volume paths, as directed by the CSI.
 
 Running as root is currently a hard requirement.

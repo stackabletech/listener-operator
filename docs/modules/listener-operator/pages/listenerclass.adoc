@@ -1,6 +1,8 @@
 = ListenerClass
+:description: The ListenerClass defines listener types and exposure rules for Kubernetes Pods, supporting various service types like ClusterIP, NodePort, and LoadBalancer.
 
-A ListenerClass defines a category of listeners. For example, this could be "VPC-internal service", "internet-accessible service", or "K8s-internal service".
+A ListenerClass defines a category of listeners.
+For example, this could be "VPC-internal service", "internet-accessible service", or "K8s-internal service".
 The ListenerClass then defines how this intent is realized in a given cluster.
 
 For example, a Google Kubernetes Engine (GKE) cluster might want to expose all internet-facing services using a managed load balancer, since GKE nodes are
@@ -11,14 +13,17 @@ relatively short-lived and don't have stable addresses:
 include::example$listenerclass-public-gke.yaml[]
 ----
 
-On the other hand, an on-premise cluster might not have dedicated load balancer infrastructure at all, but instead use "pet" Nodes which may be expected to live for years. This might lead administrators of such systems to prefer exposing node ports directly instead:
+On the other hand, an on-premise cluster might not have dedicated load balancer infrastructure at all, but instead use "pet" Nodes which may be expected to live for years.
+This might lead administrators of such systems to prefer exposing node ports directly instead:
 
 [source,yaml]
 ----
 include::example$listenerclass-public-onprem.yaml[]
 ----
 
-Finally, it can be desirable to add additional annotations to a Service. For example, a user might want to only expose some services inside a given cloud vendor VPC. How exactly this is accomplished depends on the cloud provider in question, but for GKE this requires the annotation `networking.gke.io/load-balancer-type`:
+Finally, it can be desirable to add additional annotations to a Service.
+For example, a user might want to only expose some services inside a given cloud vendor VPC.
+How exactly this is accomplished depends on the cloud provider in question, but for GKE this requires the annotation `networking.gke.io/load-balancer-type`:
 
 [source,yaml]
 ----
@@ -27,26 +32,35 @@ include::example$listenerclass-internal-gke.yaml[]
 
 == Service types
 
-The service type is defined by `ListenerClass.spec.serviceType`. The following service types are currently supported by the Stackable Listener Operator:
+The service type is defined by `ListenerClass.spec.serviceType`.
+The following service types are currently supported by the Stackable Listener Operator:
 
 [#servicetype-clusterip]
 === `ClusterIP`
 
-The Listener can be accessed from inside the Kubernetes cluster. The Listener addresses will direct clients to the cluster-internal address.
+The Listener can be accessed from inside the Kubernetes cluster.
+The Listener addresses will direct clients to the cluster-internal address.
 
 [#servicetype-nodeport]
 === `NodePort`
 
-The Listener can be accessed from outside the Kubernetes cluster. This may include the internet, if the Nodes have public IP addresses. The Listener address will direct clients to connect to a randomly assigned port on the Nodes running the Pods.
+The Listener can be accessed from outside the Kubernetes cluster.
+This may include the internet, if the Nodes have public IP addresses.
+The Listener address will direct clients to connect to a randomly assigned port on the Nodes running the Pods.
 
-Additionally, Pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific Node. If this is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
+Additionally, Pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific Node.
+If this is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
 
 [#servicetype-loadbalancer]
 === `LoadBalancer`
 
-The Listener can be accessed from outside the Kubernetes cluster. This may include the internet, depending on the configuration of the Kubernetes cloud controller manager. A dedicated address will be allocated for the Listener.
+The Listener can be accessed from outside the Kubernetes cluster.
+This may include the internet, depending on the configuration of the Kubernetes cloud controller manager.
+A dedicated address will be allocated for the Listener.
 
-Compared to xref:#servicetype-nodeport[], this service type allows Pods to be moved freely between Nodes. However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers]. Additionally, many cloud providers charge for load-balanced traffic.
+Compared to xref:#servicetype-nodeport[], this service type allows Pods to be moved freely between Nodes.
+However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers].
+Additionally, many cloud providers charge for load-balanced traffic.
 
 == Default ListenerClasses
 
@@ -58,13 +72,16 @@ The Stackable Data Platform assumes the existence of a few predefined ListenerCl
 
 === Presets
 
-To help users get started, the Stackable Listener Operator ships different ListenerClass _presets_ for different environments. These are configured using the `preset` Helm value.
+To help users get started, the Stackable Listener Operator ships different ListenerClass _presets_ for different environments.
+These are configured using the `preset` Helm value.
 
 [#preset-stable-nodes]
 ==== `stable-nodes`
 
-The `stable-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use long-lived "pet nodes". This does _not_ require any particular networking setup, but makes pods that require
-stable addresses "sticky" to the Kubernetes Node that they were scheduled to. In addition, downstream operators may generate configurations that refer to particular nodes by name.
+The `stable-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use long-lived "pet nodes".
+This does _not_ require any particular networking setup, but makes pods that require
+stable addresses "sticky" to the Kubernetes Node that they were scheduled to.
+In addition, downstream operators may generate configurations that refer to particular nodes by name.
 
 The following ListenerClasses are installed:
 
@@ -75,12 +92,15 @@ The following ListenerClasses are installed:
 [#preset-ephemeral-nodes]
 ==== `ephemeral-nodes`
 
-The `ephemeral-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use short-lived "cattle nodes". This makes them appropriate for managed cloud environments, but requires that
+The `ephemeral-nodes` preset installs ListenerClasses appropriate for Kubernetes clusters that use short-lived "cattle nodes".
+This makes them appropriate for managed cloud environments, but requires that
 a LoadBalancer controller is present in the cluster.
 
-Managed cloud environments should generally already provide an integrated LoadBalancer controller. For on-premise environments, an external implementation such as https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips[Calico] or https://metallb.org/[MetalLB] can be used.
+Managed cloud environments should generally already provide an integrated LoadBalancer controller.
+For on-premise environments, an external implementation such as https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips[Calico] or https://metallb.org/[MetalLB] can be used.
 
-NOTE: K3s' built-in https://docs.k3s.io/networking#service-load-balancer[ServiceLB] (Klipper) is _not_ recommended, because it doesn't allow multiple Services to bind the same Port. If you use ServiceLB, use the xref:#preset-stable-nodes[] preset instead.
+NOTE: K3s' built-in https://docs.k3s.io/networking#service-load-balancer[ServiceLB] (Klipper) is _not_ recommended, because it doesn't allow multiple Services to bind the same Port.
+If you use ServiceLB, use the xref:#preset-stable-nodes[] preset instead.
 
 The following ListenerClasses are installed:
 
