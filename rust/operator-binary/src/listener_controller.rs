@@ -42,6 +42,22 @@ pub async fn run(client: stackable_operator::client::Client) {
     controller
         .owns(client.get_all_api::<Service>(), watcher::Config::default())
         .watches(
+            client.get_all_api::<ListenerClass>(),
+            watcher::Config::default(),
+            {
+                let listener_store = listener_store.clone();
+                move |listenerclass| {
+                    listener_store
+                        .state()
+                        .into_iter()
+                        .filter(move |listener| {
+                            listener.spec.class_name == listenerclass.metadata.name
+                        })
+                        .map(|l| ObjectRef::from_obj(&*l))
+                }
+            },
+        )
+        .watches(
             client.get_all_api::<Endpoints>(),
             watcher::Config::default(),
             move |endpoints| {
