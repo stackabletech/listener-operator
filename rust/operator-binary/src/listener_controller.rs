@@ -264,70 +264,8 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
-            let (pvs, endpoints) = try_join(
-                async {
-                    ctx.client
-                        .list_with_label_selector::<PersistentVolume>(
-                            &(),
-                            &LabelSelector {
-                                match_labels: Some(
-                                    listener_persistent_volume_label(&listener).unwrap(),
-                                ),
-                                ..Default::default()
-                            },
-                        )
-                        .await
-                        .context(GetListenerPvsSnafu)
-                },
-                async {
-                    ctx.client
-                        // Endpoints object may not yet be created by its respective controller
-                        .get_opt::<Endpoints>(&svc_name, ns)
-                        .await
-                        .with_context(|_| GetObjectSnafu {
-                            obj: ObjectRef::<Endpoints>::new(&svc_name).within(ns).erase(),
-                        })
-                },
-            )
-            .await?;
-
-            let pv_node_names = pvs
-                .into_iter()
-                .filter_map(|pv| pv.spec?.node_affinity?.required)
-                .flat_map(|affinity| affinity.node_selector_terms)
-                .filter_map(|terms| terms.match_expressions)
-                .flatten()
-                .filter(|expr| expr.key == NODE_TOPOLOGY_LABEL_HOSTNAME && expr.operator == "In")
-                .filter_map(|expr| expr.values)
-                .flatten()
-                .collect::<BTreeSet<_>>();
-
-            // Old objects that haven't been mounted before the PV lookup mechanism was added will
-            // not have the correct labels, so we also look up using Endpoints.
-            let endpoints_node_names = endpoints
-                .into_iter()
-                .filter_map(|endpoints| endpoints.subsets)
-                .flatten()
-                .flat_map(|subset| subset.addresses)
-                .flatten()
-                .flat_map(|addr| addr.node_name)
-                .collect::<BTreeSet<_>>();
-
-            let node_names_missing_from_pv = endpoints_node_names
-                .difference(&pv_node_names)
-                .collect::<Vec<_>>();
-            if !node_names_missing_from_pv.is_empty() {
-                tracing::warn!(
-                    ?node_names_missing_from_pv,
-                    "some backing Nodes could only be found via legacy Endpoints discovery method, {} {}",
-                    "this may cause discovery config to be unstable",
-                    "(hint: try restarting the Pods backing this Listener)"
-                );
-            }
-
-            let mut node_names = pv_node_names;
-            node_names.extend(endpoints_node_names);
-
+            let node_names =
+                node_names_for_nodeport_listener(&ctx.client, &listener, ns, &svc_name).await?;
             nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
                     .get::<Node>(node_name, &())
@@ -426,6 +364,81 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
 
 pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controller::Action {
     controller::Action::requeue(*Duration::from_secs(5))
+}
+
+/// Lists the names of the [`Node`]s backing this [`Listener`].
+///
+/// Should only be used for [`NodePort`](`ServiceType::NodePort`) [`Listener`]s.
+async fn node_names_for_nodeport_listener(
+    client: &stackable_operator::client::Client,
+    listener: &Listener,
+    namespace: &str,
+    service_name: &str,
+) -> Result<BTreeSet<String>> {
+    let (pvs, endpoints) = try_join(
+        async {
+            client
+                .list_with_label_selector::<PersistentVolume>(
+                    &(),
+                    &LabelSelector {
+                        match_labels: Some(listener_persistent_volume_label(listener).unwrap()),
+                        ..Default::default()
+                    },
+                )
+                .await
+                .context(GetListenerPvsSnafu)
+        },
+        async {
+            client
+                // Endpoints object may not yet be created by its respective controller
+                .get_opt::<Endpoints>(service_name, namespace)
+                .await
+                .with_context(|_| GetObjectSnafu {
+                    obj: ObjectRef::<Endpoints>::new(service_name)
+                        .within(namespace)
+                        .erase(),
+                })
+        },
+    )
+    .await?;
+
+    let pv_node_names = pvs
+        .into_iter()
+        .filter_map(|pv| pv.spec?.node_affinity?.required)
+        .flat_map(|affinity| affinity.node_selector_terms)
+        .filter_map(|terms| terms.match_expressions)
+        .flatten()
+        .filter(|expr| expr.key == NODE_TOPOLOGY_LABEL_HOSTNAME && expr.operator == "In")
+        .filter_map(|expr| expr.values)
+        .flatten()
+        .collect::<BTreeSet<_>>();
+
+    // Old objects that haven't been mounted before the PV lookup mechanism was added will
+    // not have the correct labels, so we also look up using Endpoints.
+    let endpoints_node_names = endpoints
+        .into_iter()
+        .filter_map(|endpoints| endpoints.subsets)
+        .flatten()
+        .flat_map(|subset| subset.addresses)
+        .flatten()
+        .flat_map(|addr| addr.node_name)
+        .collect::<BTreeSet<_>>();
+
+    let node_names_missing_from_pv = endpoints_node_names
+        .difference(&pv_node_names)
+        .collect::<Vec<_>>();
+    if !node_names_missing_from_pv.is_empty() {
+        tracing::warn!(
+            ?node_names_missing_from_pv,
+            "some backing Nodes could only be found via legacy Endpoints discovery method, {} {}",
+            "this may cause discovery config to be unstable",
+            "(hint: try restarting the Pods backing this Listener)"
+        );
+    }
+
+    let mut node_names = pv_node_names;
+    node_names.extend(endpoints_node_names);
+    Ok(node_names)
 }
 
 #[derive(Snafu, Debug)]
