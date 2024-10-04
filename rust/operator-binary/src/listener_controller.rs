@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use futures::{future::try_join_all, StreamExt};
 use snafu::{OptionExt, ResultExt, Snafu};
@@ -8,17 +11,21 @@ use stackable_operator::{
         AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
         ListenerStatus, ServiceType,
     },
-    k8s_openapi::api::core::v1::{Endpoints, Node, Service, ServicePort, ServiceSpec},
+    k8s_openapi::{
+        api::core::v1::{Node, PersistentVolume, Service, ServicePort, ServiceSpec},
+        apimachinery::pkg::apis::meta::v1::LabelSelector,
+    },
     kube::{
         api::{DynamicObject, ObjectMeta},
         runtime::{controller, reflector::ObjectRef, watcher},
+        ResourceExt,
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
     time::Duration,
 };
 use strum::IntoStaticStr;
 
-use crate::utils::node_primary_address;
+use crate::{csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME, utils::node_primary_address};
 
 #[cfg(doc)]
 use stackable_operator::k8s_openapi::api::core::v1::Pod;
@@ -26,26 +33,17 @@ use stackable_operator::k8s_openapi::api::core::v1::Pod;
 const FIELD_MANAGER_SCOPE: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
-    let controller =
-        controller::Controller::new(client.get_all_api::<Listener>(), watcher::Config::default());
-    let listener_store = controller.store();
-    controller
+    controller::Controller::new(client.get_all_api::<Listener>(), watcher::Config::default())
         .owns(client.get_all_api::<Service>(), watcher::Config::default())
         .watches(
-            client.get_all_api::<Endpoints>(),
+            client.get_all_api::<PersistentVolume>(),
             watcher::Config::default(),
-            move |endpoints| {
-                listener_store
-                    .state()
-                    .into_iter()
-                    .filter(move |listener| {
-                        listener
-                            .status
-                            .as_ref()
-                            .and_then(|s| s.service_name.as_deref())
-                            == endpoints.metadata.name.as_deref()
-                    })
-                    .map(|l| ObjectRef::from_obj(&*l))
+            |pv| {
+                let labels = pv.labels();
+                labels
+                    .get(PV_LABEL_LISTENER_NAMESPACE)
+                    .zip(labels.get(PV_LABEL_LISTENER_NAME))
+                    .map(|(ns, name)| ObjectRef::<Listener>::new(name).within(ns))
             },
         )
         .shutdown_on_signal()
@@ -75,7 +73,11 @@ pub enum Error {
     NoName,
     #[snafu(display("object has no ListenerClass (.spec.class_name)"))]
     NoListenerClass,
-    #[snafu(display("failed to generate listener's pod selector"))]
+    #[snafu(display("failed to generate Listener's PersistentVolume selector"))]
+    ListenerPvSelector {
+        source: ListenerPersistentVolumeLabelError,
+    },
+    #[snafu(display("failed to generate Listener's Pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
     },
@@ -109,6 +111,7 @@ impl ReconcilerError for Error {
             Self::NoNs => None,
             Self::NoName => None,
             Self::NoListenerClass => None,
+            Self::ListenerPvSelector { source: _ } => None,
             Self::ListenerPodSelector { source: _ } => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
             Self::BuildListenerOwnerRef { .. } => None,
@@ -217,23 +220,27 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
-            let endpoints = ctx
+            let pvs = ctx
                 .client
-                .get_opt::<Endpoints>(&svc_name, ns)
+                .list_with_label_selector::<PersistentVolume>(
+                    &(),
+                    &LabelSelector {
+                        match_labels: Some(listener_persistent_volume_label(&listener).unwrap()),
+                        ..Default::default()
+                    },
+                )
                 .await
-                .with_context(|_| GetObjectSnafu {
-                    obj: ObjectRef::<Endpoints>::new(&svc_name).within(ns).erase(),
-                })?
-                // Endpoints object may not yet be created by its respective controller
-                .unwrap_or_default();
-            let node_names = endpoints
-                .subsets
+                .unwrap();
+            let node_names = pvs
                 .into_iter()
+                .filter_map(|pv| pv.spec?.node_affinity?.required)
+                .flat_map(|affinity| affinity.node_selector_terms)
+                .filter_map(|terms| terms.match_expressions)
                 .flatten()
-                .flat_map(|subset| subset.addresses)
+                .filter(|expr| expr.key == NODE_TOPOLOGY_LABEL_HOSTNAME && expr.operator == "In")
+                .filter_map(|expr| expr.values)
                 .flatten()
-                .flat_map(|addr| addr.node_name)
-                .collect::<Vec<_>>();
+                .collect::<BTreeSet<_>>();
             nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
                     .get::<Node>(node_name, &())
@@ -356,8 +363,43 @@ pub fn listener_mounted_pod_label(
     // 60.
     // We prefer uid over name because uids have a consistent length.
     Ok((
+        // This should probably have been listeners.stackable.tech/ instead, but too late to change now
         format!("listener.stackable.tech/mnt.{}", uid.replace('-', "")),
         // Arbitrary, but (hopefully) helps indicate to users which listener it applies to
         listener.metadata.name.clone().context(NoNameSnafu)?,
     ))
+}
+
+#[derive(Snafu, Debug)]
+#[snafu(module)]
+pub enum ListenerPersistentVolumeLabelError {
+    #[snafu(display("object has no name"))]
+    NoName,
+    #[snafu(display("object has no namespace"))]
+    NoNamespace,
+}
+
+const PV_LABEL_LISTENER_NAMESPACE: &str = "listeners.stackable.tech/listener-namespace";
+const PV_LABEL_LISTENER_NAME: &str = "listeners.stackable.tech/listener-name";
+
+/// A label that identifies which [`Listener`] corresponds to a given [`PersistentVolume`].
+pub fn listener_persistent_volume_label(
+    listener: &Listener,
+) -> Result<BTreeMap<String, String>, ListenerPersistentVolumeLabelError> {
+    use listener_persistent_volume_label_error::*;
+    Ok([
+        (
+            PV_LABEL_LISTENER_NAMESPACE.to_string(),
+            listener
+                .metadata
+                .namespace
+                .clone()
+                .context(NoNamespaceSnafu)?,
+        ),
+        (
+            PV_LABEL_LISTENER_NAME.to_string(),
+            listener.metadata.name.clone().context(NoNameSnafu)?,
+        ),
+    ]
+    .into())
 }
