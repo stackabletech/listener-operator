@@ -27,6 +27,7 @@ serde.workspace = true
 snafu.workspace = true
 strum.workspace = true
 h2.workspace = true
+tracing = "0.1.40"
 
 [build-dependencies]
 built.workspace = true

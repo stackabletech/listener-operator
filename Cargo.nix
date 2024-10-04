@@ -7364,6 +7364,10 @@ rec {
             name = "tonic-reflection";
             packageId = "tonic-reflection";
           }
+          {
+            name = "tracing";
+            packageId = "tracing";
+          }
         ];
         buildDependencies = [
           {
