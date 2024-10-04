@@ -8333,9 +8333,9 @@ rec {
       };
       "tonic" = rec {
         crateName = "tonic";
-        version = "0.12.2";
+        version = "0.12.3";
         edition = "2021";
-        sha256 = "1bc8m8r7ysgkb7mhs3b3mvivd43nwaix6qnqhfp5hb2bkscbmxn6";
+        sha256 = "0ljd1lfjpw0vrm5wbv15x6nq2i38llsanls5rkzmdn2n0wrmnz47";
         authors = [
           "Lucio Franco <luciofranco14@gmail.com>"
         ];
@@ -8462,7 +8462,7 @@ rec {
           }
         ];
         features = {
-          "channel" = [ "dep:hyper" "hyper?/client" "dep:hyper-util" "hyper-util?/client-legacy" "dep:tower" "tower?/balance" "tower?/buffer" "tower?/discover" "tower?/limit" "dep:tokio" "tokio?/time" "dep:hyper-timeout" ];
+          "channel" = [ "dep:hyper" "hyper?/client" "dep:hyper-util" "hyper-util?/client-legacy" "dep:tower" "tower?/balance" "tower?/buffer" "tower?/discover" "tower?/limit" "tower?/util" "dep:tokio" "tokio?/time" "dep:hyper-timeout" ];
           "codegen" = [ "dep:async-trait" ];
           "default" = [ "transport" "codegen" "prost" ];
           "gzip" = [ "dep:flate2" ];
