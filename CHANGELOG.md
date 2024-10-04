@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Listener.status.addresses is now de-duplicated ([#231]).
+- Listener controller now listens for ListenerClass updates ([#231]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
 
