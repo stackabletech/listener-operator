@@ -17,13 +17,18 @@ use std::{fmt::Debug, path::PathBuf};
 use tonic::{Request, Response, Status};
 
 use crate::{
-    listener_controller::{listener_mounted_pod_label, ListenerMountedPodLabelError},
+    listener_controller::{
+        listener_mounted_pod_label, listener_persistent_volume_label, ListenerMountedPodLabelError,
+        ListenerPersistentVolumeLabelError,
+    },
     utils::{error_full_message, node_primary_address},
 };
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 
 const FIELD_MANAGER_SCOPE: &str = "volume";
+
+pub const NODE_TOPOLOGY_LABEL_HOSTNAME: &str = "listeners.stackable.tech/hostname";
 
 pub struct ListenerOperatorNode {
     pub client: stackable_operator::client::Client,
@@ -55,6 +60,12 @@ enum PublishVolumeError {
     #[snafu(display("PersistentVolume has no corresponding PersistentVolumeClaim"))]
     UnclaimedPv,
 
+    #[snafu(display("failed to generate {listener}'s PersistentVolume selector"))]
+    ListenerPvReference {
+        source: ListenerPersistentVolumeLabelError,
+        listener: ObjectRef<Listener>,
+    },
+
     #[snafu(display("failed to generate {listener}'s pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
@@ -73,6 +84,12 @@ enum PublishVolumeError {
     ApplyListener {
         source: stackable_operator::client::Error,
         listener: ObjectRef<Listener>,
+    },
+
+    #[snafu(display("failed to add listener label to {pv}"))]
+    AddListenerLabelToPv {
+        source: stackable_operator::client::Error,
+        pv: ObjectRef<PersistentVolume>,
     },
 
     #[snafu(display("failed to add listener label to {pod}"))]
@@ -112,9 +129,11 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::GetObject { .. } => Status::unavailable(full_msg),
             PublishVolumeError::UnclaimedPv => Status::unavailable(full_msg),
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::ListenerPvReference { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::ListenerPodSelector { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::AddListenerLabelToPv { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
             PublishVolumeError::NoAddresses { .. } => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
@@ -155,7 +174,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             max_volumes_per_node: i64::MAX,
             accessible_topology: Some(Topology {
                 segments: [(
-                    "listeners.stackable.tech/hostname".to_string(),
+                    NODE_TOPOLOGY_LABEL_HOSTNAME.to_string(),
                     self.node_name.clone(),
                 )]
                 .into(),
@@ -275,6 +294,29 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                     })?
             }
         };
+
+        // Add listener label to PV, allowing traffic to be directed based on reservations, rather than which replicas are *currently* active.
+        // See https://github.com/stackabletech/listener-operator/issues/220
+        self.client
+            .apply_patch(
+                FIELD_MANAGER_SCOPE,
+                &pv,
+                &PersistentVolume {
+                    metadata: ObjectMeta {
+                        labels: Some(listener_persistent_volume_label(&listener).context(
+                            ListenerPvReferenceSnafu {
+                                listener: ObjectRef::from_obj(&listener),
+                            },
+                        )?),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .with_context(|_| AddListenerLabelToPvSnafu {
+                pv: ObjectRef::from_obj(&pv),
+            })?;
 
         // Add listener label to pod so that traffic can be directed to it
         self.client

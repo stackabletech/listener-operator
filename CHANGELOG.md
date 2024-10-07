@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Listener.status.addresses for NodePort listeners now includes replicas that are currently unavailable ([#231]).
+
+### Fixed
+
+- Listener.status.addresses is now de-duplicated ([#231]).
+- Listener controller now listens for ListenerClass updates ([#231]).
+
+[#231]: https://github.com/stackabletech/listener-operator/pull/231
+
 ## [24.7.0] - 2024-07-24
 
 ### Added
