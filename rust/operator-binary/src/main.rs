@@ -23,6 +23,7 @@ mod csi_server;
 mod listener_controller;
 mod utils;
 
+const APP_NAME: &str = "listener";
 const OPERATOR_KEY: &str = "listeners.stackable.tech";
 
 #[derive(clap::Parser)]
