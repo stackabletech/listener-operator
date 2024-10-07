@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Listener.status.addresses for NodePort listeners now includes replicas that are currently unavailable ([#231]).
+- Stale Listener subobjects will now be deleted ([#232]).
+- Tagged Listener Services with the SDP labels ([#232]).
 
 ### Fixed
 
@@ -14,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Listener controller now listens for ListenerClass updates ([#231]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
+[#232]: https://github.com/stackabletech/listener-operator/pull/232
 
 ## [24.7.0] - 2024-07-24
 
