@@ -108,36 +108,45 @@ pub struct Ctx {
 pub enum Error {
     #[snafu(display("object has no namespace"))]
     NoNs,
+
     #[snafu(display("object has no name"))]
     NoName,
+
     #[snafu(display("object has no ListenerClass (.spec.class_name)"))]
     NoListenerClass,
+
     #[snafu(display("failed to generate Listener's PersistentVolume selector"))]
     ListenerPvSelector {
         source: ListenerPersistentVolumeLabelError,
     },
+
     #[snafu(display("failed to generate Listener's Pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
     },
+
     #[snafu(display("failed to get PersistentVolumes for Listener"))]
     GetListenerPvs {
         source: stackable_operator::client::Error,
     },
+
     #[snafu(display("failed to get {obj}"))]
     GetObject {
         source: stackable_operator::client::Error,
         obj: ObjectRef<DynamicObject>,
     },
+
     #[snafu(display("failed to build owner reference to Listener"))]
     BuildListenerOwnerRef {
         source: stackable_operator::builder::meta::Error,
     },
+
     #[snafu(display("failed to apply {svc}"))]
     ApplyService {
         source: stackable_operator::client::Error,
         svc: ObjectRef<Service>,
     },
+
     #[snafu(display("failed to apply status for Listener"))]
     ApplyStatus {
         source: stackable_operator::client::Error,
@@ -430,9 +439,9 @@ async fn node_names_for_nodeport_listener(
     if !node_names_missing_from_pv.is_empty() {
         tracing::warn!(
             ?node_names_missing_from_pv,
-            "some backing Nodes could only be found via legacy Endpoints discovery method, {} {}",
-            "this may cause discovery config to be unstable",
-            "(hint: try restarting the Pods backing this Listener)"
+            "some backing Nodes could only be found via legacy Endpoints discovery method, \
+            this may cause discovery config to be unstable \
+            (hint: try restarting the Pods backing this Listener)",
         );
     }
 
@@ -475,6 +484,7 @@ pub fn listener_mounted_pod_label(
 pub enum ListenerPersistentVolumeLabelError {
     #[snafu(display("object has no name"))]
     NoName,
+
     #[snafu(display("object has no namespace"))]
     NoNamespace,
 }
