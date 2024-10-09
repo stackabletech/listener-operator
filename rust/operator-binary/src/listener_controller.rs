@@ -28,7 +28,10 @@ use stackable_operator::{
 };
 use strum::IntoStaticStr;
 
-use crate::{csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME, utils::node_primary_address};
+use crate::{
+    csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
+    utils::{node_primary_address, AddressCandidates},
+};
 
 #[cfg(doc)]
 use stackable_operator::k8s_openapi::api::core::v1::Pod;
@@ -269,6 +272,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         })?;
 
     let nodes: Vec<Node>;
+    let kubernetes_service_fqdn: String;
     let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
@@ -306,11 +310,11 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .flat_map(|ss| ss.load_balancer.as_ref()?.ingress.as_ref())
                 .flatten()
                 .flat_map(|ingress| {
-                    ingress
-                        .hostname
-                        .as_deref()
-                        .zip(Some(AddressType::Hostname))
-                        .or_else(|| ingress.ip.as_deref().zip(Some(AddressType::Ip)))
+                    AddressCandidates {
+                        ip: ingress.ip.as_deref(),
+                        hostname: ingress.hostname.as_deref(),
+                    }
+                    .pick(listener_class.spec.preferred_address_type)
                 })
                 .collect();
             ports = svc
@@ -323,13 +327,19 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .collect();
         }
         ServiceType::ClusterIP => {
-            addresses = svc
-                .spec
-                .iter()
-                .flat_map(|s| &s.cluster_ips)
-                .flatten()
-                .map(|addr| (&**addr, AddressType::Ip))
-                .collect::<Vec<_>>();
+            addresses = match listener_class.spec.preferred_address_type {
+                AddressType::Ip => svc
+                    .spec
+                    .iter()
+                    .flat_map(|s| &s.cluster_ips)
+                    .flatten()
+                    .map(|addr| (&**addr, AddressType::Ip))
+                    .collect::<Vec<_>>(),
+                AddressType::Hostname => {
+                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.cluster.local");
+                    vec![(&kubernetes_service_fqdn, AddressType::Hostname)]
+                }
+            };
             ports = svc
                 .spec
                 .as_ref()
