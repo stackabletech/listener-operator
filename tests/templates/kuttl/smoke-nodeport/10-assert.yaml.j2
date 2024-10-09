@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx-long-name-approaching-k8s-limits
+status:
+  readyReplicas: 2
+  replicas: 2
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener-nginx-long-name-approaching-k8s-limits-0
+status:
+  ingressAddresses:
+    - addressType: {{ test_scenario['values']['addressType'] }}
