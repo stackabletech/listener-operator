@@ -4,8 +4,8 @@ use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::meta::OwnerReferenceBuilder,
     commons::listener::{
-        Listener, ListenerIngress, ListenerPort, ListenerSpec, PodListener, PodListenerScope,
-        PodListeners, PodListenersSpec,
+        Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec, PodListener,
+        PodListenerScope, PodListeners, PodListenersSpec,
     },
     k8s_openapi::api::core::v1::{Node, PersistentVolume, PersistentVolumeClaim, Pod, Volume},
     kube::{
@@ -72,6 +72,9 @@ enum PublishVolumeError {
         listener: ObjectRef<Listener>,
     },
 
+    #[snafu(display("{listener} has no associated ListenerClass"))]
+    ListenerHasNoClass { listener: ObjectRef<Listener> },
+
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
     PodHasNoNode { pod: ObjectRef<Pod> },
 
@@ -131,6 +134,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::PodHasNoNode { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ListenerPvReference { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::ListenerPodSelector { .. } => Status::failed_precondition(full_msg),
+            PublishVolumeError::ListenerHasNoClass { .. } => Status::failed_precondition(full_msg),
             PublishVolumeError::BuildListenerOwnerRef { .. } => Status::unavailable(full_msg),
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPv { .. } => Status::unavailable(full_msg),
@@ -442,10 +446,25 @@ async fn local_listener_addresses_for_pod(
             .get::<Node>(node_name, &())
             .await
             .with_context(|_| GetObjectSnafu {
-                obj: { ObjectRef::<Node>::new(node_name).erase() },
+                obj: ObjectRef::<Node>::new(node_name).erase(),
+            })?;
+        let listener_class_name =
+            listener
+                .spec
+                .class_name
+                .as_deref()
+                .with_context(|| ListenerHasNoClassSnafu {
+                    listener: ObjectRef::from_obj(listener),
+                })?;
+        let listener_class = client
+            .get::<ListenerClass>(listener_class_name, &())
+            .await
+            .with_context(|_| GetObjectSnafu {
+                obj: ObjectRef::<ListenerClass>::new(listener_class_name).erase(),
             })?;
 
         Ok(node_primary_address(&node)
+            .pick(listener_class.spec.preferred_address_type)
             .map(|(address, address_type)| ListenerIngress {
                 // nodes: Some(vec![node_name.to_string()]),
                 address: address.to_string(),

@@ -286,7 +286,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             .await?;
             addresses = nodes
                 .iter()
-                .flat_map(node_primary_address)
+                .flat_map(|node| {
+                    node_primary_address(node).pick(listener_class.spec.preferred_address_type)
+                })
                 .collect::<Vec<_>>();
             ports = svc
                 .spec

@@ -101,26 +101,42 @@ pub fn error_full_message(err: &dyn std::error::Error) -> String {
     full_msg
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AddressCandidates<'a> {
+    pub ip: Option<&'a str>,
+    pub hostname: Option<&'a str>,
+}
+
+impl<'a> AddressCandidates<'a> {
+    pub fn pick(&self, preferred_address_type: AddressType) -> Option<(&'a str, AddressType)> {
+        let ip = self.ip.zip(Some(AddressType::Ip));
+        let hostname = self.hostname.zip(Some(AddressType::Hostname));
+        match preferred_address_type {
+            AddressType::Ip => ip.or(hostname),
+            AddressType::Hostname => hostname.or(ip),
+        }
+    }
+}
+
 /// Try to guess the primary address of a Node, which it is expected that external clients should be able to reach it on
-pub fn node_primary_address(node: &Node) -> Option<(&str, AddressType)> {
+pub fn node_primary_address(node: &Node) -> AddressCandidates {
     let addrs = node
         .status
         .as_ref()
         .and_then(|s| s.addresses.as_deref())
         .unwrap_or_default();
-    // IP addresses are currently preferred over hostnames since nodes don't always have resolvable hostnames
-    addrs
-        .iter()
-        .find(|addr| addr.type_ == "ExternalIP")
-        .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
-        .zip(Some(AddressType::Ip))
-        .or_else(|| {
-            addrs
-                .iter()
-                .find(|addr| addr.type_ == "Hostname")
-                .zip(Some(AddressType::Hostname))
-        })
-        .map(|(addr, ty)| (addr.address.as_str(), ty))
+
+    AddressCandidates {
+        ip: addrs
+            .iter()
+            .find(|addr| addr.type_ == "ExternalIP")
+            .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
+            .map(|addr| addr.address.as_str()),
+        hostname: addrs
+            .iter()
+            .find(|addr| addr.type_ == "Hostname")
+            .map(|addr| addr.address.as_str()),
+    }
 }
 
 #[cfg(test)]
