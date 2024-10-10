@@ -141,7 +141,12 @@ pub fn node_primary_address(node: &Node) -> AddressCandidates {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::error_full_message;
+    use stackable_operator::{
+        commons::listener::AddressType,
+        k8s_openapi::api::core::v1::{Node, NodeAddress, NodeStatus},
+    };
+
+    use crate::utils::{error_full_message, node_primary_address};
 
     #[test]
     fn error_messages() {
@@ -158,5 +163,72 @@ mod tests {
             ),
             "leaf: middleware: root error"
         );
+    }
+
+    #[test]
+    fn node_with_only_ips_primary_address_returns_external_ip() {
+        let node = node_from_addresses(vec![("InternalIP", "10.1.2.3"), ("ExternalIP", "1.2.3.4")]);
+        let node_primary_address = node_primary_address(&node);
+        assert_eq!(
+            node_primary_address.pick(AddressType::Ip),
+            Some(("1.2.3.4", AddressType::Ip))
+        );
+        assert_eq!(
+            node_primary_address.pick(AddressType::Hostname),
+            Some(("1.2.3.4", AddressType::Ip))
+        );
+    }
+
+    #[test]
+    fn node_with_only_hostname_primary_address_returns_hostname() {
+        let node = node_from_addresses(vec![
+            ("Hostname", "first-hostname"),
+            ("Hostname", "second-hostname"),
+        ]);
+        let node_primary_address = node_primary_address(&node);
+        assert_eq!(
+            node_primary_address.pick(AddressType::Ip),
+            Some(("first-hostname", AddressType::Hostname))
+        );
+        assert_eq!(
+            node_primary_address.pick(AddressType::Hostname),
+            Some(("first-hostname", AddressType::Hostname))
+        );
+    }
+
+    #[test]
+    fn node_with_hostname_and_ips_primary_address() {
+        let node = node_from_addresses(vec![
+            ("Hostname", "node-0"),
+            ("ExternalIP", "1.2.3.4"),
+            ("InternalIP", "10.1.2.3"),
+        ]);
+        let node_primary_address = node_primary_address(&node);
+        assert_eq!(
+            node_primary_address.pick(AddressType::Ip),
+            Some(("1.2.3.4", AddressType::Ip))
+        );
+        assert_eq!(
+            node_primary_address.pick(AddressType::Hostname),
+            Some(("node-0", AddressType::Hostname))
+        );
+    }
+
+    fn node_from_addresses<'a>(addresses: impl IntoIterator<Item = (&'a str, &'a str)>) -> Node {
+        Node {
+            status: Some(NodeStatus {
+                addresses: Some(
+                    addresses
+                        .into_iter()
+                        .map(|(ty, addr)| NodeAddress {
+                            type_: ty.to_string(),
+                            address: addr.to_string(),
+                        })
+                        .collect(),
+                ),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
     }
 }
