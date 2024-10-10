@@ -21,7 +21,7 @@ use crate::{
         listener_mounted_pod_label, listener_persistent_volume_label, ListenerMountedPodLabelError,
         ListenerPersistentVolumeLabelError,
     },
-    utils::{error_full_message, node_primary_address},
+    utils::{address::node_primary_addresses, error_full_message},
 };
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
@@ -463,7 +463,7 @@ async fn local_listener_addresses_for_pod(
                 obj: ObjectRef::<ListenerClass>::new(listener_class_name).erase(),
             })?;
 
-        Ok(node_primary_address(&node)
+        Ok(node_primary_addresses(&node)
             .pick(listener_class.spec.preferred_address_type)
             .map(|(address, address_type)| ListenerIngress {
                 // nodes: Some(vec![node_name.to_string()]),

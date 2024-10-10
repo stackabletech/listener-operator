@@ -30,7 +30,7 @@ use strum::IntoStaticStr;
 
 use crate::{
     csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
-    utils::{node_primary_address, AddressCandidates},
+    utils::address::{node_primary_addresses, AddressCandidates},
 };
 
 #[cfg(doc)]
@@ -291,7 +291,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             addresses = nodes
                 .iter()
                 .flat_map(|node| {
-                    node_primary_address(node).pick(listener_class.spec.preferred_address_type)
+                    node_primary_addresses(node).pick(listener_class.spec.preferred_address_type)
                 })
                 .collect::<Vec<_>>();
             ports = svc
