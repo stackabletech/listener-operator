@@ -3,10 +3,15 @@ dimensions:
   - name: openshift
     values:
       - "false"
+  - name: addressType
+    values:
+      - IP
+      - Hostname
 tests:
   - name: smoke-nodeport
     dimensions:
       - openshift
+      - addressType
 suites:
   - name: nightly
   - name: openshift

@@ -8,7 +8,7 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::utils::error_full_message;
+use crate::utils::error::error_full_message;
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 

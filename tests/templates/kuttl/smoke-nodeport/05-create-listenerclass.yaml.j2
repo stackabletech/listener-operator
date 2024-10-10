@@ -5,3 +5,4 @@ metadata:
   name: listener-operator-test-smoke-nodeport
 spec:
   serviceType: NodePort
+  preferredAddressType: {{ test_scenario['values']['addressType'] }}

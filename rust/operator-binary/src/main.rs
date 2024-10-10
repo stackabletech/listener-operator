@@ -17,7 +17,7 @@ use stackable_operator::{
 use tokio::signal::unix::{signal, SignalKind};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
-use utils::{uds_bind_private, TonicUnixStream};
+use utils::unix_stream::{uds_bind_private, TonicUnixStream};
 
 mod csi_server;
 mod listener_controller;
