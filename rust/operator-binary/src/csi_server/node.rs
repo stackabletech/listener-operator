@@ -21,7 +21,7 @@ use crate::{
         listener_mounted_pod_label, listener_persistent_volume_label, ListenerMountedPodLabelError,
         ListenerPersistentVolumeLabelError,
     },
-    utils::{address::node_primary_addresses, error_full_message},
+    utils::{address::node_primary_addresses, error::error_full_message},
 };
 
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
