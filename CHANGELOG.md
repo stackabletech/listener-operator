@@ -6,12 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Listener.status.addresses now allows users to configure whether they prefer IP addresses or DNS hostnames ([#233]).
+- `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233]).
 
 ### Changed
 
-- Listener.status.addresses for NodePort listeners now includes replicas that are currently unavailable ([#231]).
-- Listener.status.addresses now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
+- `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
+- `Listener.status.addresses` now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
 
 ### Fixed
 
