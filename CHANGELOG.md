@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - Listener.status.addresses is now de-duplicated ([#231]).
 - Listener controller now listens for ListenerClass updates ([#231]).
+- Propagate `ListenerClass.spec.serviceAnnotations` to the created Services ([#XXX]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
 
