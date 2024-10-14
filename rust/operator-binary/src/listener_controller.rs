@@ -237,6 +237,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .context(BuildListenerOwnerRefSnafu)?]),
             // Propagate the labels from the Listener object to the Service object, so it can be found easier
             labels: listener.metadata.labels.clone(),
+            annotations: Some(listener_class.spec.service_annotations),
             ..Default::default()
         },
         spec: Some(ServiceSpec {
