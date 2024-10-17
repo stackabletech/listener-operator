@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233]).
+
 ### Changed
 
-- Listener.status.addresses for NodePort listeners now includes replicas that are currently unavailable ([#231]).
+- `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
+- `Listener.status.addresses` now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
 
 ### Fixed
 
@@ -15,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Propagate `ListenerClass.spec.serviceAnnotations` to the created Services ([#234]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
+[#233]: https://github.com/stackabletech/listener-operator/pull/233
 [#234]: https://github.com/stackabletech/listener-operator/pull/234
 
 ## [24.7.0] - 2024-07-24

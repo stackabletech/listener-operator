@@ -30,6 +30,7 @@ How exactly this is accomplished depends on the cloud provider in question, but 
 include::example$listenerclass-internal-gke.yaml[]
 ----
 
+[#servicetype]
 == Service types
 
 The service type is defined by `ListenerClass.spec.serviceType`.
@@ -61,6 +62,24 @@ A dedicated address will be allocated for the Listener.
 Compared to xref:#servicetype-nodeport[], this service type allows Pods to be moved freely between Nodes.
 However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers].
 Additionally, many cloud providers charge for load-balanced traffic.
+
+[#addresstype]
+== Address types
+
+The Stackable Listener Operator supports both IP addresses and DNS hostnames. The preferred address type for a given ListenerClass can be configured using the `ListenerClass.spec.preferredAddressType` field. If no `preferredAddressType` is specified then it defaults to xref:#addresstype-hostname[].
+
+NOTE: If the preferred address type is not supported for a given environment then another type will be used.
+
+[#addresstype-ip]
+=== IP
+
+The IP address of a resource. The addresses will be less predictable (especially for xref:#servicetype-clusterip[] services),
+but does not require any special client configuration (beyond what the xref:#servicetype[] requires).
+
+[#addresstype-hostname]
+=== Hostname
+
+The DNS hostname of a resource. Clients must be able to resolve these addresses in order to connect, which may require special DNS configuration.
 
 == Default ListenerClasses
 
