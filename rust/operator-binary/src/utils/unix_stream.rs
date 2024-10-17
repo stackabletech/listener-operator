@@ -2,7 +2,6 @@ use std::{os::unix::prelude::AsRawFd, path::Path};
 
 use pin_project::pin_project;
 use socket2::Socket;
-use stackable_operator::{commons::listener::AddressType, k8s_openapi::api::core::v1::Node};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::{UnixListener, UnixStream},
@@ -85,62 +84,4 @@ pub fn uds_bind_private(path: impl AsRef<Path>) -> Result<UnixListener, std::io:
     socket.listen(1024)?;
     socket.set_nonblocking(true)?;
     UnixListener::from_std(socket.into())
-}
-
-/// Combines the messages of an error and its sources into a [`String`] of the form `"error: source 1: source 2: root error"`
-pub fn error_full_message(err: &dyn std::error::Error) -> String {
-    use std::fmt::Write;
-    // Build the full hierarchy of error messages by walking up the stack until an error
-    // without `source` set is encountered and concatenating all encountered error strings.
-    let mut full_msg = format!("{}", err);
-    let mut curr_err = err.source();
-    while let Some(curr_source) = curr_err {
-        write!(full_msg, ": {curr_source}").expect("string formatting should be infallible");
-        curr_err = curr_source.source();
-    }
-    full_msg
-}
-
-/// Try to guess the primary address of a Node, which it is expected that external clients should be able to reach it on
-pub fn node_primary_address(node: &Node) -> Option<(&str, AddressType)> {
-    let addrs = node
-        .status
-        .as_ref()
-        .and_then(|s| s.addresses.as_deref())
-        .unwrap_or_default();
-    // IP addresses are currently preferred over hostnames since nodes don't always have resolvable hostnames
-    addrs
-        .iter()
-        .find(|addr| addr.type_ == "ExternalIP")
-        .or_else(|| addrs.iter().find(|addr| addr.type_ == "InternalIP"))
-        .zip(Some(AddressType::Ip))
-        .or_else(|| {
-            addrs
-                .iter()
-                .find(|addr| addr.type_ == "Hostname")
-                .zip(Some(AddressType::Hostname))
-        })
-        .map(|(addr, ty)| (addr.address.as_str(), ty))
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::utils::error_full_message;
-
-    #[test]
-    fn error_messages() {
-        assert_eq!(
-            error_full_message(anyhow::anyhow!("standalone error").as_ref()),
-            "standalone error"
-        );
-        assert_eq!(
-            error_full_message(
-                anyhow::anyhow!("root error")
-                    .context("middleware")
-                    .context("leaf")
-                    .as_ref()
-            ),
-            "leaf: middleware: root error"
-        );
-    }
 }

@@ -15,6 +15,7 @@ use stackable_operator::{
         AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
         ListenerStatus, ServiceType,
     },
+    iter::TryFromIterator,
     k8s_openapi::{
         api::core::v1::{Endpoints, Node, PersistentVolume, Service, ServicePort, ServiceSpec},
         apimachinery::pkg::apis::meta::v1::LabelSelector,
@@ -24,15 +25,16 @@ use stackable_operator::{
         runtime::{controller, reflector::ObjectRef, watcher},
         Resource, ResourceExt,
     },
-    kvp::Labels,
+    kvp::{Annotations, Labels},
     logging::controller::{report_controller_reconciled, ReconcilerError},
     time::Duration,
 };
 use strum::IntoStaticStr;
 
 use crate::{
-    csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME, utils::node_primary_address, APP_NAME,
-    OPERATOR_KEY,
+    csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
+    utils::address::{node_primary_addresses, AddressCandidates},
+    APP_NAME, OPERATOR_KEY,
 };
 
 #[cfg(doc)]
@@ -145,6 +147,12 @@ pub enum Error {
         source: stackable_operator::kvp::LabelError,
     },
 
+    #[snafu(display("failed to validate annotations specified by {listener_class}"))]
+    ValidateListenerClassAnnotations {
+        source: stackable_operator::kvp::AnnotationError,
+        listener_class: ObjectRef<ListenerClass>,
+    },
+
     #[snafu(display("failed to build cluster resource labels"))]
     BuildClusterResourcesLabels {
         source: stackable_operator::kvp::LabelError,
@@ -193,6 +201,10 @@ impl ReconcilerError for Error {
             Self::ListenerPodSelector { source: _ } => None,
             Self::GetListenerPvs { source: _ } => None,
             Self::ValidateListenerLabels { source: _ } => None,
+            Self::ValidateListenerClassAnnotations {
+                source: _,
+                listener_class,
+            } => Some(listener_class.clone().erase()),
             Self::BuildClusterResourcesLabels { source: _ } => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
             Self::BuildListenerOwnerRef { .. } => None,
@@ -289,6 +301,13 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                     .get_required_labels()
                     .context(BuildClusterResourcesLabelsSnafu)?,
             )
+            .with_annotations(
+                Annotations::try_from_iter(&listener_class.spec.service_annotations).context(
+                    ValidateListenerClassAnnotationsSnafu {
+                        listener_class: ObjectRef::from_obj(&listener_class),
+                    },
+                )?,
+            )
             .build(),
         spec: Some(ServiceSpec {
             // We explicitly match here and do not implement `ToString` as there might be more (non vanilla k8s Service
@@ -318,6 +337,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         .context(ApplyServiceSnafu { svc: svc_ref })?;
 
     let nodes: Vec<Node>;
+    let kubernetes_service_fqdn: String;
     let addresses: Vec<(&str, AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
@@ -335,7 +355,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
             .await?;
             addresses = nodes
                 .iter()
-                .flat_map(node_primary_address)
+                .flat_map(|node| {
+                    node_primary_addresses(node).pick(listener_class.spec.preferred_address_type)
+                })
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -353,11 +375,11 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .flat_map(|ss| ss.load_balancer.as_ref()?.ingress.as_ref())
                 .flatten()
                 .flat_map(|ingress| {
-                    ingress
-                        .hostname
-                        .as_deref()
-                        .zip(Some(AddressType::Hostname))
-                        .or_else(|| ingress.ip.as_deref().zip(Some(AddressType::Ip)))
+                    AddressCandidates {
+                        ip: ingress.ip.as_deref(),
+                        hostname: ingress.hostname.as_deref(),
+                    }
+                    .pick(listener_class.spec.preferred_address_type)
                 })
                 .collect();
             ports = svc
@@ -370,13 +392,19 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .collect();
         }
         ServiceType::ClusterIP => {
-            addresses = svc
-                .spec
-                .iter()
-                .flat_map(|s| &s.cluster_ips)
-                .flatten()
-                .map(|addr| (&**addr, AddressType::Ip))
-                .collect::<Vec<_>>();
+            addresses = match listener_class.spec.preferred_address_type {
+                AddressType::Ip => svc
+                    .spec
+                    .iter()
+                    .flat_map(|s| &s.cluster_ips)
+                    .flatten()
+                    .map(|addr| (&**addr, AddressType::Ip))
+                    .collect::<Vec<_>>(),
+                AddressType::Hostname => {
+                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.cluster.local");
+                    vec![(&kubernetes_service_fqdn, AddressType::Hostname)]
+                }
+            };
             ports = svc
                 .spec
                 .as_ref()
