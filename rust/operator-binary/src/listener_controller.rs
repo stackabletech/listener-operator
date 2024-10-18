@@ -9,11 +9,13 @@ use futures::{
 };
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    builder::meta::OwnerReferenceBuilder,
+    builder::meta::ObjectMetaBuilder,
+    cluster_resources::{ClusterResourceApplyStrategy, ClusterResources},
     commons::listener::{
         AddressType, Listener, ListenerClass, ListenerIngress, ListenerPort, ListenerSpec,
         ListenerStatus, ServiceType,
     },
+    iter::TryFromIterator,
     k8s_openapi::{
         api::core::v1::{Endpoints, Node, PersistentVolume, Service, ServicePort, ServiceSpec},
         apimachinery::pkg::apis::meta::v1::LabelSelector,
@@ -21,8 +23,9 @@ use stackable_operator::{
     kube::{
         api::{DynamicObject, ObjectMeta},
         runtime::{controller, reflector::ObjectRef, watcher},
-        ResourceExt,
+        Resource, ResourceExt,
     },
+    kvp::{Annotations, Labels},
     logging::controller::{report_controller_reconciled, ReconcilerError},
     time::Duration,
 };
@@ -31,12 +34,13 @@ use strum::IntoStaticStr;
 use crate::{
     csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
     utils::address::{node_primary_addresses, AddressCandidates},
+    APP_NAME, OPERATOR_KEY,
 };
 
 #[cfg(doc)]
 use stackable_operator::k8s_openapi::api::core::v1::Pod;
 
-const FIELD_MANAGER_SCOPE: &str = "listener";
+const CONTROLLER_NAME: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
     let controller =
@@ -115,6 +119,11 @@ pub enum Error {
     #[snafu(display("object has no name"))]
     NoName,
 
+    #[snafu(display("failed to create cluster resources"))]
+    CreateClusterResources {
+        source: stackable_operator::cluster_resources::Error,
+    },
+
     #[snafu(display("object has no ListenerClass (.spec.class_name)"))]
     NoListenerClass,
 
@@ -133,6 +142,22 @@ pub enum Error {
         source: stackable_operator::client::Error,
     },
 
+    #[snafu(display("failed to validate labels passed through from Listener"))]
+    ValidateListenerLabels {
+        source: stackable_operator::kvp::LabelError,
+    },
+
+    #[snafu(display("failed to validate annotations specified by {listener_class}"))]
+    ValidateListenerClassAnnotations {
+        source: stackable_operator::kvp::AnnotationError,
+        listener_class: ObjectRef<ListenerClass>,
+    },
+
+    #[snafu(display("failed to build cluster resource labels"))]
+    BuildClusterResourcesLabels {
+        source: stackable_operator::kvp::LabelError,
+    },
+
     #[snafu(display("failed to get {obj}"))]
     GetObject {
         source: stackable_operator::client::Error,
@@ -146,8 +171,13 @@ pub enum Error {
 
     #[snafu(display("failed to apply {svc}"))]
     ApplyService {
-        source: stackable_operator::client::Error,
+        source: stackable_operator::cluster_resources::Error,
         svc: ObjectRef<Service>,
+    },
+
+    #[snafu(display("failed to delete orphaned resources"))]
+    DeleteOrphans {
+        source: stackable_operator::cluster_resources::Error,
     },
 
     #[snafu(display("failed to apply status for Listener"))]
@@ -165,19 +195,37 @@ impl ReconcilerError for Error {
         match self {
             Self::NoNs => None,
             Self::NoName => None,
+            Self::CreateClusterResources { source: _ } => None,
             Self::NoListenerClass => None,
             Self::ListenerPvSelector { source: _ } => None,
             Self::ListenerPodSelector { source: _ } => None,
             Self::GetListenerPvs { source: _ } => None,
+            Self::ValidateListenerLabels { source: _ } => None,
+            Self::ValidateListenerClassAnnotations {
+                source: _,
+                listener_class,
+            } => Some(listener_class.clone().erase()),
+            Self::BuildClusterResourcesLabels { source: _ } => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
             Self::BuildListenerOwnerRef { .. } => None,
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
+            Self::DeleteOrphans { source: _ } => None,
             Self::ApplyStatus { source: _ } => None,
         }
     }
 }
 
 pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<controller::Action> {
+    let mut cluster_resources = ClusterResources::new(
+        APP_NAME,
+        OPERATOR_KEY,
+        CONTROLLER_NAME,
+        &listener.object_ref(&()),
+        // Listeners don't currently support pausing
+        ClusterResourceApplyStrategy::Default,
+    )
+    .context(CreateClusterResourcesSnafu)?;
+
     let ns = listener.metadata.namespace.as_deref().context(NoNsSnafu)?;
     let listener_class_name = listener
         .spec
@@ -231,18 +279,36 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     };
 
     let svc = Service {
-        metadata: ObjectMeta {
-            namespace: Some(ns.to_string()),
-            name: Some(svc_name.clone()),
-            owner_references: Some(vec![OwnerReferenceBuilder::new()
-                .initialize_from_resource(&*listener)
-                .build()
-                .context(BuildListenerOwnerRefSnafu)?]),
-            // Propagate the labels from the Listener object to the Service object, so it can be found easier
-            labels: listener.metadata.labels.clone(),
-            annotations: Some(listener_class.spec.service_annotations),
-            ..Default::default()
-        },
+        metadata: ObjectMetaBuilder::new()
+            .namespace(ns)
+            .name(&svc_name)
+            .ownerreference_from_resource(&*listener, Some(true), Some(true))
+            .context(BuildListenerOwnerRefSnafu)?
+            .with_labels(
+                Labels::try_from(
+                    listener
+                        .metadata
+                        .labels
+                        .as_ref()
+                        .unwrap_or(&BTreeMap::new()),
+                )
+                .context(ValidateListenerLabelsSnafu)?,
+            )
+            .with_labels(
+                cluster_resources
+                    // Not using Labels::recommended, since it carries a bunch of extra information that is
+                    // only relevant for stacklets (such as rolegroups and product versions).
+                    .get_required_labels()
+                    .context(BuildClusterResourcesLabelsSnafu)?,
+            )
+            .with_annotations(
+                Annotations::try_from_iter(&listener_class.spec.service_annotations).context(
+                    ValidateListenerClassAnnotationsSnafu {
+                        listener_class: ObjectRef::from_obj(&listener_class),
+                    },
+                )?,
+            )
+            .build(),
         spec: Some(ServiceSpec {
             // We explicitly match here and do not implement `ToString` as there might be more (non vanilla k8s Service
             // types) in the future.
@@ -264,13 +330,11 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         }),
         ..Default::default()
     };
-    let svc = ctx
-        .client
-        .apply_patch(FIELD_MANAGER_SCOPE, &svc, &svc)
+    let svc_ref = ObjectRef::from_obj(&svc);
+    let svc = cluster_resources
+        .add(&ctx.client, svc)
         .await
-        .with_context(|_| ApplyServiceSnafu {
-            svc: ObjectRef::from_obj(&svc),
-        })?;
+        .context(ApplyServiceSnafu { svc: svc_ref })?;
 
     let nodes: Vec<Node>;
     let kubernetes_service_fqdn: String;
@@ -376,8 +440,14 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         ),
         node_ports: (listener_class.spec.service_type == ServiceType::NodePort).then_some(ports),
     };
+
+    cluster_resources
+        .delete_orphaned_resources(&ctx.client)
+        .await
+        .context(DeleteOrphansSnafu)?;
+
     ctx.client
-        .apply_patch_status(FIELD_MANAGER_SCOPE, &listener_status_meta, &listener_status)
+        .apply_patch_status(CONTROLLER_NAME, &listener_status_meta, &listener_status)
         .await
         .context(ApplyStatusSnafu)?;
 

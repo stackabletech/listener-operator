@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 
 - `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
 - `Listener.status.addresses` now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
+- Stale Listener subobjects will now be deleted ([#232]).
+- Tagged Listener Services with the SDP labels ([#232]).
 
 ### Fixed
 
@@ -20,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Propagate `ListenerClass.spec.serviceAnnotations` to the created Services ([#234]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
+[#232]: https://github.com/stackabletech/listener-operator/pull/232
 [#233]: https://github.com/stackabletech/listener-operator/pull/233
 [#234]: https://github.com/stackabletech/listener-operator/pull/234
 
