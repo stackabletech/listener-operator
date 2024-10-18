@@ -85,7 +85,8 @@ async fn main() -> anyhow::Result<()> {
                 built_info::RUSTC_VERSION,
             );
             let client =
-                stackable_operator::client::create_client(Some(OPERATOR_KEY.to_string())).await?;
+                stackable_operator::client::initialize_operator(Some(OPERATOR_KEY.to_string()))
+                    .await?;
             if csi_endpoint
                 .symlink_metadata()
                 .map_or(false, |meta| meta.file_type().is_socket())
