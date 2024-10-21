@@ -25,6 +25,7 @@ use stackable_operator::{
     },
     logging::controller::{report_controller_reconciled, ReconcilerError},
     time::Duration,
+    utils::cluster_domain::KUBERNETES_CLUSTER_DOMAIN,
 };
 use strum::IntoStaticStr;
 
@@ -328,6 +329,9 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                 .collect();
         }
         ServiceType::ClusterIP => {
+            let cluster_domain = KUBERNETES_CLUSTER_DOMAIN.get().expect(
+                "KUBERNETES_CLUSTER_DOMAIN must first be set by calling initialize_operator",
+            );
             addresses = match listener_class.spec.preferred_address_type {
                 AddressType::Ip => svc
                     .spec
@@ -337,7 +341,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
                     .map(|addr| (&**addr, AddressType::Ip))
                     .collect::<Vec<_>>(),
                 AddressType::Hostname => {
-                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.cluster.local");
+                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.{cluster_domain}");
                     vec![(&kubernetes_service_fqdn, AddressType::Hostname)]
                 }
             };
