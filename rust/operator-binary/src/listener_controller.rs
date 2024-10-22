@@ -22,6 +22,7 @@ use stackable_operator::{
     },
     kube::{
         api::{DynamicObject, ObjectMeta},
+        core::{error_boundary, DeserializeGuard},
         runtime::{controller, reflector::ObjectRef, watcher},
         Resource, ResourceExt,
     },
@@ -43,13 +44,18 @@ use stackable_operator::k8s_openapi::api::core::v1::Pod;
 const CONTROLLER_NAME: &str = "listener";
 
 pub async fn run(client: stackable_operator::client::Client) {
-    let controller =
-        controller::Controller::new(client.get_all_api::<Listener>(), watcher::Config::default());
+    let controller = controller::Controller::new(
+        client.get_all_api::<DeserializeGuard<Listener>>(),
+        watcher::Config::default(),
+    );
     let listener_store = controller.store();
     controller
-        .owns(client.get_all_api::<Service>(), watcher::Config::default())
+        .owns(
+            client.get_all_api::<DeserializeGuard<Service>>(),
+            watcher::Config::default(),
+        )
         .watches(
-            client.get_all_api::<ListenerClass>(),
+            client.get_all_api::<DeserializeGuard<ListenerClass>>(),
             watcher::Config::default(),
             {
                 let listener_store = listener_store.clone();
@@ -58,38 +64,44 @@ pub async fn run(client: stackable_operator::client::Client) {
                         .state()
                         .into_iter()
                         .filter(move |listener| {
-                            listener.spec.class_name == listenerclass.metadata.name
+                            let Ok(listener) = &listener.0 else {
+                                return false;
+                            };
+                            listener.spec.class_name == listenerclass.meta().name
                         })
                         .map(|l| ObjectRef::from_obj(&*l))
                 }
             },
         )
         .watches(
-            client.get_all_api::<Endpoints>(),
+            client.get_all_api::<DeserializeGuard<Endpoints>>(),
             watcher::Config::default(),
             move |endpoints| {
                 listener_store
                     .state()
                     .into_iter()
                     .filter(move |listener| {
+                        let Ok(listener) = &listener.0 else {
+                            return false;
+                        };
                         listener
                             .status
                             .as_ref()
                             .and_then(|s| s.service_name.as_deref())
-                            == endpoints.metadata.name.as_deref()
+                            == endpoints.meta().name.as_deref()
                     })
                     .map(|l| ObjectRef::from_obj(&*l))
             },
         )
         .watches(
-            client.get_all_api::<PersistentVolume>(),
+            client.get_all_api::<DeserializeGuard<PersistentVolume>>(),
             watcher::Config::default(),
             |pv| {
                 let labels = pv.labels();
                 labels
                     .get(PV_LABEL_LISTENER_NAMESPACE)
                     .zip(labels.get(PV_LABEL_LISTENER_NAME))
-                    .map(|(ns, name)| ObjectRef::<Listener>::new(name).within(ns))
+                    .map(|(ns, name)| ObjectRef::<DeserializeGuard<Listener>>::new(name).within(ns))
             },
         )
         .shutdown_on_signal()
@@ -113,6 +125,11 @@ pub struct Ctx {
 
 #[derive(Debug, Snafu, IntoStaticStr)]
 pub enum Error {
+    #[snafu(display("Listener object is invalid"))]
+    InvalidListener {
+        source: error_boundary::InvalidObject,
+    },
+
     #[snafu(display("object has no namespace"))]
     NoNs,
 
@@ -193,6 +210,7 @@ impl ReconcilerError for Error {
 
     fn secondary_object(&self) -> Option<ObjectRef<DynamicObject>> {
         match self {
+            Self::InvalidListener { source: _ } => None,
             Self::NoNs => None,
             Self::NoName => None,
             Self::CreateClusterResources { source: _ } => None,
@@ -215,7 +233,17 @@ impl ReconcilerError for Error {
     }
 }
 
-pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<controller::Action> {
+pub async fn reconcile(
+    listener: Arc<DeserializeGuard<Listener>>,
+    ctx: Arc<Ctx>,
+) -> Result<controller::Action> {
+    tracing::info!("Starting reconcile");
+    let listener = listener
+        .0
+        .as_ref()
+        .map_err(error_boundary::InvalidObject::clone)
+        .context(InvalidListenerSnafu)?;
+
     let mut cluster_resources = ClusterResources::new(
         APP_NAME,
         OPERATOR_KEY,
@@ -265,7 +293,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         .collect::<BTreeMap<_, ServicePort>>();
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
-    pod_selector.extend([listener_mounted_pod_label(&listener).context(ListenerPodSelectorSnafu)?]);
+    pod_selector.extend([listener_mounted_pod_label(listener).context(ListenerPodSelectorSnafu)?]);
 
     // ClusterIP services have no external traffic to apply policies to
     let external_traffic_policy = match listener_class.spec.service_type {
@@ -282,7 +310,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
         metadata: ObjectMetaBuilder::new()
             .namespace(ns)
             .name(&svc_name)
-            .ownerreference_from_resource(&*listener, Some(true), Some(true))
+            .ownerreference_from_resource(listener, Some(true), Some(true))
             .context(BuildListenerOwnerRefSnafu)?
             .with_labels(
                 Labels::try_from(
@@ -343,7 +371,7 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     match listener_class.spec.service_type {
         ServiceType::NodePort => {
             let node_names =
-                node_names_for_nodeport_listener(&ctx.client, &listener, ns, &svc_name).await?;
+                node_names_for_nodeport_listener(&ctx.client, listener, ns, &svc_name).await?;
             nodes = try_join_all(node_names.iter().map(|node_name| async {
                 ctx.client
                     .get::<Node>(node_name, &())
@@ -454,8 +482,13 @@ pub async fn reconcile(listener: Arc<Listener>, ctx: Arc<Ctx>) -> Result<control
     Ok(controller::Action::await_change())
 }
 
-pub fn error_policy<T>(_obj: Arc<T>, _error: &Error, _ctx: Arc<Ctx>) -> controller::Action {
-    controller::Action::requeue(*Duration::from_secs(5))
+pub fn error_policy<T>(_obj: Arc<T>, error: &Error, _ctx: Arc<Ctx>) -> controller::Action {
+    match error {
+        // root object is invalid, will be requeued when modified anyway
+        Error::InvalidListener { .. } => controller::Action::await_change(),
+
+        _ => controller::Action::requeue(*Duration::from_secs(10)),
+    }
 }
 
 /// Lists the names of the [`Node`]s backing this [`Listener`].
