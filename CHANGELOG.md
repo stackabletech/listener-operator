@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233]).
+- The operator can now run on Kubernetes clusters using a non-default cluster domain.
+  Use the env var `KUBERNETES_CLUSTER_DOMAIN` or the operator Helm chart property `kubernetesClusterDomain` to set a non-default cluster domain ([#237]).
 
 ### Changed
 
@@ -26,6 +28,7 @@ All notable changes to this project will be documented in this file.
 [#232]: https://github.com/stackabletech/listener-operator/pull/232
 [#233]: https://github.com/stackabletech/listener-operator/pull/233
 [#234]: https://github.com/stackabletech/listener-operator/pull/234
+[#237]: https://github.com/stackabletech/listener-operator/pull/237
 [#238]: https://github.com/stackabletech/listener-operator/pull/238
 
 ## [24.7.0] - 2024-07-24

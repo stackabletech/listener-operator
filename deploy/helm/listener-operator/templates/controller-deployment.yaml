@@ -42,6 +42,10 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: /csi/csi.sock
+            {{- if .Values.kubernetesClusterDomain }}
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ .Values.kubernetesClusterDomain | quote }}
+            {{- end }}
           volumeMounts:
             - name: csi
               mountPath: /csi

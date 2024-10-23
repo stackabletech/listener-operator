@@ -254,6 +254,7 @@ pub async fn reconcile(
     )
     .context(CreateClusterResourcesSnafu)?;
 
+    let cluster_info = &ctx.client.kubernetes_cluster_info;
     let ns = listener.metadata.namespace.as_deref().context(NoNsSnafu)?;
     let listener_class_name = listener
         .spec
@@ -420,6 +421,7 @@ pub async fn reconcile(
                 .collect();
         }
         ServiceType::ClusterIP => {
+            let cluster_domain = &cluster_info.cluster_domain;
             addresses = match listener_class.spec.preferred_address_type {
                 AddressType::Ip => svc
                     .spec
@@ -429,7 +431,7 @@ pub async fn reconcile(
                     .map(|addr| (&**addr, AddressType::Ip))
                     .collect::<Vec<_>>(),
                 AddressType::Hostname => {
-                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.cluster.local");
+                    kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.{cluster_domain}");
                     vec![(&kubernetes_service_fqdn, AddressType::Hostname)]
                 }
             };

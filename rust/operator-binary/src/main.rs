@@ -12,6 +12,7 @@ use futures::{pin_mut, FutureExt, TryStreamExt};
 use stackable_operator::{
     commons::listener::{Listener, ListenerClass, PodListeners},
     logging::TracingTarget,
+    utils::cluster_info::KubernetesClusterInfoOpts,
     CustomResourceExt,
 };
 use tokio::signal::unix::{signal, SignalKind};
@@ -37,11 +38,15 @@ struct Opts {
 struct ListenerOperatorRun {
     #[arg(long, env, default_value_t, value_enum)]
     tracing_target: TracingTarget,
+
     #[clap(long, env)]
     csi_endpoint: PathBuf,
 
     #[clap(subcommand)]
     mode: RunMode,
+
+    #[command(flatten)]
+    pub cluster_info_opts: KubernetesClusterInfoOpts,
 }
 
 #[derive(clap::Parser, strum::AsRefStr)]
@@ -70,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
             tracing_target,
             csi_endpoint,
             mode,
+            cluster_info_opts,
         }) => {
             stackable_operator::logging::initialize_logging(
                 "LISTENER_OPERATOR_LOG",
@@ -84,9 +90,11 @@ async fn main() -> anyhow::Result<()> {
                 built_info::BUILT_TIME_UTC,
                 built_info::RUSTC_VERSION,
             );
-            let client =
-                stackable_operator::client::initialize_operator(Some(OPERATOR_KEY.to_string()))
-                    .await?;
+            let client = stackable_operator::client::initialize_operator(
+                Some(OPERATOR_KEY.to_string()),
+                &cluster_info_opts,
+            )
+            .await?;
             if csi_endpoint
                 .symlink_metadata()
                 .map_or(false, |meta| meta.file_type().is_socket())
