@@ -29,7 +29,6 @@ use stackable_operator::{
     kvp::{Annotations, Labels},
     logging::controller::{report_controller_reconciled, ReconcilerError},
     time::Duration,
-    utils::cluster_domain::KUBERNETES_CLUSTER_DOMAIN,
 };
 use strum::IntoStaticStr;
 
@@ -255,6 +254,7 @@ pub async fn reconcile(
     )
     .context(CreateClusterResourcesSnafu)?;
 
+    let cluster_info = &ctx.client.kubernetes_cluster_info;
     let ns = listener.metadata.namespace.as_deref().context(NoNsSnafu)?;
     let listener_class_name = listener
         .spec
@@ -421,9 +421,7 @@ pub async fn reconcile(
                 .collect();
         }
         ServiceType::ClusterIP => {
-            let cluster_domain = KUBERNETES_CLUSTER_DOMAIN.get().expect(
-                "KUBERNETES_CLUSTER_DOMAIN must first be set by calling initialize_operator",
-            );
+            let cluster_domain = &cluster_info.cluster_domain;
             addresses = match listener_class.spec.preferred_address_type {
                 AddressType::Ip => svc
                     .spec
