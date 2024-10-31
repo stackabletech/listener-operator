@@ -364,6 +364,7 @@ pub async fn reconcile(
         .add(&ctx.client, svc)
         .await
         .context(ApplyServiceSnafu { svc: svc_ref })?;
+    let preferred_address_type = listener_class.spec.resolve_preferred_address_type();
 
     let nodes: Vec<Node>;
     let kubernetes_service_fqdn: String;
@@ -384,9 +385,7 @@ pub async fn reconcile(
             .await?;
             addresses = nodes
                 .iter()
-                .flat_map(|node| {
-                    node_primary_addresses(node).pick(listener_class.spec.preferred_address_type)
-                })
+                .flat_map(|node| node_primary_addresses(node).pick(preferred_address_type))
                 .collect::<Vec<_>>();
             ports = svc
                 .spec
@@ -408,7 +407,7 @@ pub async fn reconcile(
                         ip: ingress.ip.as_deref(),
                         hostname: ingress.hostname.as_deref(),
                     }
-                    .pick(listener_class.spec.preferred_address_type)
+                    .pick(preferred_address_type)
                 })
                 .collect();
             ports = svc
@@ -422,7 +421,7 @@ pub async fn reconcile(
         }
         ServiceType::ClusterIP => {
             let cluster_domain = &cluster_info.cluster_domain;
-            addresses = match listener_class.spec.preferred_address_type {
+            addresses = match preferred_address_type {
                 AddressType::Ip => svc
                     .spec
                     .iter()

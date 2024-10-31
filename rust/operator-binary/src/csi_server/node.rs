@@ -464,7 +464,7 @@ async fn local_listener_addresses_for_pod(
             })?;
 
         Ok(node_primary_addresses(&node)
-            .pick(listener_class.spec.preferred_address_type)
+            .pick(listener_class.spec.resolve_preferred_address_type())
             .map(|(address, address_type)| ListenerIngress {
                 // nodes: Some(vec![node_name.to_string()]),
                 address: address.to_string(),
