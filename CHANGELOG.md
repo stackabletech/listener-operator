@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
   (previously NodePort and ClusterIP would prefer IP addresses).
   However, the `external-unstable` ListenerClass deployed by the listener-operator still uses the IPs to avoid a regression,
   e.g. in the case of `kind` clusters the host can probably not resolve the hostname of the Kubernetes node
-  (such as `kind-control-plane`) ([#233], [#XXX]).
+  (such as `kind-control-plane`) ([#233], [#243]).
 - `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
 - Stale Listener subobjects will now be deleted ([#232]).
 - Tagged Listener Services with the SDP labels ([#232]).
@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 [#234]: https://github.com/stackabletech/listener-operator/pull/234
 [#237]: https://github.com/stackabletech/listener-operator/pull/237
 [#238]: https://github.com/stackabletech/listener-operator/pull/238
+[#243]: https://github.com/stackabletech/listener-operator/pull/243
 
 ## [24.7.0] - 2024-07-24
 
