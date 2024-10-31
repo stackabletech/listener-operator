@@ -66,7 +66,7 @@ Additionally, many cloud providers charge for load-balanced traffic.
 [#addresstype]
 == Address types
 
-The Stackable Listener Operator supports both IP addresses and DNS hostnames. The preferred address type for a given ListenerClass can be configured using the `ListenerClass.spec.preferredAddressType` field. If no `preferredAddressType` is specified then it defaults to xref:#addresstype-hostname[].
+The Stackable Listener Operator supports both IP addresses and DNS hostnames. The preferred address type for a given ListenerClass can be configured using the `ListenerClass.spec.preferredAddressType` field. If no `preferredAddressType` is specified then it defaults to xref:#addresstype-hostname-conservative[].
 
 NOTE: If the preferred address type is not supported for a given environment then another type will be used.
 
@@ -80,6 +80,11 @@ but does not require any special client configuration (beyond what the xref:#ser
 === Hostname
 
 The DNS hostname of a resource. Clients must be able to resolve these addresses in order to connect, which may require special DNS configuration.
+
+[#addresstype-hostname-conservative]
+=== HostnameConservative
+
+A pseudo-addresstype that is equivalent to xref:#addresstype-ip[] for xref:#servicetype-nodeport[] services, and xref:#addresstype-hostname[] for all others. This means that we default to hostnames where "safe", but don't assume that nodes are resolvable by external clients.
 
 == Default ListenerClasses
 
