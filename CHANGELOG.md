@@ -12,8 +12,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- BREAKING: `Listener.status.addresses` now defaults to hostnames for ClusterIP services.
+  (NodePorts remain on the IP address of the Node for now, LoadBalancers already prefer the hostname).
+  Previously ClusterIP would prefer IP addresses ([#233], [#XXX]).
+
+- BREAKING: `Listener.status.addresses` now defaults to hostnames for all service types
+  (previously NodePort and ClusterIP would prefer IP addresses).
+  However, the `external-unstable` ListenerClass deployed by the listener-operator still uses the IPs to avoid a regression,
+  e.g. in the case of `kind` clusters the host can probably not resolve the hostname of the Kubernetes node
+  (such as `kind-control-plane`) ([#233], [#XXX]).
 - `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
-- `Listener.status.addresses` now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
 - Stale Listener subobjects will now be deleted ([#232]).
 - Tagged Listener Services with the SDP labels ([#232]).
 

@@ -14,6 +14,11 @@ metadata:
   name: external-unstable
 spec:
   serviceType: NodePort
+  # Ideally we would prefer the Hostname here, but up to (including) SDP 24.7 we defaulted to the IP.
+  # We actually defaulted to Hostname for some weeks, but noticed this breaks external access to kind clusters, as the
+  # local machines can not resolve the hostnames of the nodes (such as kind-control-plane).
+  # So we stick to the old default and re-visit the default later - after SDP 24.11 is released.
+  preferredAddressType: IP
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
@@ -36,6 +41,11 @@ metadata:
   name: external-unstable
 spec:
   serviceType: NodePort
+  # Ideally we would prefer the Hostname here, but up to (including) SDP 24.7 we defaulted to the IP.
+  # We actually defaulted to Hostname for some weeks, but noticed this breaks external access to kind clusters, as the
+  # local machines can not resolve the hostnames of the nodes (such as kind-control-plane).
+  # So we stick to the old default and re-visit the default later - after SDP 24.11 is released.
+  preferredAddressType: IP
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
@@ -51,6 +61,10 @@ spec:
   # or on-premise environments that don't support external LoadBalancer peering (such as Calico (https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips)
   # or MetalLB (https://metallb.org/)).
   serviceType: NodePort
+  # As the nodes have stable addresses we expect them to have hostnames that are resolvable outside of Kubernetes.
+  # And yes, we know this causes problems when running on kind with the stable-nodes preset (default), as the kind node
+  # hostname is very likely not resolvable on the host machine.
+  preferredAddressType: Hostname
 {{ else }}
 {{ fail "An invalid preset was configured" }}
 {{ end }}
