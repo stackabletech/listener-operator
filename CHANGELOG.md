@@ -6,14 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233]).
+- `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233], [#244]).
 - The operator can now run on Kubernetes clusters using a non-default cluster domain.
   Use the env var `KUBERNETES_CLUSTER_DOMAIN` or the operator Helm chart property `kubernetesClusterDomain` to set a non-default cluster domain ([#237]).
 
 ### Changed
 
 - `Listener.status.addresses` for NodePort listeners now includes replicas that are currently unavailable ([#231]).
-- `Listener.status.addresses` now defaults to DNS hostnames for all service types (previously NodePort and ClusterIP would prefer IP addresses, [#233]).
+- BREAKING: `Listener.status.addresses` now defaults to DNS hostnames for ClusterIP services, rather than IP addresses ([#233], [#244]).
 - Stale Listener subobjects will now be deleted ([#232]).
 - Tagged Listener Services with the SDP labels ([#232]).
 
@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 [#234]: https://github.com/stackabletech/listener-operator/pull/234
 [#237]: https://github.com/stackabletech/listener-operator/pull/237
 [#238]: https://github.com/stackabletech/listener-operator/pull/238
+[#244]: https://github.com/stackabletech/listener-operator/pull/244
 
 ## [24.7.0] - 2024-07-24
 
