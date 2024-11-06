@@ -1,0 +1,5 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: envsubst '$NAMESPACE' < 05_listenerclass.yaml | kubectl apply -n $NAMESPACE -f -

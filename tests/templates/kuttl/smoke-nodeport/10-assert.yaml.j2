@@ -13,4 +13,10 @@ metadata:
   name: listener-nginx-long-name-approaching-k8s-limits-0
 status:
   ingressAddresses:
+# FIXME: This test seems to assume that Nodes always have a hostname *and* a IP address (which should be the case on
+# e.g. kind)! We probably need to relax this assertion at a later point of time
+{% if test_scenario['values']['addressType'] == 'HostnameConservative' %}
+    - addressType: IP
+{% else %}
     - addressType: {{ test_scenario['values']['addressType'] }}
+{% endif %}
