@@ -84,7 +84,8 @@ The DNS hostname of a resource. Clients must be able to resolve these addresses 
 [#addresstype-hostname-conservative]
 === HostnameConservative
 
-A pseudo-addresstype that is equivalent to xref:#addresstype-ip[] for xref:#servicetype-nodeport[] services, and xref:#addresstype-hostname[] for all others. This means that we default to hostnames where "safe", but don't assume that nodes are resolvable by external clients.
+A pseudo-addresstype that is equivalent to xref:#addresstype-ip[] for xref:#servicetype-nodeport[] services, and xref:#addresstype-hostname[] for all others.
+This means that we default to hostnames where "safe", but don't assume that nodes are resolvable by external clients.
 
 == Default ListenerClasses
 
