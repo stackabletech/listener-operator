@@ -61,7 +61,7 @@ spec:
                 ADDR=$(kubectl get listener/listener-$pod \
                   -o jsonpath='http://{.status.ingressAddresses[0].address}:{.status.ingressAddresses[0].ports.http}/pod-name');
                 echo Requesting $ADDR should return $pod;
-                echo curl -s $ADDR | grep $pod;
+                curl -s $ADDR | grep $pod;
               done
 
               echo Testing access via PodListeners
@@ -70,7 +70,7 @@ spec:
                 ADDR=$(kubectl get podlisteners/pod-$POD_UID \
                   -o jsonpath='http://{.spec.listeners.listener.ingressAddresses[0].address}:{.spec.listeners.listener.ingressAddresses[0].ports.http}/pod-name');
                 echo Requesting $ADDR should return $pod;
-                echo curl -s $ADDR | grep $pod;
+                curl -s $ADDR | grep $pod;
               done
 {% endif %}
           resources:
