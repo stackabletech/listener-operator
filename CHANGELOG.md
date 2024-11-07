@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Listener controller now listens for ListenerClass updates ([#231]).
 - Propagate `ListenerClass.spec.serviceAnnotations` to the created Services ([#234]).
 - Failing to parse one `Listener`/`ListenerClass` should no longer cause the whole operator to stop functioning ([#238]).
+- Added necessary RBAC permissions for running on Openshift ([#246]).
 
 [#231]: https://github.com/stackabletech/listener-operator/pull/231
 [#232]: https://github.com/stackabletech/listener-operator/pull/232
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 [#237]: https://github.com/stackabletech/listener-operator/pull/237
 [#238]: https://github.com/stackabletech/listener-operator/pull/238
 [#244]: https://github.com/stackabletech/listener-operator/pull/244
+[#246]: https://github.com/stackabletech/listener-operator/pull/246
 
 ## [24.7.0] - 2024-07-24
 
