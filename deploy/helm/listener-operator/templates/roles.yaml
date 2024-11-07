@@ -76,9 +76,14 @@ rules:
       - ""
     resources:
       - nodes
+      - persistentvolumes
+      - persistentvolumes/finalizers
       - persistentvolumeclaims
       - endpoints
     verbs:
+      - create
+      - update
+      - patch
       - get
       - list
       - watch
@@ -118,6 +123,7 @@ rules:
     resources:
       - listeners
       - listeners/status
+      - listeners/finalizers
       - podlisteners
     verbs:
       - patch
