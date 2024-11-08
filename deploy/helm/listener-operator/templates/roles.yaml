@@ -76,14 +76,9 @@ rules:
       - ""
     resources:
       - nodes
-      - persistentvolumes
-      - persistentvolumes/finalizers
       - persistentvolumeclaims
       - endpoints
     verbs:
-      - create
-      - update
-      - patch
       - get
       - list
       - watch
