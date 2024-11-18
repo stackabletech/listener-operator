@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [24.11.0] - 2024-11-18
+
 ### Added
 
 - `Listener.status.addresses` can now be configured to prefer either IP addresses or DNS hostnames ([#233], [#244]).
