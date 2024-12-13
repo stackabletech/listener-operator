@@ -1433,7 +1433,7 @@ rec {
       };
       "csi-grpc" = rec {
         crateName = "csi-grpc";
-        version = "24.11.1-rc1";
+        version = "24.11.1-rc2";
         edition = "2021";
         src = lib.cleanSourceWith { filter = sourceFilter;  src = ./rust/csi-grpc; };
         libName = "csi_grpc";
@@ -7348,7 +7348,7 @@ rec {
       };
       "stackable-listener-operator" = rec {
         crateName = "stackable-listener-operator";
-        version = "24.11.1-rc1";
+        version = "24.11.1-rc2";
         edition = "2021";
         crateBin = [
           {
