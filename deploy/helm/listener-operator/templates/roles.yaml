@@ -118,11 +118,13 @@ rules:
     resources:
       - listeners
       - listeners/status
+      - listeners/finalizers
       - podlisteners
     verbs:
       - patch
       - create
       - delete
+      - update
 {{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
   - apiGroups:
     - security.openshift.io
