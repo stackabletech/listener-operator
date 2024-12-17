@@ -1608,33 +1608,6 @@ rec {
         };
         resolvedDefaultFeatures = [ "alloc" "powerfmt" "std" ];
       };
-      "derivative" = rec {
-        crateName = "derivative";
-        version = "2.2.0";
-        edition = "2015";
-        sha256 = "02vpb81wisk2zh1d5f44szzxamzinqgq2k8ydrfjj2wwkrgdvhzw";
-        procMacro = true;
-        authors = [
-          "mcarton <cartonmartin+git@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "proc-macro2";
-            packageId = "proc-macro2";
-          }
-          {
-            name = "quote";
-            packageId = "quote";
-          }
-          {
-            name = "syn";
-            packageId = "syn 1.0.109";
-            features = [ "visit" "extra-traits" ];
-          }
-        ];
-        features = {
-        };
-      };
       "digest" = rec {
         crateName = "digest";
         version = "0.10.7";
@@ -1769,7 +1742,7 @@ rec {
           "default" = [ "Debug" "Clone" "Copy" "PartialEq" "Eq" "PartialOrd" "Ord" "Hash" "Default" "Deref" "DerefMut" "Into" ];
           "full" = [ "syn/full" ];
         };
-        resolvedDefaultFeatures = [ "Clone" "Debug" "Hash" "PartialEq" ];
+        resolvedDefaultFeatures = [ "Clone" "Debug" "Default" "Hash" "PartialEq" ];
       };
       "either" = rec {
         crateName = "either";
@@ -7450,13 +7423,13 @@ rec {
       };
       "stackable-operator" = rec {
         crateName = "stackable-operator";
-        version = "0.81.0";
+        version = "0.83.0";
         edition = "2021";
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "4a8d37794d9cb692da722170c6abbe0f78a0e8f8";
-          sha256 = "085gyw19qryz4c2f8g3bsg1r6ksmpr1i14hqzis759wksj3qimdf";
+          rev = "3ce7bcbdb58097cde0c0f19488a104c96f69dbc3";
+          sha256 = "1443vhsanfl2vxp6x6zpylfln682g0y8bxbk4sknycsg009mbkwm";
         };
         libName = "stackable_operator";
         authors = [
@@ -7482,12 +7455,14 @@ rec {
             packageId = "delegate";
           }
           {
-            name = "derivative";
-            packageId = "derivative";
-          }
-          {
             name = "dockerfile-parser";
             packageId = "dockerfile-parser";
+          }
+          {
+            name = "educe";
+            packageId = "educe";
+            usesDefaultFeatures = false;
+            features = [ "Clone" "Debug" "Default" "PartialEq" ];
           }
           {
             name = "either";
@@ -7613,8 +7588,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "4a8d37794d9cb692da722170c6abbe0f78a0e8f8";
-          sha256 = "085gyw19qryz4c2f8g3bsg1r6ksmpr1i14hqzis759wksj3qimdf";
+          rev = "3ce7bcbdb58097cde0c0f19488a104c96f69dbc3";
+          sha256 = "1443vhsanfl2vxp6x6zpylfln682g0y8bxbk4sknycsg009mbkwm";
         };
         procMacro = true;
         libName = "stackable_operator_derive";
@@ -7648,8 +7623,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "4a8d37794d9cb692da722170c6abbe0f78a0e8f8";
-          sha256 = "085gyw19qryz4c2f8g3bsg1r6ksmpr1i14hqzis759wksj3qimdf";
+          rev = "3ce7bcbdb58097cde0c0f19488a104c96f69dbc3";
+          sha256 = "1443vhsanfl2vxp6x6zpylfln682g0y8bxbk4sknycsg009mbkwm";
         };
         libName = "stackable_shared";
         authors = [
@@ -7801,7 +7776,7 @@ rec {
           "quote" = [ "dep:quote" ];
           "test" = [ "syn-test-suite/all-features" ];
         };
-        resolvedDefaultFeatures = [ "clone-impls" "default" "derive" "extra-traits" "full" "parsing" "printing" "proc-macro" "quote" "visit" ];
+        resolvedDefaultFeatures = [ "clone-impls" "default" "derive" "full" "parsing" "printing" "proc-macro" "quote" ];
       };
       "syn 2.0.82" = rec {
         crateName = "syn";
