@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Aggregate emitted Kubernetes events on the CustomResources ([#267]).
+
+### Changed
+
+- Append a dot (`.`) to the default cluster domain to reduce DNS requests ([#267]).
+
+[#267]: https://github.com/stackabletech/listener-operator/pull/267
+
 ## [24.11.0] - 2024-11-18
 
 ### Added
