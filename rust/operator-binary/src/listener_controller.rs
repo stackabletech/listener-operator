@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use const_format::concatcp;
 use futures::{
     future::{try_join, try_join_all},
     StreamExt,
@@ -23,7 +24,12 @@ use stackable_operator::{
     kube::{
         api::{DynamicObject, ObjectMeta},
         core::{error_boundary, DeserializeGuard},
-        runtime::{controller, reflector::ObjectRef, watcher},
+        runtime::{
+            controller,
+            events::{Recorder, Reporter},
+            reflector::ObjectRef,
+            watcher,
+        },
         Resource, ResourceExt,
     },
     kvp::{Annotations, Labels},
@@ -41,7 +47,9 @@ use crate::{
 #[cfg(doc)]
 use stackable_operator::k8s_openapi::api::core::v1::Pod;
 
+const OPERATOR_NAME: &str = "listeners.stackable.tech";
 const CONTROLLER_NAME: &str = "listener";
+pub const FULL_CONTROLLER_NAME: &str = concatcp!(CONTROLLER_NAME, '.', OPERATOR_NAME);
 
 pub async fn run(client: stackable_operator::client::Client) {
     let controller = controller::Controller::new(
@@ -49,6 +57,13 @@ pub async fn run(client: stackable_operator::client::Client) {
         watcher::Config::default(),
     );
     let listener_store = controller.store();
+    let event_recorder = Arc::new(Recorder::new(
+        client.as_kube_client(),
+        Reporter {
+            controller: FULL_CONTROLLER_NAME.to_string(),
+            instance: None,
+        },
+    ));
     controller
         .owns(
             client.get_all_api::<DeserializeGuard<Service>>(),
@@ -112,10 +127,19 @@ pub async fn run(client: stackable_operator::client::Client) {
                 client: client.clone(),
             }),
         )
-        .map(|res| {
-            report_controller_reconciled(&client, "listener.listeners.stackable.tech", &res);
-        })
-        .collect::<()>()
+        // We can let the reporting happen in the background
+        .for_each_concurrent(
+            16, // concurrency limit
+            |result| {
+                // The event_recorder needs to be shared across all invocations, so that
+                // events are correctly aggregated
+                let event_recorder = event_recorder.clone();
+                async move {
+                    report_controller_reconciled(&event_recorder, FULL_CONTROLLER_NAME, &result)
+                        .await;
+                }
+            },
+        )
         .await;
 }
 

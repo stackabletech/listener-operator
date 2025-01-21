@@ -12,6 +12,7 @@ publish = false
 csi-grpc = { path = "../csi-grpc" }
 
 clap.workspace = true
+const_format.workspace = true
 futures.workspace = true
 libc.workspace = true
 pin-project.workspace = true
