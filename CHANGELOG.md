@@ -4,11 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added
+## [24.11.1] - 2025-01-10
 
-- Aggregate emitted Kubernetes events on the CustomResources ([#267]).
+## [24.11.1-rc2] - 2024-12-12
 
-[#267]: https://github.com/stackabletech/listener-operator/pull/267
+## [24.11.1-rc1] - 2024-12-06
 
 ## [24.11.0] - 2024-11-18
 
