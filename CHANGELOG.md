@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 
 [#267]: https://github.com/stackabletech/listener-operator/pull/267
 
+## [24.11.1] - 2025-01-10
+
 ## [24.11.0] - 2024-11-18
 
 ### Added
