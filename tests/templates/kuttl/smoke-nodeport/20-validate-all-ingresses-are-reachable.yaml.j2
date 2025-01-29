@@ -47,7 +47,7 @@ spec:
       serviceAccountName: query-ingresses-sa
       containers:
         - name: query-ingresses
-          image: docker.stackable.tech/stackable/testing-tools:0.2.0-stackable0.0.0-dev
+          image: oci.stackable.tech/sdp/testing-tools:0.2.0-stackable0.0.0-dev
 # NOTE: Hostname resolution does not work on our OKD clusters, so the command for testing the Hostname is omitted on Openshift. It would be better to omit this entire test value for Openshift but this is not (yet) possible in beku.
 {% if test_scenario['values']['openshift'] == 'true' and test_scenario['values']['addressType'] != "Hostname" %}
           command:
