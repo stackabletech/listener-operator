@@ -8,9 +8,8 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use crate::utils::error::error_full_message;
-
 use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
+use crate::utils::error::error_full_message;
 
 pub struct ListenerOperatorController {
     pub client: stackable_operator::client::Client,
