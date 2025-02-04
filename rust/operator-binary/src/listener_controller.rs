@@ -9,6 +9,8 @@ use futures::{
     StreamExt,
 };
 use snafu::{OptionExt, ResultExt, Snafu};
+#[cfg(doc)]
+use stackable_operator::k8s_openapi::api::core::v1::Pod;
 use stackable_operator::{
     builder::meta::ObjectMetaBuilder,
     cluster_resources::{ClusterResourceApplyStrategy, ClusterResources},
@@ -43,9 +45,6 @@ use crate::{
     utils::address::{node_primary_addresses, AddressCandidates},
     APP_NAME, OPERATOR_KEY,
 };
-
-#[cfg(doc)]
-use stackable_operator::k8s_openapi::api::core::v1::Pod;
 
 const OPERATOR_NAME: &str = "listeners.stackable.tech";
 const CONTROLLER_NAME: &str = "listener";

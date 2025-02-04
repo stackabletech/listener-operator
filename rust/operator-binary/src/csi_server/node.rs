@@ -1,3 +1,5 @@
+use std::{fmt::Debug, path::PathBuf};
+
 use csi_grpc::{self as csi, v1::Topology};
 use serde::{de::IntoDeserializer, Deserialize};
 use snafu::{OptionExt, ResultExt, Snafu};
@@ -13,9 +15,9 @@ use stackable_operator::{
         runtime::reflector::ObjectRef,
     },
 };
-use std::{fmt::Debug, path::PathBuf};
 use tonic::{Request, Response, Status};
 
+use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 use crate::{
     listener_controller::{
         listener_mounted_pod_label, listener_persistent_volume_label, ListenerMountedPodLabelError,
@@ -23,8 +25,6 @@ use crate::{
     },
     utils::{address::node_primary_addresses, error::error_full_message},
 };
-
-use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
 
 const FIELD_MANAGER_SCOPE: &str = "volume";
 
