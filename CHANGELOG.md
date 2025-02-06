@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Aggregate emitted Kubernetes events on the CustomResources ([#267]).
+- OLM deployment helper ([#279]).
 
 ### Changed
 
@@ -14,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 [#267]: https://github.com/stackabletech/listener-operator/pull/267
 [#268]: https://github.com/stackabletech/listener-operator/pull/268
+[#279]: https://github.com/stackabletech/listener-operator/pull/279
 
 ## [24.11.1] - 2025-01-10
 
