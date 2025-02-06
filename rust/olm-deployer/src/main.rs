@@ -62,6 +62,8 @@ struct OlmDeployerRun {
         help = "Name of ClusterServiceVersion object that owns this Deployment."
     )]
     csv: String,
+    #[arg(long, short, help = "Name of deployment object that owns this Pod.")]
+    deployer: String,
     #[arg(long, short, help = "Namespace of the ClusterServiceVersion object.")]
     namespace: String,
     #[arg(long, short, help = "Directory with manifests to patch and apply.")]
@@ -79,6 +81,7 @@ async fn main() -> Result<()> {
     if let Command::Run(OlmDeployerRun {
         keep_alive,
         csv,
+        deployer,
         namespace,
         dir,
         tracing_target,
@@ -98,7 +101,7 @@ async fn main() -> Result<()> {
         let client =
             client::initialize_operator(Some(APP_NAME.to_string()), &cluster_info_opts).await?;
 
-        let deployment = get_deployment(&csv, &namespace, &client).await?;
+        let deployment = get_deployment(&csv, &deployer, &namespace, &client).await?;
         let cluster_role = get_cluster_role(&csv, &client).await?;
 
         let kube_client = client.as_kube_client();
@@ -204,7 +207,12 @@ async fn get_cluster_role(csv: &str, client: &client::Client) -> Result<ClusterR
     }
 }
 
-async fn get_deployment(csv: &str, namespace: &str, client: &client::Client) -> Result<Deployment> {
+async fn get_deployment(
+    csv: &str,
+    deployer: &str,
+    namespace: &str,
+    client: &client::Client,
+) -> Result<Deployment> {
     let labels = format!("olm.owner={csv},olm.owner.kind=ClusterServiceVersion");
     let lp = ListParams {
         label_selector: Some(labels.clone()),
@@ -216,7 +224,9 @@ async fn get_deployment(csv: &str, namespace: &str, client: &client::Client) -> 
 
     match result.len() {
         0 => bail!("no deployment owned by the csv {csv} found in namespace {namespace}"),
-        1 => Ok(result.first().unwrap().clone()),
-        _ => bail!("multiple deployments owned by the csv {csv} found but only one was expected"),
+        _ => Ok(result
+            .into_iter()
+            .find(|d| d.name_any() == deployer)
+            .context(format!("no deployment named {deployer} found"))?),
     }
 }
