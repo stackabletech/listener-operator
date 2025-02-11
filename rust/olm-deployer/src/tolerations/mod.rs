@@ -1,6 +1,10 @@
+use anyhow::{anyhow, Context};
 use stackable_operator::{
     k8s_openapi::api::{apps::v1::Deployment, core::v1::Toleration},
-    kube::api::{DynamicObject, GroupVersionKind},
+    kube::{
+        api::{DynamicObject, GroupVersionKind},
+        ResourceExt,
+    },
 };
 
 use crate::data::get_or_create;
@@ -14,13 +18,19 @@ pub(super) fn maybe_copy_tolerations(
     target_gvk: &GroupVersionKind,
 ) -> anyhow::Result<()> {
     if target_gvk.kind == "DaemonSet" {
+        let tname = target.name_any();
         if let Some(tolerations) = deployment_tolerations(source) {
             let path = "template/spec/tolerations".split("/");
-            *get_or_create(target.data.pointer_mut("/spec").unwrap(), path)? =
-                serde_json::json!(tolerations
-                    .iter()
-                    .map(|t| serde_json::json!(t))
-                    .collect::<Vec<serde_json::Value>>());
+            *get_or_create(
+                target
+                    .data
+                    .pointer_mut("/spec")
+                    .context(anyhow!("DaemonSet named [{tname}] has empty .spec"))?,
+                path,
+            )? = serde_json::json!(tolerations
+                .iter()
+                .map(|t| serde_json::json!(t))
+                .collect::<Vec<serde_json::Value>>());
         }
     }
 

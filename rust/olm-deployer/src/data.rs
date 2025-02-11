@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context};
 use stackable_operator::kube::{api::DynamicObject, ResourceExt};
 
 pub fn container<'a>(
@@ -6,7 +7,13 @@ pub fn container<'a>(
 ) -> anyhow::Result<&'a mut serde_json::Value> {
     let tname = target.name_any();
     let path = "template/spec/containers".split("/");
-    match get_or_create(target.data.pointer_mut("/spec").unwrap(), path)? {
+    match get_or_create(
+        target
+            .data
+            .pointer_mut("/spec")
+            .context(anyhow!("object [{tname}] has no .spec property"))?,
+        path,
+    )? {
         serde_json::Value::Array(containers) => {
             for c in containers {
                 if c.is_object() {
@@ -56,7 +63,8 @@ fn get_or_insert_default_object<'a>(
         serde_json::Value::Object(map) => map,
         x @ serde_json::Value::Null => {
             *x = serde_json::json!({});
-            x.as_object_mut().unwrap()
+            x.as_object_mut()
+                .context(anyhow!("expected an empty map for [{key}] but found null"))?
         }
         x => anyhow::bail!("invalid type {x:?}, expected map"),
     };

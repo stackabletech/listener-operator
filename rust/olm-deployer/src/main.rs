@@ -201,7 +201,10 @@ async fn get_cluster_role(csv: &str, client: &client::Client) -> Result<ClusterR
     let cluster_role_api = client.get_all_api::<ClusterRole>();
     let result = cluster_role_api.list(&lp).await?.items;
     if !result.is_empty() {
-        Ok(result.first().unwrap().clone())
+        Ok(result
+            .first()
+            .context(anyhow!("ClusterRole object not found for labels {labels}"))?
+            .clone())
     } else {
         bail!("ClusterRole object not found for labels {labels}")
     }
