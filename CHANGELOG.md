@@ -11,11 +11,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Bump `stackable-operator` to 0.87.0 ([#282]).
 - Default to OCI for image metadata ([#268]).
 
 [#267]: https://github.com/stackabletech/listener-operator/pull/267
 [#268]: https://github.com/stackabletech/listener-operator/pull/268
 [#279]: https://github.com/stackabletech/listener-operator/pull/279
+[#282]: https://github.com/stackabletech/listener-operator/pull/282
 
 ## [24.11.1] - 2025-01-10
 
