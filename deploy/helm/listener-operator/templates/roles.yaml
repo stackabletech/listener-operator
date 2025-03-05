@@ -60,6 +60,7 @@ rules:
       - list
       - watch
       - create
+      - delete # Needed to set an ownerRef on already existing Services
       - patch
   - apiGroups:
       - ""

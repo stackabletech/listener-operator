@@ -14,10 +14,15 @@ All notable changes to this project will be documented in this file.
 - Bump `stackable-operator` to 0.87.0 ([#282]).
 - Default to OCI for image metadata ([#268]).
 
+### Fixed
+
+- Give RBAC permission to `delete` Services, which is needed to set an ownerRef on already existing Services ([#283]).
+
 [#267]: https://github.com/stackabletech/listener-operator/pull/267
 [#268]: https://github.com/stackabletech/listener-operator/pull/268
 [#279]: https://github.com/stackabletech/listener-operator/pull/279
 [#282]: https://github.com/stackabletech/listener-operator/pull/282
+[#283]: https://github.com/stackabletech/listener-operator/pull/283
 
 ## [24.11.1] - 2025-01-10
 
