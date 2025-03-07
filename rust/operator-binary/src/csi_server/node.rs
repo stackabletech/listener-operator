@@ -591,12 +591,18 @@ mod pod_dir {
             }
             default_addr_dir.get_or_insert(addr_dir);
         }
+
+        let default_addr_link = target_path.join("default-address");
+        // Remove any existing symlink because `tokio::fs::symlink` fails if it already exists.
+        // This happens if the node was restarted. The pod then restarts with the same UID and
+        // the pre-populated volume.
+        let _ = tokio::fs::remove_file(&default_addr_link).await;
         tokio::fs::symlink(
             default_addr_dir
                 .context(NoDefaultAddressSnafu)?
                 .strip_prefix(target_path)
                 .context(DefaultAddrIsOutsideRootSnafu)?,
-            target_path.join("default-address"),
+            &default_addr_link,
         )
         .await?;
         Ok(())
