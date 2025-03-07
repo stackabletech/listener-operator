@@ -17,12 +17,15 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Give RBAC permission to `delete` Services, which is needed to set an ownerRef on already existing Services ([#283]).
+- Fix the error "failed to write content: File exists (os error 17)" after a
+  Node restart ([#284]).
 
 [#267]: https://github.com/stackabletech/listener-operator/pull/267
 [#268]: https://github.com/stackabletech/listener-operator/pull/268
 [#279]: https://github.com/stackabletech/listener-operator/pull/279
 [#282]: https://github.com/stackabletech/listener-operator/pull/282
 [#283]: https://github.com/stackabletech/listener-operator/pull/283
+[#284]: https://github.com/stackabletech/listener-operator/pull/284
 
 ## [24.11.1] - 2025-01-10
 
