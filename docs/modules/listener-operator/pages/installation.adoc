@@ -41,3 +41,24 @@ You're now ready to expose services!
 Microk8s uses a non-standard Kubelet state directory.
 Installing listener-operator on Microk8s requires the argument
 `--set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet` to be added to the `helm install` command.
+
+=== HUAWEI cloud
+
+In some cases HUAWEI cloud has the kubelet directory located at `/mnt/paas/kubernetes/kubelet`, resulting in the following error:
+
+`failed to publish volume error=status: Unavailable, message: "failed to create secret parent dir /mnt/paas/kubernetes/kubelet/pods/<POD_ID>/volumes/kubernetes.io~csi/pvc-<PVC_ID>/mount: No such file or directory (os error 2)"`
+
+In case you are encountering the mentioned error (or listener-operator does not work on your HUAWEI cloud at all), you need to add the argument `--set kubeletDir=/mnt/paas/kubernetes/kubelet` to the `helm install` command.
+
+=== IBM cloud
+
+In some cases IBM cloud has the kubelet directory located at `/var/data/kubelet/`, resulting in the following error:
+
+`failed to publish volume error=status: Unavailable, message: "failed to create secret parent dir /var/data/kubelet/pods/<POD_ID>/volumes/kubernetes.io~csi/pvc-<PVC_ID>/mount: No such file or directory (os error 2)"`
+
+In case you are encountering the mentioned error (or listener-operator does not work on your IBM cloud at all), you need to add the argument `--set kubeletDir=/var/data/kubelet` to the `helm install` command.
+
+=== VMware Tanzu
+
+VMware Tanzu uses a non-standard Kubelet state directory. Installing listener-operator on Tanzu requires the argument
+`--set kubeletDir=/var/vcap/data/kubelet` to be added to the `helm install` command.
