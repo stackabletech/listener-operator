@@ -1,6 +1,6 @@
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
-use clap::{crate_description, crate_version, Parser};
+use clap::Parser;
 use csi_grpc::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
 };
@@ -49,7 +49,7 @@ struct ListenerOperatorRun {
     pub cluster_info_opts: KubernetesClusterInfoOpts,
 }
 
-#[derive(clap::Parser, strum::AsRefStr)]
+#[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
     Controller,
     Node {
@@ -82,13 +82,15 @@ async fn main() -> anyhow::Result<()> {
                 "listener-operator",
                 tracing_target,
             );
-            stackable_operator::utils::print_startup_string(
-                &format!("{} ({})", crate_description!(), mode.as_ref()),
-                crate_version!(),
-                built_info::GIT_VERSION,
-                built_info::TARGET,
-                built_info::BUILT_TIME_UTC,
-                built_info::RUSTC_VERSION,
+            tracing::info!(
+                run_mode = %mode,
+                built_info.pkg_version = built_info::PKG_VERSION,
+                built_info.git_version = built_info::GIT_VERSION,
+                built_info.target = built_info::TARGET,
+                built_info.built_time_utc = built_info::BUILT_TIME_UTC,
+                built_info.rustc_version = built_info::RUSTC_VERSION,
+                "Starting {description}",
+                description = built_info::PKG_DESCRIPTION
             );
             let client = stackable_operator::client::initialize_operator(
                 Some(OPERATOR_KEY.to_string()),
