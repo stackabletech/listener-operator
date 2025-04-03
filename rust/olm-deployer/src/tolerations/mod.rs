@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use stackable_operator::{
     k8s_openapi::api::{apps::v1::Deployment, core::v1::Toleration},
     kube::{
-        api::{DynamicObject, GroupVersionKind},
         ResourceExt,
+        api::{DynamicObject, GroupVersionKind},
     },
 };
 
@@ -27,10 +27,12 @@ pub(super) fn maybe_copy_tolerations(
                     .pointer_mut("/spec")
                     .context(anyhow!("DaemonSet named [{tname}] has empty .spec"))?,
                 path,
-            )? = serde_json::json!(tolerations
-                .iter()
-                .map(|t| serde_json::json!(t))
-                .collect::<Vec<serde_json::Value>>());
+            )? = serde_json::json!(
+                tolerations
+                    .iter()
+                    .map(|t| serde_json::json!(t))
+                    .collect::<Vec<serde_json::Value>>()
+            );
         }
     }
 
@@ -114,11 +116,13 @@ spec:
         let mut daemonset = DAEMONSET.clone();
         maybe_copy_tolerations(&DEPLOYMENT, &mut daemonset, &gvk)?;
 
-        let expected = serde_json::json!(deployment_tolerations(&DEPLOYMENT)
-            .unwrap()
-            .iter()
-            .map(|t| serde_json::json!(t))
-            .collect::<Vec<serde_json::Value>>());
+        let expected = serde_json::json!(
+            deployment_tolerations(&DEPLOYMENT)
+                .unwrap()
+                .iter()
+                .map(|t| serde_json::json!(t))
+                .collect::<Vec<serde_json::Value>>()
+        );
 
         assert_eq!(
             daemonset.data.pointer("/spec/template/spec/tolerations"),

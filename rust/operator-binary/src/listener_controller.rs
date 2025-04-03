@@ -5,8 +5,8 @@ use std::{
 
 use const_format::concatcp;
 use futures::{
-    future::{try_join, try_join_all},
     StreamExt,
+    future::{try_join, try_join_all},
 };
 use snafu::{OptionExt, ResultExt, Snafu};
 #[cfg(doc)]
@@ -24,26 +24,26 @@ use stackable_operator::{
         apimachinery::pkg::apis::meta::v1::LabelSelector,
     },
     kube::{
+        Resource, ResourceExt,
         api::{DynamicObject, ObjectMeta},
-        core::{error_boundary, DeserializeGuard},
+        core::{DeserializeGuard, error_boundary},
         runtime::{
             controller,
             events::{Recorder, Reporter},
             reflector::ObjectRef,
             watcher,
         },
-        Resource, ResourceExt,
     },
     kvp::{Annotations, Labels},
-    logging::controller::{report_controller_reconciled, ReconcilerError},
+    logging::controller::{ReconcilerError, report_controller_reconciled},
     time::Duration,
 };
 use strum::IntoStaticStr;
 
 use crate::{
-    csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
-    utils::address::{node_primary_addresses, AddressCandidates},
     APP_NAME, OPERATOR_KEY,
+    csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
+    utils::address::{AddressCandidates, node_primary_addresses},
 };
 
 const OPERATOR_NAME: &str = "listeners.stackable.tech";
@@ -56,13 +56,10 @@ pub async fn run(client: stackable_operator::client::Client) {
         watcher::Config::default(),
     );
     let listener_store = controller.store();
-    let event_recorder = Arc::new(Recorder::new(
-        client.as_kube_client(),
-        Reporter {
-            controller: FULL_CONTROLLER_NAME.to_string(),
-            instance: None,
-        },
-    ));
+    let event_recorder = Arc::new(Recorder::new(client.as_kube_client(), Reporter {
+        controller: FULL_CONTROLLER_NAME.to_string(),
+        instance: None,
+    }));
     controller
         .owns(
             client.get_all_api::<DeserializeGuard<Service>>(),
@@ -302,15 +299,12 @@ pub async fn reconcile(
                  port,
                  protocol,
              }| {
-                (
-                    (protocol, name),
-                    ServicePort {
-                        name: Some(name.clone()),
-                        protocol: protocol.clone(),
-                        port: *port,
-                        ..Default::default()
-                    },
-                )
+                ((protocol, name), ServicePort {
+                    name: Some(name.clone()),
+                    protocol: protocol.clone(),
+                    port: *port,
+                    ..Default::default()
+                })
             },
         )
         // Deduplicate ports by (protocol, name)
@@ -527,13 +521,10 @@ async fn node_names_for_nodeport_listener(
     let (pvs, endpoints) = try_join(
         async {
             client
-                .list_with_label_selector::<PersistentVolume>(
-                    &(),
-                    &LabelSelector {
-                        match_labels: Some(listener_persistent_volume_label(listener).unwrap()),
-                        ..Default::default()
-                    },
-                )
+                .list_with_label_selector::<PersistentVolume>(&(), &LabelSelector {
+                    match_labels: Some(listener_persistent_volume_label(listener).unwrap()),
+                    ..Default::default()
+                })
                 .await
                 .context(GetListenerPvsSnafu)
         },
