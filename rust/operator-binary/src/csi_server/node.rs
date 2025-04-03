@@ -1,7 +1,7 @@
 use std::{fmt::Debug, path::PathBuf};
 
 use csi_grpc::{self as csi, v1::Topology};
-use serde::{de::IntoDeserializer, Deserialize};
+use serde::{Deserialize, de::IntoDeserializer};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::meta::OwnerReferenceBuilder,
@@ -17,11 +17,11 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
+use super::{ListenerSelector, ListenerVolumeContext, tonic_unimplemented};
 use crate::{
     listener_controller::{
-        listener_mounted_pod_label, listener_persistent_volume_label, ListenerMountedPodLabelError,
-        ListenerPersistentVolumeLabelError,
+        ListenerMountedPodLabelError, ListenerPersistentVolumeLabelError,
+        listener_mounted_pod_label, listener_persistent_volume_label,
     },
     utils::{address::node_primary_addresses, error::error_full_message},
 };
@@ -258,10 +258,12 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                     metadata: ObjectMeta {
                         namespace: Some(ns.clone()),
                         name: Some(pvc_name.to_string()),
-                        owner_references: Some(vec![OwnerReferenceBuilder::new()
-                            .initialize_from_resource(&pv)
-                            .build()
-                            .context(BuildListenerOwnerRefSnafu)?]),
+                        owner_references: Some(vec![
+                            OwnerReferenceBuilder::new()
+                                .initialize_from_resource(&pv)
+                                .build()
+                                .context(BuildListenerOwnerRefSnafu)?,
+                        ]),
                         // Propagate the labels from the PVC to the Listener object, so it can be found easier, e.g. to
                         // determine the endpoints of stacklets.
                         labels: pvc.metadata.labels,
@@ -302,21 +304,17 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         // Add listener label to PV, allowing traffic to be directed based on reservations, rather than which replicas are *currently* active.
         // See https://github.com/stackabletech/listener-operator/issues/220
         self.client
-            .apply_patch(
-                FIELD_MANAGER_SCOPE,
-                &pv,
-                &PersistentVolume {
-                    metadata: ObjectMeta {
-                        labels: Some(listener_persistent_volume_label(&listener).context(
-                            ListenerPvReferenceSnafu {
-                                listener: ObjectRef::from_obj(&listener),
-                            },
-                        )?),
-                        ..Default::default()
-                    },
+            .apply_patch(FIELD_MANAGER_SCOPE, &pv, &PersistentVolume {
+                metadata: ObjectMeta {
+                    labels: Some(listener_persistent_volume_label(&listener).context(
+                        ListenerPvReferenceSnafu {
+                            listener: ObjectRef::from_obj(&listener),
+                        },
+                    )?),
                     ..Default::default()
                 },
-            )
+                ..Default::default()
+            })
             .await
             .with_context(|_| AddListenerLabelToPvSnafu {
                 pv: ObjectRef::from_obj(&pv),
@@ -327,23 +325,20 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             // IMPORTANT
             // Use a merge patch rather than an apply so that we don't delete labels added by other listener volumes.
             // Volumes aren't hot-swappable anyway, and all labels will be removed when the pod is deleted.
-            .merge_patch(
-                &pod,
-                &Pod {
-                    metadata: ObjectMeta {
-                        labels: Some(
-                            [listener_mounted_pod_label(&listener).context(
-                                ListenerPodSelectorSnafu {
-                                    listener: ObjectRef::from_obj(&listener),
-                                },
-                            )?]
-                            .into(),
-                        ),
-                        ..Default::default()
-                    },
+            .merge_patch(&pod, &Pod {
+                metadata: ObjectMeta {
+                    labels: Some(
+                        [listener_mounted_pod_label(&listener).context(
+                            ListenerPodSelectorSnafu {
+                                listener: ObjectRef::from_obj(&listener),
+                            },
+                        )?]
+                        .into(),
+                    ),
                     ..Default::default()
                 },
-            )
+                ..Default::default()
+            })
             .await
             .with_context(|_| AddListenerLabelToPodSnafu {
                 pod: ObjectRef::from_obj(&pod),
@@ -517,29 +512,28 @@ async fn publish_pod_listener(
         metadata: ObjectMeta {
             name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
             namespace: pod.metadata.namespace.clone(),
-            owner_references: Some(vec![OwnerReferenceBuilder::new()
-                .initialize_from_resource(pod)
-                .build()
-                .context(BuildListenerOwnerRefSnafu)?]),
+            owner_references: Some(vec![
+                OwnerReferenceBuilder::new()
+                    .initialize_from_resource(pod)
+                    .build()
+                    .context(BuildListenerOwnerRefSnafu)?,
+            ]),
             ..Default::default()
         },
         spec: PodListenersSpec {
-            listeners: [(
-                listener_pod_volume.name.clone(),
-                PodListener {
-                    scope: if listener
-                        .status
-                        .as_ref()
-                        .and_then(|s| s.node_ports.as_ref())
-                        .is_some()
-                    {
-                        PodListenerScope::Node
-                    } else {
-                        PodListenerScope::Cluster
-                    },
-                    ingress_addresses: Some(listener_addresses.to_vec()),
+            listeners: [(listener_pod_volume.name.clone(), PodListener {
+                scope: if listener
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.node_ports.as_ref())
+                    .is_some()
+                {
+                    PodListenerScope::Node
+                } else {
+                    PodListenerScope::Cluster
                 },
-            )]
+                ingress_addresses: Some(listener_addresses.to_vec()),
+            })]
             .into(),
         },
     };

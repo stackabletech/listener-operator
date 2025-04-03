@@ -8,17 +8,17 @@ use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
     node::ListenerOperatorNode,
 };
-use futures::{pin_mut, FutureExt, TryStreamExt};
+use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
+    CustomResourceExt,
     commons::listener::{Listener, ListenerClass, PodListeners},
     logging::TracingTarget,
     utils::cluster_info::KubernetesClusterInfoOpts,
-    CustomResourceExt,
 };
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
-use utils::unix_stream::{uds_bind_private, TonicUnixStream};
+use utils::unix_stream::{TonicUnixStream, uds_bind_private};
 
 mod csi_server;
 mod listener_controller;
