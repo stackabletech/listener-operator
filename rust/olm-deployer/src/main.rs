@@ -89,13 +89,14 @@ async fn main() -> Result<()> {
     }) = opts.cmd
     {
         logging::initialize_logging(ENV_VAR_LOGGING, APP_NAME, tracing_target);
-        utils::print_startup_string(
-            crate_description!(),
-            crate_version!(),
-            built_info::GIT_VERSION,
-            built_info::TARGET,
-            built_info::BUILT_TIME_UTC,
-            built_info::RUSTC_VERSION,
+        tracing::info!(
+            built_info.pkg_version = built_info::PKG_VERSION,
+            built_info.git_version = built_info::GIT_VERSION,
+            built_info.target = built_info::TARGET,
+            built_info.built_time_utc = built_info::BUILT_TIME_UTC,
+            built_info.rustc_version = built_info::RUSTC_VERSION,
+            "Starting {description}",
+            description = built_info::PKG_DESCRIPTION
         );
 
         let client =
