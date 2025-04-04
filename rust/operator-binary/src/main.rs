@@ -1,4 +1,4 @@
-use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
+use std::{ops::Deref as _, os::unix::prelude::FileTypeExt, path::PathBuf};
 
 use clap::Parser;
 use csi_grpc::v1::{
@@ -11,13 +11,15 @@ use csi_server::{
 use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
     CustomResourceExt,
+    cli::{RollingPeriod, TelemetryArguments},
     commons::listener::{Listener, ListenerClass, PodListeners},
-    logging::TracingTarget,
     utils::cluster_info::KubernetesClusterInfoOpts,
 };
+use stackable_telemetry::{Tracing, tracing::settings::Settings};
 use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
+use tracing::level_filters::LevelFilter;
 use utils::unix_stream::{TonicUnixStream, uds_bind_private};
 
 mod csi_server;
@@ -36,14 +38,14 @@ struct Opts {
 
 #[derive(clap::Parser)]
 struct ListenerOperatorRun {
-    #[arg(long, env, default_value_t, value_enum)]
-    tracing_target: TracingTarget,
-
     #[clap(long, env)]
     csi_endpoint: PathBuf,
 
     #[clap(subcommand)]
     mode: RunMode,
+
+    #[command(flatten)]
+    pub telemetry_arguments: TelemetryArguments,
 
     #[command(flatten)]
     pub cluster_info_opts: KubernetesClusterInfoOpts,
@@ -62,6 +64,9 @@ mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
+// TODO (@NickLarsenNZ): Change the variable to `CONSOLE_LOG`
+pub const ENV_VAR_CONSOLE_LOG: &str = "LISTENER_OPERATOR_LOG";
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -72,16 +77,49 @@ async fn main() -> anyhow::Result<()> {
             PodListeners::print_yaml_schema(built_info::PKG_VERSION)?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
-            tracing_target,
             csi_endpoint,
             mode,
+            telemetry_arguments,
             cluster_info_opts,
         }) => {
-            stackable_operator::logging::initialize_logging(
-                "LISTENER_OPERATOR_LOG",
-                "listener-operator",
-                tracing_target,
-            );
+            let _tracing_guard = Tracing::builder()
+                .service_name("listener-operator")
+                .with_console_output((
+                    ENV_VAR_CONSOLE_LOG,
+                    LevelFilter::INFO,
+                    !telemetry_arguments.no_console_output,
+                ))
+                // NOTE (@NickLarsenNZ): Before stackable-telemetry was used, the log directory was
+                // set via an env: `LISTENER_OPERATOR_LOG_DIRECTORY`.
+                // See: https://github.com/stackabletech/operator-rs/blob/f035997fca85a54238c8de895389cc50b4d421e2/crates/stackable-operator/src/logging/mod.rs#L40
+                // Now it will be `ROLLING_LOGS` (or via `--rolling-logs <DIRECTORY>`).
+                .with_file_output(telemetry_arguments.rolling_logs.map(|log_directory| {
+                    let rotation_period = telemetry_arguments
+                        .rolling_logs_period
+                        .unwrap_or(RollingPeriod::Hourly)
+                        .deref()
+                        .clone();
+
+                    Settings::builder()
+                        .with_environment_variable(ENV_VAR_CONSOLE_LOG)
+                        .with_default_level(LevelFilter::INFO)
+                        .file_log_settings_builder(log_directory, "tracing-rs.log")
+                        .with_rotation_period(rotation_period)
+                        .build()
+                }))
+                .with_otlp_log_exporter((
+                    "OTLP_LOG",
+                    LevelFilter::DEBUG,
+                    telemetry_arguments.otlp_logs,
+                ))
+                .with_otlp_trace_exporter((
+                    "OTLP_TRACE",
+                    LevelFilter::DEBUG,
+                    telemetry_arguments.otlp_traces,
+                ))
+                .build()
+                .init()?;
+
             tracing::info!(
                 run_mode = %mode,
                 built_info.pkg_version = built_info::PKG_VERSION,
