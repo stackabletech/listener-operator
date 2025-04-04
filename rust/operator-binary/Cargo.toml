@@ -10,6 +10,8 @@ publish = false
 
 [dependencies]
 csi-grpc = { path = "../csi-grpc" }
+stackable-operator.workspace = true
+stackable-telemetry.workspace = true
 
 clap.workspace = true
 const_format.workspace = true
@@ -18,7 +20,6 @@ libc.workspace = true
 pin-project.workspace = true
 prost.workspace = true
 socket2.workspace = true
-stackable-operator.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true
 tonic.workspace = true
