@@ -1,5 +1,5 @@
 [package]
-name = "olm-deployer"
+name = "stackable-listener-operator-olm-deployer"
 description = "OLM deployment helper."
 version.workspace = true
 authors.workspace = true
