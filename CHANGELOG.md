@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- BREAKING: Replace stackable-operator `initialize_logging` with stackable-telemetry `Tracing` ([#291]).
+  - operator-binary
+    - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set by
+      `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
+    - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now set by `CONSOLE_LOG`.
+  - olm-deployer
+    - The file log directory was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG_DIRECTORY`, and is now set by
+      `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
+    - The console log level was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG`, and is now set by `CONSOLE_LOG`.
+  - Replace stackable-operator `print_startup_string` with `tracing::info!` with fields.
+
+[#291]: https://github.com/stackabletech/listener-operator/pull/291
+
 ## [25.3.0] - 2025-03-21
 
 ### Added
