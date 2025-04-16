@@ -1,6 +1,11 @@
 {
-  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-operator-derive@0.3.1": "1gbm9r0smh249c5z08gm4kpa9jq3k7wl568009gr5hck586hx82f",
-  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-operator@0.87.4": "1gbm9r0smh249c5z08gm4kpa9jq3k7wl568009gr5hck586hx82f",
-  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-shared@0.0.1": "1gbm9r0smh249c5z08gm4kpa9jq3k7wl568009gr5hck586hx82f",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#k8s-version@0.1.2": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-operator-derive@0.3.1": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-operator@0.92.0": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-shared@0.0.1": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-telemetry@0.6.0": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-versioned-macros@0.7.1": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech//operator-rs.git?branch=feature%2Flistenerclass-loadbalancerclass#stackable-versioned@0.7.1": "09mwkxy4jcghrjxkd80qxy1q9dj8iy6mbx0n8rzmlx1hhzs2cpf3",
+  "git+https://github.com/stackabletech/operator-rs.git?tag=stackable-telemetry-0.5.0#stackable-telemetry@0.5.0": "0lwa2n85x2x9bmyb5dgcychan6frv7nj3kfl2qah22sp8m21alw8",
   "git+https://github.com/stackabletech/product-config.git?tag=0.7.0#product-config@0.7.0": "0gjsm80g6r75pm3824dcyiz4ysq1ka4c1if6k1mjm9cnd5ym0gny"
 }

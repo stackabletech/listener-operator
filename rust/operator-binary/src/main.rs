@@ -1,6 +1,6 @@
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
-use clap::{crate_description, crate_version, Parser};
+use clap::Parser;
 use csi_grpc::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
 };
@@ -8,17 +8,17 @@ use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
     node::ListenerOperatorNode,
 };
-use futures::{pin_mut, FutureExt, TryStreamExt};
+use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
+    self, CustomResourceExt,
     commons::listener::{Listener, ListenerClass, PodListeners},
-    logging::TracingTarget,
     utils::cluster_info::KubernetesClusterInfoOpts,
-    CustomResourceExt,
 };
-use tokio::signal::unix::{signal, SignalKind};
+use stackable_telemetry::{Tracing, tracing::TelemetryOptions};
+use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
-use utils::unix_stream::{uds_bind_private, TonicUnixStream};
+use utils::unix_stream::{TonicUnixStream, uds_bind_private};
 
 mod csi_server;
 mod listener_controller;
@@ -36,9 +36,6 @@ struct Opts {
 
 #[derive(clap::Parser)]
 struct ListenerOperatorRun {
-    #[arg(long, env, default_value_t, value_enum)]
-    tracing_target: TracingTarget,
-
     #[clap(long, env)]
     csi_endpoint: PathBuf,
 
@@ -46,10 +43,13 @@ struct ListenerOperatorRun {
     mode: RunMode,
 
     #[command(flatten)]
+    pub telemetry_arguments: TelemetryOptions,
+
+    #[command(flatten)]
     pub cluster_info_opts: KubernetesClusterInfoOpts,
 }
 
-#[derive(clap::Parser, strum::AsRefStr)]
+#[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
     Controller,
     Node {
@@ -62,6 +62,9 @@ mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
+// TODO (@NickLarsenNZ): Change the variable to `CONSOLE_LOG`
+pub const ENV_VAR_CONSOLE_LOG: &str = "LISTENER_OPERATOR_LOG";
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -72,23 +75,27 @@ async fn main() -> anyhow::Result<()> {
             PodListeners::print_yaml_schema(built_info::PKG_VERSION)?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
-            tracing_target,
             csi_endpoint,
             mode,
+            telemetry_arguments,
             cluster_info_opts,
         }) => {
-            stackable_operator::logging::initialize_logging(
-                "LISTENER_OPERATOR_LOG",
-                "listener-operator",
-                tracing_target,
-            );
-            stackable_operator::utils::print_startup_string(
-                &format!("{} ({})", crate_description!(), mode.as_ref()),
-                crate_version!(),
-                built_info::GIT_VERSION,
-                built_info::TARGET,
-                built_info::BUILT_TIME_UTC,
-                built_info::RUSTC_VERSION,
+            // NOTE (@NickLarsenNZ): Before stackable-telemetry was used:
+            // - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now `CONSOLE_LOG` (when using Tracing::pre_configured).
+            // - The file log level was (maybe?) set by `LISTENER_OPERATOR_LOG`, and is now set via `FILE_LOG` (when using Tracing::pre_configured).
+            // - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set by `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
+            let _tracing_guard =
+                Tracing::pre_configured(built_info::PKG_NAME, telemetry_arguments).init()?;
+
+            tracing::info!(
+                run_mode = %mode,
+                built_info.pkg_version = built_info::PKG_VERSION,
+                built_info.git_version = built_info::GIT_VERSION,
+                built_info.target = built_info::TARGET,
+                built_info.built_time_utc = built_info::BUILT_TIME_UTC,
+                built_info.rustc_version = built_info::RUSTC_VERSION,
+                "Starting {description}",
+                description = built_info::PKG_DESCRIPTION
             );
             let client = stackable_operator::client::initialize_operator(
                 Some(OPERATOR_KEY.to_string()),

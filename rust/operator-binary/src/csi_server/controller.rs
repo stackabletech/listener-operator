@@ -1,5 +1,5 @@
 use csi_grpc as csi;
-use serde::{de::IntoDeserializer, Deserialize};
+use serde::{Deserialize, de::IntoDeserializer};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     commons::listener::{Listener, ListenerClass, ServiceType},
@@ -8,7 +8,7 @@ use stackable_operator::{
 };
 use tonic::{Request, Response, Status};
 
-use super::{tonic_unimplemented, ListenerSelector, ListenerVolumeContext};
+use super::{ListenerSelector, ListenerVolumeContext, tonic_unimplemented};
 use crate::utils::error::error_full_message;
 
 pub struct ListenerOperatorController {

@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Context};
-use stackable_operator::kube::{api::DynamicObject, ResourceExt};
+use anyhow::{Context, anyhow};
+use stackable_operator::kube::{ResourceExt, api::DynamicObject};
 
 pub fn container<'a>(
     target: &'a mut DynamicObject,
