@@ -104,3 +104,17 @@ kubeletDir: /var/lib/kubelet
 # stable-nodes: ListenerClasses are preinstalled that are suitable for on-prem/"pet" environments, assuming long-running Nodes but not requiring a LoadBalancer controller
 # ephemeral-nodes: ListenerClasses are preinstalled that are suitable for cloud/"cattle" environments with short-lived nodes, however this requires a LoadBalancer controller to be installed
 preset: stable-nodes
+
+# See all available options and detailed explanations about the concept here:
+# https://docs.stackable.tech/home/stable/concepts/telemetry/
+telemetry:
+  consoleLog:
+    enabled: true
+  fileLog:
+    enabled: false
+    rotationPeriod: hourly
+    maxFiles: 6
+  otelLogExporter:
+    enabled: false
+  otelTraceExporter:
+    enabled: false
