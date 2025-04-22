@@ -4,20 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Adds new telemetry CLI arguments and environment variables ([#299]).
+  - Use `--file-log-max-files` (or `FILE_LOG_MAX_FILES`) to limit the number of log files kept.
+  - The file log rotation period is now configurable via `FILE_LOG_ROTATION_PERIOD`.
+  - Use `--console-log-format` (or `CONSOLE_LOG_FORMAT`) to set the format to `plain` (default) or `json`.
+
 ### Changed
 
-- BREAKING: Replace stackable-operator `initialize_logging` with stackable-telemetry `Tracing` ([#291]).
+- BREAKING: Replace stackable-operator `initialize_logging` with stackable-telemetry `Tracing` ([#291], [#299]).
   - operator-binary
-    - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set by
-      `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
-    - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now set by `CONSOLE_LOG`.
+    - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now set by `CONSOLE_LOG_LEVEL`.
+    - The file log level was set by `LISTENER_OPERATOR_LOG`, and is now set by `FILE_LOG_LEVEL`.
+    - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set
+      by `FILE_LOG_DIRECTORY` (or via `--file-log-directory <DIRECTORY>`).
   - olm-deployer
-    - The file log directory was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG_DIRECTORY`, and is now set by
-      `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
-    - The console log level was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG`, and is now set by `CONSOLE_LOG`.
+    - The console log level was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG`, and is now set by `CONSOLE_LOG_LEVEL`.
+    - The file log level was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG`, and is now set by `FILE_LOG_LEVEL`.
+    - The file log directory was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG_DIRECTORY`, and is now set
+      by `FILE_LOG_DIRECTORY` (or via `--file-log-directory <DIRECTORY>`).
   - Replace stackable-operator `print_startup_string` with `tracing::info!` with fields.
 
 [#291]: https://github.com/stackabletech/listener-operator/pull/291
+[#299]: https://github.com/stackabletech/listener-operator/pull/299
 
 ## [25.3.0] - 2025-03-21
 
