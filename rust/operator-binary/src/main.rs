@@ -12,9 +12,9 @@ use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
     self, CustomResourceExt,
     commons::listener::{Listener, ListenerClass, PodListeners},
+    telemetry::{Tracing, tracing::TelemetryOptions},
     utils::cluster_info::KubernetesClusterInfoOpts,
 };
-use stackable_telemetry::{Tracing, tracing::TelemetryOptions};
 use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;

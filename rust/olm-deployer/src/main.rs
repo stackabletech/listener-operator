@@ -29,9 +29,9 @@ use stackable_operator::{
         core::GroupVersionKind,
         discovery::{ApiResource, Discovery, Scope},
     },
+    telemetry::{Tracing, tracing::TelemetryOptions},
     utils::cluster_info::KubernetesClusterInfoOpts,
 };
-use stackable_telemetry::{Tracing, tracing::TelemetryOptions};
 
 pub const APP_NAME: &str = "stkbl-listener-olm-deployer";
 

@@ -10,7 +10,6 @@ publish = false
 
 [dependencies]
 stackable-operator.workspace = true
-stackable-telemetry.workspace = true
 
 anyhow.workspace = true
 clap.workspace = true
