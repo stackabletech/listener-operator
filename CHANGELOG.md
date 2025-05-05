@@ -25,9 +25,11 @@ All notable changes to this project will be documented in this file.
     - The file log directory was set by `STKBL_LISTENER_OLM_DEPLOYER_LOG_DIRECTORY`, and is now set
       by `FILE_LOG_DIRECTORY` (or via `--file-log-directory <DIRECTORY>`).
   - Replace stackable-operator `print_startup_string` with `tracing::info!` with fields.
+- Upgrade csi-provisioner to 5.2.0 ([#304]).
 
 [#291]: https://github.com/stackabletech/listener-operator/pull/291
 [#299]: https://github.com/stackabletech/listener-operator/pull/299
+[#304]: https://github.com/stackabletech/listener-operator/pull/304
 
 ## [25.3.0] - 2025-03-21
 
