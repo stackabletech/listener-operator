@@ -1,4 +1,4 @@
-use stackable_operator::{commons::listener::AddressType, k8s_openapi::api::core::v1::Node};
+use stackable_operator::{crd::listener::v1alpha1, k8s_openapi::api::core::v1::Node};
 
 /// The primary addresses of an entity, for each type of address.
 #[derive(Debug, Clone, Copy)]
@@ -9,12 +9,15 @@ pub struct AddressCandidates<'a> {
 
 impl<'a> AddressCandidates<'a> {
     /// Tries to pick the preferred [`AddressType`], falling back if it is not available.
-    pub fn pick(&self, preferred_address_type: AddressType) -> Option<(&'a str, AddressType)> {
-        let ip = self.ip.zip(Some(AddressType::Ip));
-        let hostname = self.hostname.zip(Some(AddressType::Hostname));
+    pub fn pick(
+        &self,
+        preferred_address_type: v1alpha1::AddressType,
+    ) -> Option<(&'a str, v1alpha1::AddressType)> {
+        let ip = self.ip.zip(Some(v1alpha1::AddressType::Ip));
+        let hostname = self.hostname.zip(Some(v1alpha1::AddressType::Hostname));
         match preferred_address_type {
-            AddressType::Ip => ip.or(hostname),
-            AddressType::Hostname => hostname.or(ip),
+            v1alpha1::AddressType::Ip => ip.or(hostname),
+            v1alpha1::AddressType::Hostname => hostname.or(ip),
         }
     }
 }
@@ -43,7 +46,7 @@ pub fn node_primary_addresses(node: &Node) -> AddressCandidates {
 #[cfg(test)]
 mod tests {
     use stackable_operator::{
-        commons::listener::AddressType,
+        crd::listener::v1alpha1,
         k8s_openapi::api::core::v1::{Node, NodeAddress, NodeStatus},
     };
 
@@ -54,12 +57,12 @@ mod tests {
         let node = node_from_addresses(vec![("InternalIP", "10.1.2.3"), ("ExternalIP", "1.2.3.4")]);
         let node_primary_address = node_primary_addresses(&node);
         assert_eq!(
-            node_primary_address.pick(AddressType::Ip),
-            Some(("1.2.3.4", AddressType::Ip))
+            node_primary_address.pick(v1alpha1::AddressType::Ip),
+            Some(("1.2.3.4", v1alpha1::AddressType::Ip))
         );
         assert_eq!(
-            node_primary_address.pick(AddressType::Hostname),
-            Some(("1.2.3.4", AddressType::Ip))
+            node_primary_address.pick(v1alpha1::AddressType::Hostname),
+            Some(("1.2.3.4", v1alpha1::AddressType::Ip))
         );
     }
 
@@ -71,12 +74,12 @@ mod tests {
         ]);
         let node_primary_address = node_primary_addresses(&node);
         assert_eq!(
-            node_primary_address.pick(AddressType::Ip),
-            Some(("first-hostname", AddressType::Hostname))
+            node_primary_address.pick(v1alpha1::AddressType::Ip),
+            Some(("first-hostname", v1alpha1::AddressType::Hostname))
         );
         assert_eq!(
-            node_primary_address.pick(AddressType::Hostname),
-            Some(("first-hostname", AddressType::Hostname))
+            node_primary_address.pick(v1alpha1::AddressType::Hostname),
+            Some(("first-hostname", v1alpha1::AddressType::Hostname))
         );
     }
 
@@ -89,12 +92,12 @@ mod tests {
         ]);
         let node_primary_address = node_primary_addresses(&node);
         assert_eq!(
-            node_primary_address.pick(AddressType::Ip),
-            Some(("1.2.3.4", AddressType::Ip))
+            node_primary_address.pick(v1alpha1::AddressType::Ip),
+            Some(("1.2.3.4", v1alpha1::AddressType::Ip))
         );
         assert_eq!(
-            node_primary_address.pick(AddressType::Hostname),
-            Some(("node-0", AddressType::Hostname))
+            node_primary_address.pick(v1alpha1::AddressType::Hostname),
+            Some(("node-0", v1alpha1::AddressType::Hostname))
         );
     }
 

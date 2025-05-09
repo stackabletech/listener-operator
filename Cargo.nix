@@ -2904,6 +2904,7 @@ rec {
           "rustc-dep-of-std" = [ "dep:compiler_builtins" "dep:core" ];
           "wasm_js" = [ "dep:wasm-bindgen" "dep:js-sys" ];
         };
+        resolvedDefaultFeatures = [ "std" ];
       };
       "gimli" = rec {
         crateName = "gimli";
@@ -4708,9 +4709,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         libName = "k8s_version";
         authors = [
@@ -5783,9 +5784,9 @@ rec {
       };
       "opentelemetry" = rec {
         crateName = "opentelemetry";
-        version = "0.28.0";
+        version = "0.29.1";
         edition = "2021";
-        sha256 = "09k43sgaarw3zx5j434ngq1canpcjibsbxaqqa8dyp0acxxncvi3";
+        sha256 = "0v6ijlxs486yip2zbjdpgqc525q8l8k9s8ddz6b4ixvm4xz271wy";
         dependencies = [
           {
             name = "futures-core";
@@ -5821,7 +5822,8 @@ rec {
           }
         ];
         features = {
-          "default" = [ "trace" "metrics" "logs" "internal-logs" ];
+          "default" = [ "trace" "metrics" "logs" "internal-logs" "futures" ];
+          "futures" = [ "futures-core" "futures-sink" "pin-project-lite" ];
           "futures-core" = [ "dep:futures-core" ];
           "futures-sink" = [ "dep:futures-sink" ];
           "internal-logs" = [ "tracing" ];
@@ -5829,16 +5831,16 @@ rec {
           "spec_unstable_logs_enabled" = [ "logs" ];
           "testing" = [ "trace" ];
           "thiserror" = [ "dep:thiserror" ];
-          "trace" = [ "pin-project-lite" "futures-sink" "futures-core" "thiserror" ];
+          "trace" = [ "futures" "thiserror" ];
           "tracing" = [ "dep:tracing" ];
         };
-        resolvedDefaultFeatures = [ "default" "futures-core" "futures-sink" "internal-logs" "logs" "metrics" "pin-project-lite" "spec_unstable_logs_enabled" "thiserror" "trace" "tracing" ];
+        resolvedDefaultFeatures = [ "default" "futures" "futures-core" "futures-sink" "internal-logs" "logs" "metrics" "pin-project-lite" "spec_unstable_logs_enabled" "thiserror" "trace" "tracing" ];
       };
       "opentelemetry-appender-tracing" = rec {
         crateName = "opentelemetry-appender-tracing";
-        version = "0.28.1";
+        version = "0.29.1";
         edition = "2021";
-        sha256 = "1h6x4pwk225yi8mxl3sqkhg5ya93z57i68267lzi2c7c7fpwf4y5";
+        sha256 = "0zbjp4idhprbfxk21wpcivicx8c8w60w7bn4kpfpn013xdjgh5p7";
         libName = "opentelemetry_appender_tracing";
         dependencies = [
           {
@@ -5866,10 +5868,16 @@ rec {
         ];
         devDependencies = [
           {
+            name = "tracing";
+            packageId = "tracing";
+            usesDefaultFeatures = false;
+            features = [ "std" ];
+          }
+          {
             name = "tracing-subscriber";
             packageId = "tracing-subscriber";
             usesDefaultFeatures = false;
-            features = [ "registry" "std" "env-filter" ];
+            features = [ "env-filter" "registry" "std" "fmt" ];
           }
         ];
         features = {
@@ -5883,9 +5891,9 @@ rec {
       };
       "opentelemetry-http" = rec {
         crateName = "opentelemetry-http";
-        version = "0.28.0";
+        version = "0.29.0";
         edition = "2021";
-        sha256 = "0lv2sbsdr7b8bxnly92zzhlm1wzjbynib1xlkw9hs0qh56pkz1m8";
+        sha256 = "1vf86z9d4dr9msck3k2xan9w5k35rfk9bylhpnav9d97p0rapms6";
         libName = "opentelemetry_http";
         dependencies = [
           {
@@ -5934,15 +5942,11 @@ rec {
       };
       "opentelemetry-otlp" = rec {
         crateName = "opentelemetry-otlp";
-        version = "0.28.0";
+        version = "0.29.0";
         edition = "2021";
-        sha256 = "148xq13ar11bvmk7pxbslrhh5pgf40bv83n6dlysigj1dm613vsv";
+        sha256 = "0mjnx260qn4x1p9pyip35m7764kkszn087f0f6xcq5k9w07p56fq";
         libName = "opentelemetry_otlp";
         dependencies = [
-          {
-            name = "async-trait";
-            packageId = "async-trait";
-          }
           {
             name = "futures-core";
             packageId = "futures-core";
@@ -6017,6 +6021,12 @@ rec {
             usesDefaultFeatures = false;
             features = [ "macros" "rt-multi-thread" ];
           }
+          {
+            name = "tonic";
+            packageId = "tonic";
+            usesDefaultFeatures = false;
+            features = [ "server" ];
+          }
         ];
         features = {
           "default" = [ "http-proto" "reqwest-blocking-client" "trace" "metrics" "logs" "internal-logs" ];
@@ -6053,9 +6063,9 @@ rec {
       };
       "opentelemetry-proto" = rec {
         crateName = "opentelemetry-proto";
-        version = "0.28.0";
+        version = "0.29.0";
         edition = "2021";
-        sha256 = "0vbl4si1mny87pmqxxg6wday45pcc8bvpcrf46cpwwi4606qgy2n";
+        sha256 = "1cq96c16hxsfvcd26ip1v3sg9952mi89snqdawc5whw14cjdlh4c";
         libName = "opentelemetry_proto";
         dependencies = [
           {
@@ -6085,7 +6095,7 @@ rec {
           "base64" = [ "dep:base64" ];
           "default" = [ "full" ];
           "full" = [ "gen-tonic" "trace" "logs" "metrics" "zpages" "with-serde" "internal-logs" ];
-          "gen-tonic" = [ "gen-tonic-messages" "tonic/transport" ];
+          "gen-tonic" = [ "gen-tonic-messages" "tonic/channel" ];
           "gen-tonic-messages" = [ "tonic" "prost" ];
           "hex" = [ "dep:hex" ];
           "internal-logs" = [ "tracing" ];
@@ -6106,15 +6116,10 @@ rec {
       };
       "opentelemetry_sdk" = rec {
         crateName = "opentelemetry_sdk";
-        version = "0.28.0";
+        version = "0.29.0";
         edition = "2021";
-        sha256 = "0w4mycm070f4knvi1x5v199apd1fvi0712qiyv0pz70889havpw4";
+        sha256 = "02r99lz30zrb8870vivww8cvwhdi78v5fv5sq6mr8wyls4hzppmg";
         dependencies = [
-          {
-            name = "async-trait";
-            packageId = "async-trait";
-            optional = true;
-          }
           {
             name = "futures-channel";
             packageId = "futures-channel";
@@ -6145,10 +6150,10 @@ rec {
           }
           {
             name = "rand";
-            packageId = "rand";
+            packageId = "rand 0.9.1";
             optional = true;
             usesDefaultFeatures = false;
-            features = [ "std" "std_rng" "small_rng" ];
+            features = [ "std" "std_rng" "small_rng" "os_rng" "thread_rng" ];
           }
           {
             name = "serde_json";
@@ -6180,10 +6185,9 @@ rec {
           }
         ];
         features = {
-          "async-std" = [ "dep:async-std" ];
-          "async-trait" = [ "dep:async-trait" ];
           "default" = [ "trace" "metrics" "logs" "internal-logs" ];
           "experimental_logs_batch_log_processor_with_async_runtime" = [ "logs" ];
+          "experimental_logs_concurrent_log_processor" = [ "logs" ];
           "experimental_metrics_disable_name_validation" = [ "metrics" ];
           "experimental_metrics_periodicreader_with_async_runtime" = [ "metrics" ];
           "experimental_trace_batch_span_processor_with_async_runtime" = [ "trace" ];
@@ -6192,25 +6196,24 @@ rec {
           "internal-logs" = [ "tracing" ];
           "jaeger_remote_sampler" = [ "trace" "opentelemetry-http" "http" "serde" "serde_json" "url" ];
           "logs" = [ "opentelemetry/logs" "serde_json" ];
-          "metrics" = [ "opentelemetry/metrics" "glob" "async-trait" ];
+          "metrics" = [ "opentelemetry/metrics" "glob" ];
           "opentelemetry-http" = [ "dep:opentelemetry-http" ];
           "percent-encoding" = [ "dep:percent-encoding" ];
           "rand" = [ "dep:rand" ];
-          "rt-async-std" = [ "async-std" "experimental_async_runtime" ];
           "rt-tokio" = [ "tokio" "tokio-stream" "experimental_async_runtime" ];
           "rt-tokio-current-thread" = [ "tokio" "tokio-stream" "experimental_async_runtime" ];
           "serde" = [ "dep:serde" ];
           "serde_json" = [ "dep:serde_json" ];
           "spec_unstable_logs_enabled" = [ "logs" "opentelemetry/spec_unstable_logs_enabled" ];
           "spec_unstable_metrics_views" = [ "metrics" ];
-          "testing" = [ "opentelemetry/testing" "trace" "metrics" "logs" "rt-async-std" "rt-tokio" "rt-tokio-current-thread" "tokio/macros" "tokio/rt-multi-thread" ];
+          "testing" = [ "opentelemetry/testing" "trace" "metrics" "logs" "rt-tokio" "rt-tokio-current-thread" "tokio/macros" "tokio/rt-multi-thread" ];
           "tokio" = [ "dep:tokio" ];
           "tokio-stream" = [ "dep:tokio-stream" ];
           "trace" = [ "opentelemetry/trace" "rand" "percent-encoding" ];
           "tracing" = [ "dep:tracing" ];
           "url" = [ "dep:url" ];
         };
-        resolvedDefaultFeatures = [ "async-trait" "default" "experimental_async_runtime" "glob" "internal-logs" "logs" "metrics" "percent-encoding" "rand" "rt-tokio" "serde_json" "spec_unstable_logs_enabled" "tokio" "tokio-stream" "trace" "tracing" ];
+        resolvedDefaultFeatures = [ "default" "experimental_async_runtime" "glob" "internal-logs" "logs" "metrics" "percent-encoding" "rand" "rt-tokio" "serde_json" "spec_unstable_logs_enabled" "tokio" "tokio-stream" "trace" "tracing" ];
       };
       "ordered-float" = rec {
         crateName = "ordered-float";
@@ -6954,7 +6957,7 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "proc-macro" ];
       };
-      "rand" = rec {
+      "rand 0.8.5" = rec {
         crateName = "rand";
         version = "0.8.5";
         edition = "2018";
@@ -6973,13 +6976,13 @@ rec {
           }
           {
             name = "rand_chacha";
-            packageId = "rand_chacha";
+            packageId = "rand_chacha 0.3.1";
             optional = true;
             usesDefaultFeatures = false;
           }
           {
             name = "rand_core";
-            packageId = "rand_core";
+            packageId = "rand_core 0.6.4";
           }
         ];
         features = {
@@ -6998,7 +7001,40 @@ rec {
         };
         resolvedDefaultFeatures = [ "alloc" "default" "getrandom" "libc" "rand_chacha" "small_rng" "std" "std_rng" ];
       };
-      "rand_chacha" = rec {
+      "rand 0.9.1" = rec {
+        crateName = "rand";
+        version = "0.9.1";
+        edition = "2021";
+        sha256 = "15yxfcxbgmwba5cv7mjg9bhc1r5c9483dfcdfspg62x4jk8dkgwz";
+        authors = [
+          "The Rand Project Developers"
+          "The Rust Project Developers"
+        ];
+        dependencies = [
+          {
+            name = "rand_chacha";
+            packageId = "rand_chacha 0.9.0";
+            optional = true;
+            usesDefaultFeatures = false;
+          }
+          {
+            name = "rand_core";
+            packageId = "rand_core 0.9.3";
+            usesDefaultFeatures = false;
+          }
+        ];
+        features = {
+          "default" = [ "std" "std_rng" "os_rng" "small_rng" "thread_rng" ];
+          "log" = [ "dep:log" ];
+          "os_rng" = [ "rand_core/os_rng" ];
+          "serde" = [ "dep:serde" "rand_core/serde" ];
+          "std" = [ "rand_core/std" "rand_chacha?/std" "alloc" ];
+          "std_rng" = [ "dep:rand_chacha" ];
+          "thread_rng" = [ "std" "std_rng" "os_rng" ];
+        };
+        resolvedDefaultFeatures = [ "alloc" "os_rng" "small_rng" "std" "std_rng" "thread_rng" ];
+      };
+      "rand_chacha 0.3.1" = rec {
         crateName = "rand_chacha";
         version = "0.3.1";
         edition = "2018";
@@ -7017,7 +7053,7 @@ rec {
           }
           {
             name = "rand_core";
-            packageId = "rand_core";
+            packageId = "rand_core 0.6.4";
           }
         ];
         features = {
@@ -7028,7 +7064,44 @@ rec {
         };
         resolvedDefaultFeatures = [ "std" ];
       };
-      "rand_core" = rec {
+      "rand_chacha 0.9.0" = rec {
+        crateName = "rand_chacha";
+        version = "0.9.0";
+        edition = "2021";
+        sha256 = "1jr5ygix7r60pz0s1cv3ms1f6pd1i9pcdmnxzzhjc3zn3mgjn0nk";
+        authors = [
+          "The Rand Project Developers"
+          "The Rust Project Developers"
+          "The CryptoCorrosion Contributors"
+        ];
+        dependencies = [
+          {
+            name = "ppv-lite86";
+            packageId = "ppv-lite86";
+            usesDefaultFeatures = false;
+            features = [ "simd" ];
+          }
+          {
+            name = "rand_core";
+            packageId = "rand_core 0.9.3";
+          }
+        ];
+        devDependencies = [
+          {
+            name = "rand_core";
+            packageId = "rand_core 0.9.3";
+            features = [ "os_rng" ];
+          }
+        ];
+        features = {
+          "default" = [ "std" ];
+          "os_rng" = [ "rand_core/os_rng" ];
+          "serde" = [ "dep:serde" ];
+          "std" = [ "ppv-lite86/std" "rand_core/std" ];
+        };
+        resolvedDefaultFeatures = [ "std" ];
+      };
+      "rand_core 0.6.4" = rec {
         crateName = "rand_core";
         version = "0.6.4";
         edition = "2018";
@@ -7051,6 +7124,29 @@ rec {
           "std" = [ "alloc" "getrandom" "getrandom/std" ];
         };
         resolvedDefaultFeatures = [ "alloc" "getrandom" "std" ];
+      };
+      "rand_core 0.9.3" = rec {
+        crateName = "rand_core";
+        version = "0.9.3";
+        edition = "2021";
+        sha256 = "0f3xhf16yks5ic6kmgxcpv1ngdhp48mmfy4ag82i1wnwh8ws3ncr";
+        authors = [
+          "The Rand Project Developers"
+          "The Rust Project Developers"
+        ];
+        dependencies = [
+          {
+            name = "getrandom";
+            packageId = "getrandom 0.3.1";
+            optional = true;
+          }
+        ];
+        features = {
+          "os_rng" = [ "dep:getrandom" ];
+          "serde" = [ "dep:serde" ];
+          "std" = [ "getrandom?/std" ];
+        };
+        resolvedDefaultFeatures = [ "os_rng" "std" ];
       };
       "redox_syscall" = rec {
         crateName = "redox_syscall";
@@ -8970,9 +9066,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         libName = "stackable_operator";
         authors = [
@@ -9129,9 +9225,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         procMacro = true;
         libName = "stackable_operator_derive";
@@ -9164,9 +9260,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         libName = "stackable_shared";
         authors = [
@@ -9205,9 +9301,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         libName = "stackable_telemetry";
         authors = [
@@ -9310,9 +9406,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         libName = "stackable_versioned";
         authors = [
@@ -9336,9 +9432,9 @@ rec {
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
-          url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "5fdc47a10de685e4eea49fd0a3f6c3a15a4966c1";
-          sha256 = "0li9smdrz7danqz17lfkl0j9zl2i84csgc7d01lxs5qi8jcs9fzw";
+          url = "https://github.com/stackabletech//operator-rs.git";
+          rev = "dddd78fdc1bffb766caa30d5891bccad40073990";
+          sha256 = "0r0p4p4nyid6gjwq3mx9c5xp9xhk77dpwhhb51w00sknhg5p9qz7";
         };
         procMacro = true;
         libName = "stackable_versioned_macros";
@@ -10472,7 +10568,7 @@ rec {
           }
           {
             name = "rand";
-            packageId = "rand";
+            packageId = "rand 0.8.5";
             optional = true;
             features = [ "small_rng" ];
           }
@@ -10972,9 +11068,9 @@ rec {
       };
       "tracing-opentelemetry" = rec {
         crateName = "tracing-opentelemetry";
-        version = "0.29.0";
+        version = "0.30.0";
         edition = "2021";
-        sha256 = "0dnca0b7bxbp6gd64skkvzy3p58yjh35kvnxpggz7sfwd4jjs7vj";
+        sha256 = "0i64g7cyrdpzkc2zixz8bd0v1icha63ifcdwpvc3z0gmsr5pd3px";
         libName = "tracing_opentelemetry";
         dependencies = [
           {

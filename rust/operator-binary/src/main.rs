@@ -10,8 +10,9 @@ use csi_server::{
 };
 use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
-    self, CustomResourceExt,
-    commons::listener::{Listener, ListenerClass, PodListeners},
+    self, YamlSchema,
+    crd::listener::{Listener, ListenerClass, PodListeners},
+    shared::yaml::SerializeOptions,
     telemetry::{Tracing, tracing::TelemetryOptions},
     utils::cluster_info::KubernetesClusterInfoOpts,
 };
@@ -70,9 +71,12 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
-            ListenerClass::print_yaml_schema(built_info::PKG_VERSION)?;
-            Listener::print_yaml_schema(built_info::PKG_VERSION)?;
-            PodListeners::print_yaml_schema(built_info::PKG_VERSION)?;
+            ListenerClass::merged_crd(ListenerClass::V1Alpha1)?
+                .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
+            Listener::merged_crd(Listener::V1Alpha1)?
+                .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
+            PodListeners::merged_crd(PodListeners::V1Alpha1)?
+                .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,
