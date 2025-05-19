@@ -509,9 +509,9 @@ pub fn error_policy<T>(_obj: Arc<T>, error: &Error, _ctx: Arc<Ctx>) -> controlle
     }
 }
 
-/// Lists the names of the [`Node`]s backing this [`Listener`].
+/// Lists the names of the [`Node`]s backing this [`v1alpha1::Listener`].
 ///
-/// Should only be used for [`NodePort`](`ServiceType::NodePort`) [`Listener`]s.
+/// Should only be used for [`NodePort`](`v1alpha1::ServiceType::NodePort`) [`v1alpha1::Listener`]s.
 async fn node_names_for_nodeport_listener(
     client: &stackable_operator::client::Client,
     listener: &v1alpha1::Listener,
@@ -623,7 +623,7 @@ pub enum ListenerPersistentVolumeLabelError {
 const PV_LABEL_LISTENER_NAMESPACE: &str = "listeners.stackable.tech/listener-namespace";
 const PV_LABEL_LISTENER_NAME: &str = "listeners.stackable.tech/listener-name";
 
-/// A label that identifies which [`Listener`] corresponds to a given [`PersistentVolume`].
+/// A label that identifies which [`v1alpha1::Listener`] corresponds to a given [`PersistentVolume`].
 pub fn listener_persistent_volume_label(
     listener: &v1alpha1::Listener,
 ) -> Result<BTreeMap<String, String>, ListenerPersistentVolumeLabelError> {

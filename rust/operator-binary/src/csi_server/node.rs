@@ -477,7 +477,7 @@ async fn local_listener_addresses_for_pod(
     }
 }
 
-/// Publish listener into a [`PodListeners`] Kubernetes object.
+/// Publish listener into a [`v1alpha1::PodListeners`] Kubernetes object.
 async fn publish_pod_listener(
     client: &stackable_operator::client::Client,
     pod: &Pod,

@@ -8,7 +8,7 @@ pub struct AddressCandidates<'a> {
 }
 
 impl<'a> AddressCandidates<'a> {
-    /// Tries to pick the preferred [`AddressType`], falling back if it is not available.
+    /// Tries to pick the preferred [`v1alpha1::AddressType`], falling back if it is not available.
     pub fn pick(
         &self,
         preferred_address_type: v1alpha1::AddressType,
