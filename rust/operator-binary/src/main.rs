@@ -11,7 +11,7 @@ use csi_server::{
 use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
     self, CustomResourceExt,
-    commons::listener::{Listener, ListenerClass, PodListeners},
+    crd::listener,
     telemetry::{Tracing, tracing::TelemetryOptions},
     utils::cluster_info::KubernetesClusterInfoOpts,
 };
@@ -70,9 +70,9 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
-            ListenerClass::print_yaml_schema(built_info::PKG_VERSION)?;
-            Listener::print_yaml_schema(built_info::PKG_VERSION)?;
-            PodListeners::print_yaml_schema(built_info::PKG_VERSION)?;
+            listener::v1alpha1::ListenerClass::print_yaml_schema(built_info::PKG_VERSION)?;
+            listener::v1alpha1::Listener::print_yaml_schema(built_info::PKG_VERSION)?;
+            listener::v1alpha1::PodListeners::print_yaml_schema(built_info::PKG_VERSION)?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,
