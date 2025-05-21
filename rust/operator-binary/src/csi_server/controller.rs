@@ -2,7 +2,7 @@ use csi_grpc as csi;
 use serde::{Deserialize, de::IntoDeserializer};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
-    commons::listener::{Listener, ListenerClass, ServiceType},
+    crd::listener,
     k8s_openapi::api::core::v1::PersistentVolumeClaim,
     kube::{core::DynamicObject, runtime::reflector::ObjectRef},
 };
@@ -36,7 +36,9 @@ enum CreateVolumeError {
     #[snafu(display("failed to decode volume context"))]
     DecodeVolumeContext { source: serde::de::value::Error },
     #[snafu(display("{listener} does not specify a listener class"))]
-    NoListenerClass { listener: ObjectRef<Listener> },
+    NoListenerClass {
+        listener: ObjectRef<listener::v1alpha1::Listener>,
+    },
 }
 
 impl From<CreateVolumeError> for Status {
@@ -99,10 +101,10 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
             ListenerSelector::Listener(listener_name) => {
                 let listener = self
                     .client
-                    .get::<Listener>(&listener_name, &ns)
+                    .get::<listener::v1alpha1::Listener>(&listener_name, &ns)
                     .await
                     .with_context(|_| GetObjectSnafu {
-                        obj: ObjectRef::<Listener>::new(&listener_name)
+                        obj: ObjectRef::<listener::v1alpha1::Listener>::new(&listener_name)
                             .within(&ns)
                             .erase(),
                     })?;
@@ -118,10 +120,10 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
         };
         let listener_class = self
             .client
-            .get::<ListenerClass>(&listener_class_name, &())
+            .get::<listener::v1alpha1::ListenerClass>(&listener_class_name, &())
             .await
             .with_context(|_| GetObjectSnafu {
-                obj: ObjectRef::<ListenerClass>::new(&listener_class_name)
+                obj: ObjectRef::<listener::v1alpha1::ListenerClass>::new(&listener_class_name)
                     .within(&ns)
                     .erase(),
             })?;
@@ -134,7 +136,7 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                 accessible_topology: match listener_class.spec.service_type {
                     // Pick the top node (as selected by the CSI client) and "stick" to that
                     // Since we want clients to have a stable address to connect to
-                    ServiceType::NodePort => request
+                    listener::v1alpha1::ServiceType::NodePort => request
                         .accessibility_requirements
                         .unwrap_or_default()
                         .preferred
@@ -142,7 +144,8 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                         .take(1)
                         .collect(),
                     // Load balancers and services of type ClusterIP have no relationship to any particular node, so don't try to be sticky
-                    ServiceType::LoadBalancer | ServiceType::ClusterIP => Vec::new(),
+                    listener::v1alpha1::ServiceType::LoadBalancer
+                    | listener::v1alpha1::ServiceType::ClusterIP => Vec::new(),
                 },
             }),
         }))
