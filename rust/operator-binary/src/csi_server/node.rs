@@ -5,7 +5,7 @@ use serde::{Deserialize, de::IntoDeserializer};
 use snafu::{OptionExt, ResultExt, Snafu};
 use stackable_operator::{
     builder::meta::OwnerReferenceBuilder,
-    crd::listener::v1alpha1,
+    crd::listener,
     k8s_openapi::api::core::v1::{Node, PersistentVolume, PersistentVolumeClaim, Pod, Volume},
     kube::{
         core::{DynamicObject, ObjectMeta},
@@ -60,18 +60,18 @@ enum PublishVolumeError {
     #[snafu(display("failed to generate {listener}'s PersistentVolume selector"))]
     ListenerPvReference {
         source: ListenerPersistentVolumeLabelError,
-        listener: ObjectRef<v1alpha1::Listener>,
+        listener: ObjectRef<listener::v1alpha1::Listener>,
     },
 
     #[snafu(display("failed to generate {listener}'s pod selector"))]
     ListenerPodSelector {
         source: ListenerMountedPodLabelError,
-        listener: ObjectRef<v1alpha1::Listener>,
+        listener: ObjectRef<listener::v1alpha1::Listener>,
     },
 
     #[snafu(display("{listener} has no associated ListenerClass"))]
     ListenerHasNoClass {
-        listener: ObjectRef<v1alpha1::Listener>,
+        listener: ObjectRef<listener::v1alpha1::Listener>,
     },
 
     #[snafu(display("{pod} has not been scheduled to a node yet"))]
@@ -85,7 +85,7 @@ enum PublishVolumeError {
     #[snafu(display("failed to apply {listener}"))]
     ApplyListener {
         source: stackable_operator::client::Error,
-        listener: ObjectRef<v1alpha1::Listener>,
+        listener: ObjectRef<listener::v1alpha1::Listener>,
     },
 
     #[snafu(display("failed to add listener label to {pv}"))]
@@ -113,7 +113,7 @@ enum PublishVolumeError {
     WritePodListeners {
         source: stackable_operator::client::Error,
         create_error: stackable_operator::client::Error,
-        pod_listeners: ObjectRef<v1alpha1::PodListeners>,
+        pod_listeners: ObjectRef<listener::v1alpha1::PodListeners>,
     },
 
     #[snafu(display("failed to find Pod volume corresponding for {pvc}"))]
@@ -243,17 +243,17 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         let listener = match listener_selector {
             ListenerSelector::Listener(listener_name) => self
                 .client
-                .get::<v1alpha1::Listener>(&listener_name, &ns)
+                .get::<listener::v1alpha1::Listener>(&listener_name, &ns)
                 .await
                 .with_context(|_| GetObjectSnafu {
                     obj: {
-                        ObjectRef::<v1alpha1::Listener>::new(&listener_name)
+                        ObjectRef::<listener::v1alpha1::Listener>::new(&listener_name)
                             .within(&ns)
                             .erase()
                     },
                 })?,
             ListenerSelector::ListenerClass(listener_class_name) => {
-                let listener = v1alpha1::Listener {
+                let listener = listener::v1alpha1::Listener {
                     metadata: ObjectMeta {
                         namespace: Some(ns.clone()),
                         name: Some(pvc_name.to_string()),
@@ -268,7 +268,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                         labels: pvc.metadata.labels,
                         ..Default::default()
                     },
-                    spec: v1alpha1::ListenerSpec {
+                    spec: listener::v1alpha1::ListenerSpec {
                         class_name: Some(listener_class_name),
                         ports: Some(
                             pod.spec
@@ -276,7 +276,7 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
                                 .flat_map(|ps| &ps.containers)
                                 .flat_map(|ctr| &ctr.ports)
                                 .flatten()
-                                .map(|port| v1alpha1::ListenerPort {
+                                .map(|port| listener::v1alpha1::ListenerPort {
                                     name: port
                                         .name
                                         .clone()
@@ -419,9 +419,9 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 /// (and so can't be found in `Endpoints`).
 async fn local_listener_addresses_for_pod(
     client: &stackable_operator::client::Client,
-    listener: &v1alpha1::Listener,
+    listener: &listener::v1alpha1::Listener,
     pod: &Pod,
-) -> Result<Vec<v1alpha1::ListenerIngress>, PublishVolumeError> {
+) -> Result<Vec<listener::v1alpha1::ListenerIngress>, PublishVolumeError> {
     use publish_volume_error::*;
 
     if let Some(node_ports) = listener
@@ -451,20 +451,23 @@ async fn local_listener_addresses_for_pod(
                     listener: ObjectRef::from_obj(listener),
                 })?;
         let listener_class = client
-            .get::<v1alpha1::ListenerClass>(listener_class_name, &())
+            .get::<listener::v1alpha1::ListenerClass>(listener_class_name, &())
             .await
             .with_context(|_| GetObjectSnafu {
-                obj: ObjectRef::<v1alpha1::ListenerClass>::new(listener_class_name).erase(),
+                obj: ObjectRef::<listener::v1alpha1::ListenerClass>::new(listener_class_name)
+                    .erase(),
             })?;
 
         Ok(node_primary_addresses(&node)
             .pick(listener_class.spec.resolve_preferred_address_type())
-            .map(|(address, address_type)| v1alpha1::ListenerIngress {
-                // nodes: Some(vec![node_name.to_string()]),
-                address: address.to_string(),
-                address_type,
-                ports: node_ports,
-            })
+            .map(
+                |(address, address_type)| listener::v1alpha1::ListenerIngress {
+                    // nodes: Some(vec![node_name.to_string()]),
+                    address: address.to_string(),
+                    address_type,
+                    ports: node_ports,
+                },
+            )
             .into_iter()
             .collect())
     } else {
@@ -477,14 +480,14 @@ async fn local_listener_addresses_for_pod(
     }
 }
 
-/// Publish listener into a [`v1alpha1::PodListeners`] Kubernetes object.
+/// Publish listener into a [`listener::v1alpha1::PodListeners`] Kubernetes object.
 async fn publish_pod_listener(
     client: &stackable_operator::client::Client,
     pod: &Pod,
     pod_name: &str,
     pvc_name: &str,
-    listener: &v1alpha1::Listener,
-    listener_addresses: &[v1alpha1::ListenerIngress],
+    listener: &listener::v1alpha1::Listener,
+    listener_addresses: &[listener::v1alpha1::ListenerIngress],
 ) -> Result<(), PublishVolumeError> {
     use publish_volume_error::*;
     let listener_pod_volume = pod
@@ -507,7 +510,7 @@ async fn publish_pod_listener(
         .with_context(|| FindPodVolumeForPvcSnafu {
             pvc: ObjectRef::<PersistentVolumeClaim>::new(pvc_name),
         })?;
-    let pod_listeners = v1alpha1::PodListeners {
+    let pod_listeners = listener::v1alpha1::PodListeners {
         metadata: ObjectMeta {
             name: pod.metadata.uid.as_deref().map(|uid| format!("pod-{uid}")),
             namespace: pod.metadata.namespace.clone(),
@@ -519,20 +522,23 @@ async fn publish_pod_listener(
             ]),
             ..Default::default()
         },
-        spec: v1alpha1::PodListenersSpec {
-            listeners: [(listener_pod_volume.name.clone(), v1alpha1::PodListener {
-                scope: if listener
-                    .status
-                    .as_ref()
-                    .and_then(|s| s.node_ports.as_ref())
-                    .is_some()
-                {
-                    v1alpha1::PodListenerScope::Node
-                } else {
-                    v1alpha1::PodListenerScope::Cluster
+        spec: listener::v1alpha1::PodListenersSpec {
+            listeners: [(
+                listener_pod_volume.name.clone(),
+                listener::v1alpha1::PodListener {
+                    scope: if listener
+                        .status
+                        .as_ref()
+                        .and_then(|s| s.node_ports.as_ref())
+                        .is_some()
+                    {
+                        listener::v1alpha1::PodListenerScope::Node
+                    } else {
+                        listener::v1alpha1::PodListenerScope::Cluster
+                    },
+                    ingress_addresses: Some(listener_addresses.to_vec()),
                 },
-                ingress_addresses: Some(listener_addresses.to_vec()),
-            })]
+            )]
             .into(),
         },
     };
@@ -555,7 +561,7 @@ mod pod_dir {
     use std::path::Path;
 
     use snafu::{OptionExt, ResultExt, Snafu};
-    use stackable_operator::crd::listener::v1alpha1;
+    use stackable_operator::crd::listener;
 
     #[derive(Snafu, Debug)]
     pub enum Error {
@@ -569,7 +575,7 @@ mod pod_dir {
 
     pub async fn write_listener_info_to_pod_dir(
         target_path: &Path,
-        listener_addrs: &[v1alpha1::ListenerIngress],
+        listener_addrs: &[listener::v1alpha1::ListenerIngress],
     ) -> Result<(), Error> {
         let addrs_path = target_path.join("addresses");
         tokio::fs::create_dir_all(&addrs_path).await?;

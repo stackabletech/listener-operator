@@ -14,7 +14,7 @@ use stackable_operator::k8s_openapi::api::core::v1::Pod;
 use stackable_operator::{
     builder::meta::ObjectMetaBuilder,
     cluster_resources::{ClusterResourceApplyStrategy, ClusterResources},
-    crd::listener::v1alpha1,
+    crd::listener,
     iter::TryFromIterator,
     k8s_openapi::{
         api::core::v1::{Endpoints, Node, PersistentVolume, Service, ServicePort, ServiceSpec},
@@ -49,7 +49,7 @@ pub const FULL_CONTROLLER_NAME: &str = concatcp!(CONTROLLER_NAME, '.', OPERATOR_
 
 pub async fn run(client: stackable_operator::client::Client) {
     let controller = controller::Controller::new(
-        client.get_all_api::<DeserializeGuard<v1alpha1::Listener>>(),
+        client.get_all_api::<DeserializeGuard<listener::v1alpha1::Listener>>(),
         watcher::Config::default(),
     );
     let listener_store = controller.store();
@@ -63,7 +63,7 @@ pub async fn run(client: stackable_operator::client::Client) {
             watcher::Config::default(),
         )
         .watches(
-            client.get_all_api::<DeserializeGuard<v1alpha1::ListenerClass>>(),
+            client.get_all_api::<DeserializeGuard<listener::v1alpha1::ListenerClass>>(),
             watcher::Config::default(),
             {
                 let listener_store = listener_store.clone();
@@ -110,7 +110,8 @@ pub async fn run(client: stackable_operator::client::Client) {
                     .get(PV_LABEL_LISTENER_NAMESPACE)
                     .zip(labels.get(PV_LABEL_LISTENER_NAME))
                     .map(|(ns, name)| {
-                        ObjectRef::<DeserializeGuard<v1alpha1::Listener>>::new(name).within(ns)
+                        ObjectRef::<DeserializeGuard<listener::v1alpha1::Listener>>::new(name)
+                            .within(ns)
                     })
             },
         )
@@ -186,7 +187,7 @@ pub enum Error {
     #[snafu(display("failed to validate annotations specified by {listener_class}"))]
     ValidateListenerClassAnnotations {
         source: stackable_operator::kvp::AnnotationError,
-        listener_class: ObjectRef<v1alpha1::ListenerClass>,
+        listener_class: ObjectRef<listener::v1alpha1::ListenerClass>,
     },
 
     #[snafu(display("failed to build cluster resource labels"))]
@@ -253,7 +254,7 @@ impl ReconcilerError for Error {
 }
 
 pub async fn reconcile(
-    listener: Arc<DeserializeGuard<v1alpha1::Listener>>,
+    listener: Arc<DeserializeGuard<listener::v1alpha1::Listener>>,
     ctx: Arc<Ctx>,
 ) -> Result<controller::Action> {
     tracing::info!("Starting reconcile");
@@ -282,10 +283,10 @@ pub async fn reconcile(
         .context(NoListenerClassSnafu)?;
     let listener_class = ctx
         .client
-        .get::<v1alpha1::ListenerClass>(listener_class_name, &())
+        .get::<listener::v1alpha1::ListenerClass>(listener_class_name, &())
         .await
         .with_context(|_| GetObjectSnafu {
-            obj: ObjectRef::<v1alpha1::ListenerClass>::new(listener_class_name).erase(),
+            obj: ObjectRef::<listener::v1alpha1::ListenerClass>::new(listener_class_name).erase(),
         })?;
     let pod_ports = listener
         .spec
@@ -293,7 +294,7 @@ pub async fn reconcile(
         .iter()
         .flatten()
         .map(
-            |v1alpha1::ListenerPort {
+            |listener::v1alpha1::ListenerPort {
                  name,
                  port,
                  protocol,
@@ -314,13 +315,14 @@ pub async fn reconcile(
 
     // ClusterIP services have no external traffic to apply policies to
     let external_traffic_policy = match listener_class.spec.service_type {
-        v1alpha1::ServiceType::NodePort | v1alpha1::ServiceType::LoadBalancer => Some(
+        listener::v1alpha1::ServiceType::NodePort
+        | listener::v1alpha1::ServiceType::LoadBalancer => Some(
             listener_class
                 .spec
                 .service_external_traffic_policy
                 .to_string(),
         ),
-        v1alpha1::ServiceType::ClusterIP => None,
+        listener::v1alpha1::ServiceType::ClusterIP => None,
     };
 
     let svc = Service {
@@ -358,9 +360,9 @@ pub async fn reconcile(
             // We explicitly match here and do not implement `ToString` as there might be more (non vanilla k8s Service
             // types) in the future.
             type_: Some(match listener_class.spec.service_type {
-                v1alpha1::ServiceType::NodePort => "NodePort".to_string(),
-                v1alpha1::ServiceType::LoadBalancer => "LoadBalancer".to_string(),
-                v1alpha1::ServiceType::ClusterIP => "ClusterIP".to_string(),
+                listener::v1alpha1::ServiceType::NodePort => "NodePort".to_string(),
+                listener::v1alpha1::ServiceType::LoadBalancer => "LoadBalancer".to_string(),
+                listener::v1alpha1::ServiceType::ClusterIP => "ClusterIP".to_string(),
             }),
             ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy,
@@ -384,10 +386,10 @@ pub async fn reconcile(
 
     let nodes: Vec<Node>;
     let kubernetes_service_fqdn: String;
-    let addresses: Vec<(&str, v1alpha1::AddressType)>;
+    let addresses: Vec<(&str, listener::v1alpha1::AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
-        v1alpha1::ServiceType::NodePort => {
+        listener::v1alpha1::ServiceType::NodePort => {
             let node_names =
                 node_names_for_nodeport_listener(&ctx.client, listener, ns, &svc_name).await?;
             nodes = try_join_all(node_names.iter().map(|node_name| async {
@@ -412,7 +414,7 @@ pub async fn reconcile(
                 .filter_map(|port| Some((port.name.clone()?, port.node_port?)))
                 .collect();
         }
-        v1alpha1::ServiceType::LoadBalancer => {
+        listener::v1alpha1::ServiceType::LoadBalancer => {
             addresses = svc
                 .status
                 .iter()
@@ -435,19 +437,22 @@ pub async fn reconcile(
                 .filter_map(|port| Some((port.name.clone()?, port.port)))
                 .collect();
         }
-        v1alpha1::ServiceType::ClusterIP => {
+        listener::v1alpha1::ServiceType::ClusterIP => {
             let cluster_domain = &cluster_info.cluster_domain;
             addresses = match preferred_address_type {
-                v1alpha1::AddressType::Ip => svc
+                listener::v1alpha1::AddressType::Ip => svc
                     .spec
                     .iter()
                     .flat_map(|s| &s.cluster_ips)
                     .flatten()
-                    .map(|addr| (&**addr, v1alpha1::AddressType::Ip))
+                    .map(|addr| (&**addr, listener::v1alpha1::AddressType::Ip))
                     .collect::<Vec<_>>(),
-                v1alpha1::AddressType::Hostname => {
+                listener::v1alpha1::AddressType::Hostname => {
                     kubernetes_service_fqdn = format!("{svc_name}.{ns}.svc.{cluster_domain}");
-                    vec![(&kubernetes_service_fqdn, v1alpha1::AddressType::Hostname)]
+                    vec![(
+                        &kubernetes_service_fqdn,
+                        listener::v1alpha1::AddressType::Hostname,
+                    )]
                 }
             };
             ports = svc
@@ -461,29 +466,31 @@ pub async fn reconcile(
         }
     };
 
-    let listener_status_meta = v1alpha1::Listener {
+    let listener_status_meta = listener::v1alpha1::Listener {
         metadata: ObjectMeta {
             name: listener.metadata.name.clone(),
             namespace: listener.metadata.namespace.clone(),
             uid: listener.metadata.uid.clone(),
             ..Default::default()
         },
-        spec: v1alpha1::ListenerSpec::default(),
+        spec: listener::v1alpha1::ListenerSpec::default(),
         status: None,
     };
-    let listener_status = v1alpha1::ListenerStatus {
+    let listener_status = listener::v1alpha1::ListenerStatus {
         service_name: svc.metadata.name,
         ingress_addresses: Some(
             addresses
                 .into_iter()
-                .map(|(address, address_type)| v1alpha1::ListenerIngress {
-                    address: address.to_string(),
-                    address_type,
-                    ports: ports.clone(),
-                })
+                .map(
+                    |(address, address_type)| listener::v1alpha1::ListenerIngress {
+                        address: address.to_string(),
+                        address_type,
+                        ports: ports.clone(),
+                    },
+                )
                 .collect(),
         ),
-        node_ports: (listener_class.spec.service_type == v1alpha1::ServiceType::NodePort)
+        node_ports: (listener_class.spec.service_type == listener::v1alpha1::ServiceType::NodePort)
             .then_some(ports),
     };
 
@@ -509,12 +516,12 @@ pub fn error_policy<T>(_obj: Arc<T>, error: &Error, _ctx: Arc<Ctx>) -> controlle
     }
 }
 
-/// Lists the names of the [`Node`]s backing this [`v1alpha1::Listener`].
+/// Lists the names of the [`Node`]s backing this [`listener::v1alpha1::Listener`].
 ///
-/// Should only be used for [`NodePort`](`v1alpha1::ServiceType::NodePort`) [`v1alpha1::Listener`]s.
+/// Should only be used for [`NodePort`](`listener::v1alpha1::ServiceType::NodePort`) [`listener::v1alpha1::Listener`]s.
 async fn node_names_for_nodeport_listener(
     client: &stackable_operator::client::Client,
-    listener: &v1alpha1::Listener,
+    listener: &listener::v1alpha1::Listener,
     namespace: &str,
     service_name: &str,
 ) -> Result<BTreeSet<String>> {
@@ -594,7 +601,7 @@ pub enum ListenerMountedPodLabelError {
 ///
 /// Listener-Op's CSI Node driver is responsible for adding this to the relevant [`Pod`]s.
 pub fn listener_mounted_pod_label(
-    listener: &v1alpha1::Listener,
+    listener: &listener::v1alpha1::Listener,
 ) -> Result<(String, String), ListenerMountedPodLabelError> {
     use listener_mounted_pod_label_error::*;
     let uid = listener.metadata.uid.as_deref().context(NoUidSnafu)?;
@@ -623,9 +630,9 @@ pub enum ListenerPersistentVolumeLabelError {
 const PV_LABEL_LISTENER_NAMESPACE: &str = "listeners.stackable.tech/listener-namespace";
 const PV_LABEL_LISTENER_NAME: &str = "listeners.stackable.tech/listener-name";
 
-/// A label that identifies which [`v1alpha1::Listener`] corresponds to a given [`PersistentVolume`].
+/// A label that identifies which [`listener::v1alpha1::Listener`] corresponds to a given [`PersistentVolume`].
 pub fn listener_persistent_volume_label(
-    listener: &v1alpha1::Listener,
+    listener: &listener::v1alpha1::Listener,
 ) -> Result<BTreeMap<String, String>, ListenerPersistentVolumeLabelError> {
     use listener_persistent_volume_label_error::*;
     Ok([
