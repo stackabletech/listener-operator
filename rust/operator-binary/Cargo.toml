@@ -11,7 +11,6 @@ publish = false
 [dependencies]
 csi-grpc = { path = "../csi-grpc" }
 stackable-operator.workspace = true
-stackable-telemetry.workspace = true
 
 clap.workspace = true
 const_format.workspace = true
