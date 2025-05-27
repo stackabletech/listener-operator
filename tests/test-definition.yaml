@@ -13,6 +13,10 @@ tests:
     dimensions:
       - openshift
       - addressType
+  # Not a "regular" test dimension since custom lbclasses won't be possible to /connect/ to,
+  # we just want to check that they get created correctly
+  - name: custom-lbclass
+    dimensions: []
 suites:
   - name: nightly
   - name: openshift

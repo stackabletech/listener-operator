@@ -1,0 +1,13 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener
+status:
+  ingressAddresses:
+    # mirrors the address configured by 15_listener_patch.yaml
+    - address: svc.example.com
+      addressType: Hostname
+      # mirrors the ports configured in 10_listener.yaml
+      ports:
+        http: 80

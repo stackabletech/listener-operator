@@ -1,0 +1,8 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: listener-operator-test-custom-lbclass-$NAMESPACE
+spec:
+  serviceType: LoadBalancer
+  loadBalancerClass: custom-lbclass
