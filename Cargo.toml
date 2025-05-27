@@ -22,8 +22,6 @@ libc = "0.2"
 pin-project = "1.1"
 prost = "0.13"
 prost-types = "0.13"
-# TODO: aws-lc-rs requires custom nix setup
-rustls = { version = "0.23.25", default-features = false, features = ["ring"] }
 serde = "1.0"
 serde_json = "1.0"
 serde_yaml = "0.9"

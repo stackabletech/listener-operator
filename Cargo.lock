@@ -2683,7 +2683,6 @@ dependencies = [
  "libc",
  "pin-project",
  "prost",
- "rustls",
  "serde",
  "snafu 0.8.5",
  "socket2",

@@ -8850,12 +8850,6 @@ rec {
             packageId = "prost";
           }
           {
-            name = "rustls";
-            packageId = "rustls";
-            usesDefaultFeatures = false;
-            features = [ "ring" ];
-          }
-          {
             name = "serde";
             packageId = "serde";
           }
