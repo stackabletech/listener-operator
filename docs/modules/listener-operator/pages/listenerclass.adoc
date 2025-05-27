@@ -63,6 +63,15 @@ Compared to xref:#servicetype-nodeport[], this service type allows Pods to be mo
 However, it requires https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a cloud controller manager that supports load balancers].
 Additionally, many cloud providers charge for load-balanced traffic.
 
+[#servicetype-loadbalancer-class]
+==== Custom load-balancer classes
+
+Kubernetes supports using multiple different load balancer types in the same cluster by configuring a unique https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-class[load-balancer class] for each provider.
+
+The Stackable Listener Operator supports using custom classes setting the `ListenerClass.spec.loadBalancerClass`.
+
+NOTE: `loadBalancerClass` is _only_ respected when using the xref:#servicetype-loadbalancer[] service type. Otherwise, the field will be ignored.
+
 [#addresstype]
 == Address types
 
