@@ -68,9 +68,18 @@ Additionally, many cloud providers charge for load-balanced traffic.
 
 Kubernetes supports using multiple different load balancer types in the same cluster by configuring a unique https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-class[load-balancer class] for each provider.
 
-The Stackable Listener Operator supports using custom classes setting the `ListenerClass.spec.loadBalancerClass`.
+The Stackable Listener Operator supports using custom classes setting the `ListenerClass.spec.loadBalancerClass` field.
 
 NOTE: `loadBalancerClass` is _only_ respected when using the xref:#servicetype-loadbalancer[] service type. Otherwise, the field will be ignored.
+
+[#servicetype-loadbalancer-nodeportallocation]
+==== Load-balancer NodePort allocation
+
+Normally, Kubernetes https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-nodeport-allocation[also enables] xref:#servicetype-nodeport[] access for any Services that use the xref:#servicetype-loadbalancer[] type.
+
+If your LoadBalancer controller does not require this then it can be disabled using the `ListenerClass.spec.loadBalancerAllocateNodePorts` field.
+
+NOTE: `loadBalancerAllocateNodePorts` is _only_ respected when using the xref:#servicetype-loadbalancer[] service type. Otherwise, the field will be ignored.
 
 [#addresstype]
 == Address types
