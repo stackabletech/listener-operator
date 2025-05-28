@@ -5,3 +5,4 @@ metadata:
   name: listener
 spec:
   loadBalancerClass: custom-lbclass
+  allocateLoadBalancerNodePorts: {{ test_scenario['values']['loadbalancer-allocatenodeports'] }}

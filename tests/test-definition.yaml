@@ -8,6 +8,10 @@ dimensions:
       - IP
       - Hostname
       - HostnameConservative
+  - name: loadbalancer-allocatenodeports
+    values:
+      - "false"
+      - "true"
 tests:
   - name: smoke-nodeport
     dimensions:
@@ -18,6 +22,7 @@ tests:
   - name: custom-lbclass
     dimensions:
       - openshift
+      - loadbalancer-allocatenodeports
 suites:
   - name: nightly
   - name: openshift
