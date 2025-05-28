@@ -4,5 +4,9 @@ kind: Service
 metadata:
   name: listener
 spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
   loadBalancerClass: custom-lbclass
   allocateLoadBalancerNodePorts: {{ test_scenario['values']['loadbalancer-allocatenodeports'] }}
