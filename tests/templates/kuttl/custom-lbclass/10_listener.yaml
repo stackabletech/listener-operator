@@ -1,0 +1,10 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener
+spec:
+  className: listener-operator-test-custom-lbclass-$NAMESPACE
+  ports:
+    - name: http
+      port: 80

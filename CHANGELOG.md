@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
   - Use `--file-log-max-files` (or `FILE_LOG_MAX_FILES`) to limit the number of log files kept.
   - Use `--file-log-rotation-period` (or `FILE_LOG_ROTATION_PERIOD`) to configure the frequency of rotation.
   - Use `--console-log-format` (or `CONSOLE_LOG_FORMAT`) to set the format to `plain` (default) or `json`.
+- Added support for configuring `Service.spec.loadBalancerClass` and `.allocateLoadBalancerNodePorts` ([#288]).
 
 ### Changed
 
@@ -28,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Upgrade csi-provisioner to 5.2.0 ([#304]).
 - Version CRDs and bump dependencies ([#307]).
 
+[#288]: https://github.com/stackabletech/listener-operator/pull/288
 [#291]: https://github.com/stackabletech/listener-operator/pull/291
 [#299]: https://github.com/stackabletech/listener-operator/pull/299
 [#304]: https://github.com/stackabletech/listener-operator/pull/304

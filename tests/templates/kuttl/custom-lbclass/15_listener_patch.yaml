@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Service
+status:
+  loadBalancer:
+    ingress:
+      - hostname: svc.example.com

@@ -325,6 +325,23 @@ pub async fn reconcile(
         listener::v1alpha1::ServiceType::ClusterIP => None,
     };
 
+    let load_balancer_class = match listener_class.spec.service_type {
+        listener::v1alpha1::ServiceType::LoadBalancer => {
+            listener_class.spec.load_balancer_class.clone()
+        }
+        listener::v1alpha1::ServiceType::NodePort | listener::v1alpha1::ServiceType::ClusterIP => {
+            None
+        }
+    };
+    let allocate_load_balancer_node_ports = match listener_class.spec.service_type {
+        listener::v1alpha1::ServiceType::LoadBalancer => {
+            Some(listener_class.spec.load_balancer_allocate_node_ports)
+        }
+        listener::v1alpha1::ServiceType::NodePort | listener::v1alpha1::ServiceType::ClusterIP => {
+            None
+        }
+    };
+
     let svc = Service {
         metadata: ObjectMetaBuilder::new()
             .namespace(ns)
@@ -364,6 +381,8 @@ pub async fn reconcile(
                 listener::v1alpha1::ServiceType::LoadBalancer => "LoadBalancer".to_string(),
                 listener::v1alpha1::ServiceType::ClusterIP => "ClusterIP".to_string(),
             }),
+            load_balancer_class,
+            allocate_load_balancer_node_ports,
             ports: Some(pod_ports.into_values().collect()),
             external_traffic_policy,
             selector: Some(pod_selector),

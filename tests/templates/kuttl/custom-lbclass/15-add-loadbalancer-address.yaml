@@ -1,0 +1,5 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: kubectl patch -n $NAMESPACE service/listener --subresource=status --patch-file=15_listener_patch.yaml
