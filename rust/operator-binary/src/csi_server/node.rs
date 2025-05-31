@@ -303,17 +303,21 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         // Add listener label to PV, allowing traffic to be directed based on reservations, rather than which replicas are *currently* active.
         // See https://github.com/stackabletech/listener-operator/issues/220
         self.client
-            .apply_patch(FIELD_MANAGER_SCOPE, &pv, &PersistentVolume {
-                metadata: ObjectMeta {
-                    labels: Some(listener_persistent_volume_label(&listener).context(
-                        ListenerPvReferenceSnafu {
-                            listener: ObjectRef::from_obj(&listener),
-                        },
-                    )?),
+            .apply_patch(
+                FIELD_MANAGER_SCOPE,
+                &pv,
+                &PersistentVolume {
+                    metadata: ObjectMeta {
+                        labels: Some(listener_persistent_volume_label(&listener).context(
+                            ListenerPvReferenceSnafu {
+                                listener: ObjectRef::from_obj(&listener),
+                            },
+                        )?),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
-            })
+            )
             .await
             .with_context(|_| AddListenerLabelToPvSnafu {
                 pv: ObjectRef::from_obj(&pv),
@@ -324,20 +328,23 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             // IMPORTANT
             // Use a merge patch rather than an apply so that we don't delete labels added by other listener volumes.
             // Volumes aren't hot-swappable anyway, and all labels will be removed when the pod is deleted.
-            .merge_patch(&pod, &Pod {
-                metadata: ObjectMeta {
-                    labels: Some(
-                        [listener_mounted_pod_label(&listener).context(
-                            ListenerPodSelectorSnafu {
-                                listener: ObjectRef::from_obj(&listener),
-                            },
-                        )?]
-                        .into(),
-                    ),
+            .merge_patch(
+                &pod,
+                &Pod {
+                    metadata: ObjectMeta {
+                        labels: Some(
+                            [listener_mounted_pod_label(&listener).context(
+                                ListenerPodSelectorSnafu {
+                                    listener: ObjectRef::from_obj(&listener),
+                                },
+                            )?]
+                            .into(),
+                        ),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
-            })
+            )
             .await
             .with_context(|_| AddListenerLabelToPodSnafu {
                 pod: ObjectRef::from_obj(&pod),
