@@ -1,6 +1,7 @@
 * xref:listener-operator:installation.adoc[]
 * xref:listener-operator:usage.adoc[]
 * Concepts
+** xref:listener-operator:overview.adoc[]
 ** xref:listener-operator:listener.adoc[]
 ** xref:listener-operator:listenerclass.adoc[]
 ** xref:listener-operator:volume.adoc[]

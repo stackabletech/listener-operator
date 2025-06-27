@@ -1,0 +1,92 @@
+= Overview
+
+So. You've deployed something, and now you want let people call into it.
+Just grab the IP address, port, maybe punch a hole through the firewall if you're feeling particularly adventurous, and you're off to the races... right?
+
+I'm afraid it's not quite so simple when we're running in Kubernetes, because having more machines makes everything harder.
+
+When exposing a product there are a few things that we need to understand about the product and customer environment.
+
+This page will contain some guidance for when to expect each option to apply, but it is still up to you, dear implementer, to verify how your product in question works.
+
+[#responsibility]
+== Whose Policy Is It Anyway?
+
+One of the core principles of the Listener operator is to separate _product knowledge_ from _cluster policy_.
+
+We (Stackable) know what networking requirements the applications have (xref:#routing[routing], xref:#address-stability[stability expectations], and so on).
+But there's also a lot that we _don't_.
+Who needs to xref:#access-scope[access the service]?
+Does the cluster provide a xref:#address-stability[load balancer]?
+How much does using that load balancer cost?
+
+The Listener Operator tries to separate these concepts, by letting administrators define cluster policies using xref:listenerclass.adoc[ListenerClasses], and then letting each application _apply_ one (or more) of those policies via xref:listener.adoc[].
+
+[#access-scope]
+== Access control/scope
+
+Not all services should be accessible from the public internet.
+Of course, xref:#authentication[authentication] is still also very important, but a useful first step is limiting who is able to access the service at all in the first place.
+
+With the Listener operator, this kind of policy is generally defined by the xref:listenerclass.adoc[] and/or regular Kubernetes mechanisms such as https://kubernetes.io/docs/concepts/services-networking/network-policies/[NetworkPolicy].
+Application administrators _must_ always be free to apply any ListenerClass of their choosing.
+
+[#routing]
+== Request routing
+
+We'll usually want to support running more than one replica of a given service.. which means that we need some way to direct clients to the right server.
+
+=== Server-side request routing
+
+Sometimes, clients should just connect to _any_ instance of the service, and the service itself is responsible for Doing The Right Thing(tm).
+
+This is common for stateless front-ends, or for services that handle a more complicated consensus protocol internally (like ZooKeeper).
+
+Kubernetes traditionally handles this through deploying a common https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#service-v1-core[Service] across the entire replica set.
+
+The Listener operator supports this by manually deploying a common xref:listener.adoc[] object, and then xref:volume.adoc#shared-exposure[mounting] it into each replica.
+
+NOTE: However, these listeners _may_ still have more than one address (for example: when using xref:listenerclass.adoc#servicetype-nodeport[node-bound listeners]). Clients are responsible for picking a random target address from the options given.
+
+=== Client-side request routing
+
+Sometimes, the client needs to connect to a specific instance of a service.
+
+For example, a HDFS client connects to _all_ available NameNodes to find the current primary instance, then queries _that_ one for which DataNode has the file that it is looking for.
+
+Kubernetes doesn't really handle this natively, you would need to deploy a separate Service for each
+
+The Listener operator supports this by automatically creating xref:listener.adoc[Listeners] corresponding to each xref:volume.adoc[] when xref:volume.adoc#individual-pod-exposure[requested].
+
+[#address-stability]
+== Address stability
+
+We want to avoid clients needing to update their connection configuration just because the service got redeployed.
+
+The Listener operator binds the lifetime of an address to the lifetime of the xref:volume.adoc[Listener Volume].
+As long as the PersistentVolume exists, the xref:listener.adoc[] is expected to keep the same address.
+If the PersistentVolume(Claim) is deleted (and recreated), then the address may{empty}footnote:[But isn't always.] be changed.
+Long-lived bindings can be created through `StatefulSet.spec.volumeClaimTemplates`, which creates "permanent" PersistentVolumes, which are not cleaned up automatically and must be deleted manually by an administrator once they are no longer used.
+Short-lived bindings should be created through `Pod.spec.volumes.ephemeral`, which creates a PersistentVolume that will automatically be deleted once the Pod no longer exists.
+
+WARNING: Ephemeral CSI volumes (configured via `Pod.spec.volumes.csi`) are an entirely different thing entirely, and are not supported by the Listener operator. Ephemeral PersistentVolumeClaims (`.volumes.ephemeral`) are still "Persistent" from CSI's point of view.
+
+The listener operator provides two tools for dealing with this:
+load balancers (xref:listenerclass.adoc#servicetype-loadbalancer[external] and xref:listenerclass.adoc#servicetype-clusterip[in-cluster]) and xref:volume.adoc#pinning[pinning].
+
+Load balancers provide a stable shared address, but (external) load balancers aren't available in all clusters (Kubernetes provides https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a standard API], but the actual implementation is up to the cloud provider or an external project like https://metallb.io/[MetalLB]).
+Going through an (external) load balancer also tends to add an extra traffic hop, slowing down access and incurring extra costs (especially in cloud environments, which will generally charge extra for traffic that passes through load balancers).
+
+:fn-nodeport-lb: footnote:[Unless Kubernetes is configured to also https://kubernetes.io/docs/reference/networking/virtual-ips/#external-traffic-policy[balance NodePort traffic]. However, the Stackable Data Platform generally avoids this feature, since it increases the blast radius of unavailable Nodes.]
+
+xref:listenerclass.adoc#servicetype-nodeport[NodePort] services avoid the additional hop, but require users to direct the traffic to correct Node hosting the service.{fn-nodeport-lb}
+Normally directing traffic to individual Nodes is wildly impractical, because Kubernetes is free to schedule a given Pod to a new Node every time it is recreated.
+The Listener operator works around this by xref:volume.adoc#pinning[pinning] Pods to specific Nodes if required to provide a stable address.
+However, this _does_ come at the caveat of preventing Kubernetes from scheduling Pods that are pinned to Nodes that are no longer available (or that no longer exist).
+
+[#authentication]
+== Authentication (TLS/Kerberos)
+
+Services often need to authenticate their identity, so that clients can be sure that their traffic isn't intercepted by an impostor. Additionally, services usually want to authenticate who their clients are!
+
+This isn't covered by the Listener operator itself, but the xref:secret-operator:index.adoc[] can be used to provision TLS and Kerberos credentials that xref:secret-operator:scope.adoc#listener-volume[correspond] to xref:listener.adoc[] addresses.
