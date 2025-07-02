@@ -12,7 +12,8 @@ When this address must be configured statically in clients (such as for HDFS Nam
 Mounting listeners into Pods as PersistentVolume allows the Listener Operator to pin these workloads to one node.
 Note that this only happens for xref:listenerclass.adoc[]es that actually benefit from pinning.
 
-== Pod metadata injection
+[#downwards-api]
+== Downwards API
 
 Some services (such as Kafka) need to know their external address, so that they can advertize it to their own replica discovery mechanism.
 xref:listener.adoc[] volumes contain a file tree that exposes this information:

@@ -1,31 +1,92 @@
 = Listener
 :description: The Listener exposes Pods based on ListenerClass rules, provides address info via Ingress_addresses, supports PVC mounting, and enables sticky scheduling.
 
-A Listener object exposes a set of Pods according to the rules of a xref:listenerclass.adoc[], but it also adds a couple of other features that are useful for the Stackable data platform at large.
+:fn-kubernetes-service: footnote:[It is actually implemented using them, but don't rely on that.]
 
-== ListenerClass
+A Listener object represents a single exposed (possibly) load-balanced service that clients can connect to.
+It can be thought of as the Stackable Data Platform equivalent of a Kubernetes https://kubernetes.io/docs/concepts/services-networking/service/[Service].{fn-kubernetes-service}
 
-The exact rules of pod exposure are dictated by the specified xref:listenerclass.adoc[], which allow a single Listener definition to be reused in different clusters, regardless of the Kubernetes distribution or cloud provider.
+The mechanism for the service is controlled by the xref:listenerclass.adoc[].
+This way, which a single Listener definition can be reused in different clusters, expressing the same _intent_ regardless of the Kubernetes distribution or cloud provider's limitations.
+
+Listeners only direct traffic to Pods that also mount them as a xref:volume.adoc[volume].
+The volume allows the operator to xref:#pinning[pin] the Pod to a specific Node, and provides an API for workloads to retrieve their external address.
 
 == Address API
 
-A Listener writes back all addresses that it can be reached on to `Listener.status.ingress_addresses`, which can then be used to generate discovery information.
-Contrary to Kubernetes' Service, this is done regardless of the type of service, and transparently also contains information about remapped ports.
+NOTE: The CRD-based API is intended for external clients that need to retrieve the address.
+      The workload can retrieve _its own_ address(es) by using the xref:volume.adoc#downwards-api[downwards API].
 
-== Address volume projection
+A Listener writes back all addresses that it can be reached on to `Listener.status.ingressAddresses`, which can then be used to connect to the service (generate discovery information).
+Compared to Kubernetes' Services, this list is provided _regardless_ of the type of the backing Service.
 
-Listener objects can be mounted into a Pod as a PersistentVolumeClaim (PVC), which contains information about how the Pod should request that external clients refer to it.
+NOTE: All addresses may not be able to reach all backing Pods. Clients should connect to a _random_ address in the list, not just the first one.
 
-For example, if the volume is mounted to `/stackable/listener`, the primary address can be read from  `/stackable/listener/default-address/address`, and the public `http` port number can be read from `/stackable/listener/default-address/ports/http`.
+Ports may be remapped from the Service definition.
+Never assume that the exposed on an address will match your declared port.
+Instead, read the port numbers from `.ports.\{portname\}`.
+Otherwise, it will break when using NodePort services.
 
 == Per-replica listeners
 
-A Listener PVC can also specify a xref:listenerclass.adoc[] rather than a Listener, in which case a Listener object is created automatically.
-These PVCs can automatically be created for each replica using either StatefulSet's `volumeClaimTemplates` (for long-lived listeners that will be kept across replica restarts and upgrades) or Pod's `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding Pod is deleted).
+A Listener volume can also specify a xref:listenerclass.adoc[] rather than a Listener, in which case a Listener object is created automatically for each volume.
 
-== Sticky scheduling
+These volumes, in turn, can automatically be created for each replica using either:
 
-When mounting a Listener PVC, it will be made "sticky" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node that the workload is running on.
+- StatefulSet's `volumeClaimTemplates` (for long-lived listeners that will be kept across replica restarts and upgrades), or
+- Pod's `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding Pod is deleted)
+
+== Pinning
+
+When mounting a Listener PVC, it will be "pinned" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node that the workload is running on.
 
 Keep in mind that this will only work correctly when using long-lived PVCs (such as via StatefulSet's `volumeClaimTemplates`).
 Ephemeral PVCs will be "reset" for every pod that is created, even if they refer to a long-lived Listener object.
+
+[#reference]
+== Reference
+
+[source,yaml]
+----
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: my-listener
+spec:
+  className: external-unstable
+  ports:
+  - name: http
+    port: 9864
+    protocol: TCP
+  extraPodSelectorLabels:
+    foo: bar
+  publishNotReadyAddresses: true
+status:
+  ingressAddresses:
+  - address: 172.18.0.3
+    addressType: IP
+    ports:
+      http: 32222
+  nodePorts:
+    http: 32222
+  serviceName: my-listener
+----
+
+`spec.className`:: The name of the xref:listenerclass.adoc[] to use.
+`spec.ports`:: The ports exposed from the backing Pods.
+`spec.ports.name`:: The name of the port.
+`spec.ports.port`:: The number of the port. This must match the port number exposed by the container.
+`spec.ports.protocol`:: The IP protocol (TCP/UDP/SCTP). Defaults to TCP.
+`spec.extraPodSelectorLabels`:: Traffic will only be forwarded to Pods that apply these labels.
+                                This field exists for exceptional cases, where Pods sometimes want to stop receiving traffic based on some dynamic condition.
+                                Normal target selection should use xref:volume.adoc[Listener volumes] instead.
+                                (Volumes are still required when using `extraPodSelectorLabels`.)
+`spec.publishNotReadyAddresses`:: If false, traffic will only be directed to Pods that are Ready. If true, traffic will be directed to any running Pod. Defaults to true.
+`status.ingressAddresses`:: A list of all addresses that the Listener can be reached on. See xref:#address-api[].
+`status.ingressAddresses.address`:: The hostname or IP address of this Listener.
+`status.ingressAddresses.addressType`:: `IP` if `address` is an IP address, `Hostname` if it is a hostname.
+`status.ingressAddresses.ports.\{portName\}`:: The _exposed_ port number for a given port name (as defined in `.spec.ports`). Note that this may be different than the port specified in `.spec.ports.port``.
+`status.nodePorts.\{portName\}`:: For internal use only.
+                                  You probably want to use `.status.ingressAddresses` instead.
+                                  _If_ the ListenerClass is configured to use xref:listenerclass.adoc#servicetype-nodeport[NodePort] then this is the port number that each port is accessible on on its respective Node.
+`status.serviceName`: The name of the Kubernetes Service object backing this Listener.
