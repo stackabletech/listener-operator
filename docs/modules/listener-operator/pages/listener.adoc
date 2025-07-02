@@ -38,10 +38,10 @@ These volumes, in turn, can automatically be created for each replica using eith
 
 == Pinning
 
-When mounting a Listener PVC, it will be "pinned" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node that the workload is running on.
+When mounting a Listener volume, it will be "pinned" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node that the workload is running on.
 
-Keep in mind that this will only work correctly when using long-lived PVCs (such as via StatefulSet's `volumeClaimTemplates`).
-Ephemeral PVCs will be "reset" for every pod that is created, even if they refer to a long-lived Listener object.
+Keep in mind that this will only work correctly when using long-lived volumes (such as via StatefulSet's `volumeClaimTemplates`).
+Ephemeral volumes will be "reset" for every pod that is created, even if they refer to a long-lived Listener object.
 
 [#reference]
 == Reference
