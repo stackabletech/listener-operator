@@ -84,6 +84,12 @@ rules:
       - list
       - watch
   - apiGroups:
+      - ""
+    resources:
+      - nodes/proxy
+    verbs:
+      - get
+  - apiGroups:
       - storage.k8s.io
     resources:
       - csinodes
