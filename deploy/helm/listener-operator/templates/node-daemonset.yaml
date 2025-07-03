@@ -41,7 +41,7 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: /csi/csi.sock
-            - name: NODE_NAME
+            - name: KUBERNETES_NODE_NAME
               valueFrom:
                 fieldRef:
                   apiVersion: v1
