@@ -69,9 +69,9 @@ If the PersistentVolume(Claim) is deleted (and recreated), then the address may{
 Long-lived bindings can be created through `StatefulSet.spec.volumeClaimTemplates`, which creates "permanent" PersistentVolumes, which are not cleaned up automatically and must be deleted manually by an administrator once they are no longer used.
 Short-lived bindings should be created through `Pod.spec.volumes.ephemeral`, which creates a PersistentVolume that will automatically be deleted once the Pod no longer exists.
 
-WARNING: Ephemeral CSI volumes (configured via `Pod.spec.volumes.csi`) are an entirely different thing entirely, and are not supported by the Listener operator. Ephemeral PersistentVolumeClaims (`.volumes.ephemeral`) are still "Persistent" from CSI's point of view.
+WARNING: Ephemeral CSI volumes (configured via `Pod.spec.volumes.csi`) are a different thing entirely, and are not supported by the Listener operator. Ephemeral PersistentVolumeClaims (`.volumes.ephemeral`) are still "Persistent" from CSI's point of view.
 
-The listener operator provides two tools for dealing with this:
+The listener operator provides a few tools for dealing with this:
 load balancers (xref:listenerclass.adoc#servicetype-loadbalancer[external] and xref:listenerclass.adoc#servicetype-clusterip[in-cluster]) and xref:volume.adoc#pinning[pinning].
 
 Load balancers provide a stable shared address, but (external) load balancers aren't available in all clusters (Kubernetes provides https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer[a standard API], but the actual implementation is up to the cloud provider or an external project like https://metallb.io/[MetalLB]).
