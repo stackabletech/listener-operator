@@ -3,6 +3,9 @@
 
 The Listener Operator acts as a CSI PersistentVolume, which helps it to stabilize network addresses, inject pod metadata and expose individual Pods.
 
+The listener volume represents a Pod being exposed by a xref:listener.adoc[].
+The backing Listener can either be created xref:#individual-pod-exposure[automatically by the Volume], or xref:#shared-exposure[manually by the operator].
+
 [#pinning]
 == Stable addresses
 
@@ -33,6 +36,8 @@ xref:listener.adoc[] volumes contain a file tree that exposes this information:
 Sometimes each replica must be exposed individually, for example because clients need to access data on a specific shard.
 PersistentVolumeClaim templates can be used to provision this automatically.
 
+Listeners created by volumes share their volume's lifetime; if the volume is deleted then so is the Listener.
+
 === StatefulSet `volumeClaimTemplates`
 
 The `volumeClaimTemplates` allow volumes to be provisioned for each StatefulSet replica.
@@ -45,21 +50,31 @@ This makes them useful for provisioning addresses that must be hard-coded into c
 These volumes are tied to the lifetime of the Pod and will be deleted along with it.
 This makes them useful for provisioning temporary addresses that will be discovered out of band (such as for HDFS DataNodes).
 
+== Shared exposure
+
+Multiple replicas can reference the same xref:listener.adoc[], by creating the Listener manually, and then setting the xref:#reference-listener-name[] annotation on the volume.
+
+In this case, the injected Pod metadata _may_ still be specific to a particular Pod.
+For example, when binding xref:listenerclass.adoc#servicetype-nodeport[NodePort] Listeners, the Pod will only contain metadata about the Node that it is actually running on.
+
+xref:#pinning[Pinning] (if applicable) is managed on the _volume_ scope, each replica binding a single Listener can be pinned to a different Node.
+
 == Reference
 
 All configuration must be specified as `annotations` on the PersistentVolumeClaim.
 The following attributes are currently supported:
 
+[#reference-listener-name]
 === `listeners.stackable.tech/listener-name`
 
 *Required*: If `listeners.stackable.tech/listener-class` is not specified
 
 Provisions metadata about an existing xref:listener.adoc[] that was created manually.
 
+[#reference-listener-class]
 === `listeners.stackable.tech/listener-class`
 
 *Required*: If `listeners.stackable.tech/listener-name` is not specified
 
 Provisions a new xref:listener.adoc[] using the specified xref:listenerclass.adoc[].
-The created xref:listener.adoc[] will expose
-all of the Pod's ports.
+The created xref:listener.adoc[] will expose all of the Pod's ports.
