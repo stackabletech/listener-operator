@@ -4,14 +4,15 @@
 :fn-kubernetes-service: footnote:[It is actually implemented using them, but don't rely on that.]
 
 A Listener object represents a single exposed (possibly) load-balanced service that clients can connect to.
-It can be thought of as the Stackable Data Platform equivalent of a Kubernetes https://kubernetes.io/docs/concepts/services-networking/service/[Service].{fn-kubernetes-service}
+It can be thought of as the Stackable Data Platform equivalent of a Kubernetes https://kubernetes.io/docs/concepts/services-networking/service/[Service,window=_blank].{fn-kubernetes-service}
 
 The mechanism for the service is controlled by the xref:listenerclass.adoc[].
-This way, which a single Listener definition can be reused in different clusters, expressing the same _intent_ regardless of the Kubernetes distribution or cloud provider's limitations.
+This way, a single Listener definition can be reused in different clusters, expressing the same _intent_ regardless of the Kubernetes distribution or cloud provider's limitations.
 
 Listeners only direct traffic to Pods that also mount them as a xref:volume.adoc[volume].
 The volume allows the operator to xref:#pinning[pin] the Pod to a specific Node, and provides an API for workloads to retrieve their external address.
 
+[#address-api]
 == Address API
 
 NOTE: The CRD-based API is intended for external clients that need to retrieve the address.
@@ -23,7 +24,7 @@ Compared to Kubernetes' Services, this list is provided _regardless_ of the type
 NOTE: All addresses may not be able to reach all backing Pods. Clients should connect to a _random_ address in the list, not just the first one.
 
 Ports may be remapped from the Service definition.
-Never assume that the exposed on an address will match your declared port.
+Never assume that the exposed port on an address will match your declared port.
 Instead, read the port numbers from `.ports.\{portname\}`.
 Otherwise, it will break when using NodePort services.
 
@@ -36,6 +37,7 @@ These volumes, in turn, can automatically be created for each replica using eith
 - StatefulSet's `volumeClaimTemplates` (for long-lived listeners that will be kept across replica restarts and upgrades), or
 - Pod's `volumes[].ephemeral` (for temporary listeners that are deleted when their corresponding Pod is deleted)
 
+[#pinning]
 == Pinning
 
 When mounting a Listener volume, it will be "pinned" to that node if the xref:listenerclass.adoc[] uses a strategy that depends on the node that the workload is running on.
