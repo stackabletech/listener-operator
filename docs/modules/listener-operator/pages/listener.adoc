@@ -77,17 +77,22 @@ status:
 `spec.className`:: The name of the xref:listenerclass.adoc[] to use.
 `spec.ports`:: The ports exposed from the backing Pods.
 `spec.ports.name`:: The name of the port.
-`spec.ports.port`:: The number of the port. This must match the port number exposed by the container.
-`spec.ports.protocol`:: The IP protocol (TCP/UDP/SCTP). Defaults to TCP.
+`spec.ports.port`:: The number of the port.
+                    This must match the port number exposed by the container.
+`spec.ports.protocol`:: The IP protocol (TCP/UDP/SCTP).
+                        Defaults to TCP.
 `spec.extraPodSelectorLabels`:: Traffic will only be forwarded to Pods that apply these labels.
                                 This field exists for exceptional cases, where Pods sometimes want to stop receiving traffic based on some dynamic condition.
                                 Normal target selection should use xref:volume.adoc[Listener volumes] instead.
                                 (Volumes are still required when using `extraPodSelectorLabels`.)
-`spec.publishNotReadyAddresses`:: If false, traffic will only be directed to Pods that are Ready. If true, traffic will be directed to any running Pod. Defaults to true.
-`status.ingressAddresses`:: A list of all addresses that the Listener can be reached on. See xref:#address-api[].
+`spec.publishNotReadyAddresses`:: If false, traffic will only be directed to Pods that are Ready.
+                                  If true, traffic will be directed to any running Pod. Defaults to true.
+`status.ingressAddresses`:: A list of all addresses that the Listener can be reached on.
+                            See xref:#address-api[].
 `status.ingressAddresses.address`:: The hostname or IP address of this Listener.
 `status.ingressAddresses.addressType`:: `IP` if `address` is an IP address, `Hostname` if it is a hostname.
-`status.ingressAddresses.ports.\{portName\}`:: The _exposed_ port number for a given port name (as defined in `.spec.ports`). Note that this may be different than the port specified in `.spec.ports.port``.
+`status.ingressAddresses.ports.\{portName\}`:: The _exposed_ port number for a given port name (as defined in `.spec.ports`).
+                                              Note that this may be different than the port specified in `.spec.ports.port``.
 `status.nodePorts.\{portName\}`:: For internal use only.
                                   You probably want to use `.status.ingressAddresses` instead.
                                   _If_ the ListenerClass is configured to use xref:listenerclass.adoc#servicetype-nodeport[NodePort] then this is the port number that each port is accessible on on its respective Node.
