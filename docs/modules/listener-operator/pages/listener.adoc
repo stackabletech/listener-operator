@@ -91,4 +91,4 @@ status:
 `status.nodePorts.\{portName\}`:: For internal use only.
                                   You probably want to use `.status.ingressAddresses` instead.
                                   _If_ the ListenerClass is configured to use xref:listenerclass.adoc#servicetype-nodeport[NodePort] then this is the port number that each port is accessible on on its respective Node.
-`status.serviceName`: The name of the Kubernetes Service object backing this Listener.
+`status.serviceName`:: The name of the Kubernetes Service object backing this Listener.
