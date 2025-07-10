@@ -39,7 +39,7 @@ fn deployment_resources(deployment: &Deployment) -> Option<&ResourceRequirements
         .into_iter()
         .flatten()
         .filter(|c| c.name == "listener-operator-deployer")
-        .last()
+        .next_back()
         .and_then(|c| c.resources.as_ref())
 }
 

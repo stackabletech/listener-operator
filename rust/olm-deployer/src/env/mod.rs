@@ -57,7 +57,7 @@ fn deployer_env_var(deployment: &Deployment) -> Option<&Vec<EnvVar>> {
         .into_iter()
         .flatten()
         .filter(|c| c.name == "listener-operator-deployer")
-        .last()
+        .next_back()
         .and_then(|c| c.env.as_ref())
 }
 
