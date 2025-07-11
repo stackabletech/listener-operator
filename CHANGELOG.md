@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
   - Use `--file-log-rotation-period` (or `FILE_LOG_ROTATION_PERIOD`) to configure the frequency of rotation.
   - Use `--console-log-format` (or `CONSOLE_LOG_FORMAT`) to set the format to `plain` (default) or `json`.
 - Added support for configuring `Service.spec.loadBalancerClass` and `.allocateLoadBalancerNodePorts` ([#288]).
+- Add RBAC rule to helm template for automatic cluster domain detection ([#320]).
 
 ### Changed
 
@@ -28,12 +29,28 @@ All notable changes to this project will be documented in this file.
   - Replace stackable-operator `print_startup_string` with `tracing::info!` with fields.
 - Upgrade csi-provisioner to 5.2.0 ([#304]).
 - Version CRDs and bump dependencies ([#307]).
+- BREAKING: Bump stackable-operator to 0.94.0 and update other dependencies ([#320]).
+  - The default Kubernetes cluster domain name is now fetched from the kubelet API unless explicitly configured.
+  - This requires operators to have the RBAC permission to get nodes/proxy in the apiGroup "". The helm-chart takes care of this.
+  - The CLI argument `--kubernetes-node-name` or env variable `KUBERNETES_NODE_NAME` needs to be set.
+    It supersedes the old argument/env variable `NODE_NAME`.
+    The helm-chart takes care of this.
+
+### Fixed
+
+- Allow uppercase characters in domain names ([#320]).
+
+### Removed
+
+- Remove the `lastUpdateTime` field from the stacklet status ([#320]).
+- Remove role binding to legacy service accounts ([#320]).
 
 [#288]: https://github.com/stackabletech/listener-operator/pull/288
 [#291]: https://github.com/stackabletech/listener-operator/pull/291
 [#299]: https://github.com/stackabletech/listener-operator/pull/299
 [#304]: https://github.com/stackabletech/listener-operator/pull/304
 [#307]: https://github.com/stackabletech/listener-operator/pull/307
+[#320]: https://github.com/stackabletech/listener-operator/pull/320
 
 ## [25.3.0] - 2025-03-21
 

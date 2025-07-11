@@ -33,14 +33,16 @@ pub(super) fn maybe_copy_resources(
 fn deployment_resources(deployment: &Deployment) -> Option<&ResourceRequirements> {
     deployment
         .spec
-        .as_ref()
-        .and_then(|ds| ds.template.spec.as_ref())
-        .map(|ts| ts.containers.iter())
-        .into_iter()
-        .flatten()
+        .as_ref()?
+        .template
+        .spec
+        .as_ref()?
+        .containers
+        .iter()
         .filter(|c| c.name == "listener-operator-deployer")
-        .last()
-        .and_then(|c| c.resources.as_ref())
+        .next_back()?
+        .resources
+        .as_ref()
 }
 
 #[cfg(test)]

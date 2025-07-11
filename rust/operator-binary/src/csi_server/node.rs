@@ -138,7 +138,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::ApplyListener { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPv { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
-            PublishVolumeError::NoAddresses { .. } => Status::unavailable(full_msg),
+            PublishVolumeError::NoAddresses => Status::unavailable(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
             PublishVolumeError::WritePodListeners { .. } => Status::unavailable(full_msg),
             PublishVolumeError::FindPodVolumeForPvc { .. } => Status::failed_precondition(full_msg),
