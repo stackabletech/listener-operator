@@ -59,10 +59,7 @@ struct ListenerOperatorRun {
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
     Controller,
-    Node {
-        #[clap(long, env)]
-        node_name: String,
-    },
+    Node,
 }
 
 mod built_info {
@@ -143,11 +140,12 @@ async fn main() -> anyhow::Result<()> {
                         .await
                         .map_err(|err| err.factor_first().0)?;
                 }
-                RunMode::Node { node_name } => {
+                RunMode::Node => {
+                    let node_name = &cluster_info_opts.kubernetes_node_name;
                     csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
-                            node_name,
+                            node_name: node_name.to_owned(),
                         }))
                         .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
                         .await?;
