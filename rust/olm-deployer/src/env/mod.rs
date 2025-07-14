@@ -51,14 +51,16 @@ pub(super) fn maybe_copy_env(
 fn deployer_env_var(deployment: &Deployment) -> Option<&Vec<EnvVar>> {
     deployment
         .spec
-        .as_ref()
-        .and_then(|ds| ds.template.spec.as_ref())
-        .map(|ts| ts.containers.iter())
-        .into_iter()
-        .flatten()
+        .as_ref()?
+        .template
+        .spec
+        .as_ref()?
+        .containers
+        .iter()
         .filter(|c| c.name == "listener-operator-deployer")
-        .last()
-        .and_then(|c| c.env.as_ref())
+        .next_back()?
+        .env
+        .as_ref()
 }
 
 #[cfg(test)]

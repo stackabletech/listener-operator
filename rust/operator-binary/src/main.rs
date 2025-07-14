@@ -1,3 +1,6 @@
+// TODO: Look into how to properly resolve `clippy::result_large_err`.
+// This will need changes in our and upstream error types.
+#![allow(clippy::result_large_err)]
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
 use clap::Parser;
@@ -11,7 +14,10 @@ use csi_server::{
 use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
     self, YamlSchema,
-    crd::listener::{Listener, ListenerClass, PodListeners},
+    crd::listener::{
+        Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
+        PodListenersVersion,
+    },
     shared::yaml::SerializeOptions,
     telemetry::{Tracing, tracing::TelemetryOptions},
     utils::cluster_info::KubernetesClusterInfoOpts,
@@ -53,10 +59,7 @@ struct ListenerOperatorRun {
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
     Controller,
-    Node {
-        #[clap(long, env)]
-        node_name: String,
-    },
+    Node,
 }
 
 mod built_info {
@@ -71,11 +74,11 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     match opts.cmd {
         stackable_operator::cli::Command::Crd => {
-            ListenerClass::merged_crd(ListenerClass::V1Alpha1)?
+            ListenerClass::merged_crd(ListenerClassVersion::V1Alpha1)?
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
-            Listener::merged_crd(Listener::V1Alpha1)?
+            Listener::merged_crd(ListenerVersion::V1Alpha1)?
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
-            PodListeners::merged_crd(PodListeners::V1Alpha1)?
+            PodListeners::merged_crd(PodListenersVersion::V1Alpha1)?
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
@@ -137,11 +140,12 @@ async fn main() -> anyhow::Result<()> {
                         .await
                         .map_err(|err| err.factor_first().0)?;
                 }
-                RunMode::Node { node_name } => {
+                RunMode::Node => {
+                    let node_name = &cluster_info_opts.kubernetes_node_name;
                     csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
-                            node_name,
+                            node_name: node_name.to_owned(),
                         }))
                         .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
                         .await?;
