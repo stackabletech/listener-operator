@@ -21,8 +21,6 @@ NOTE: The CRD-based API is intended for external clients that need to retrieve t
 A Listener writes back all addresses that it can be reached on to `Listener.status.ingressAddresses`, which can then be used to connect to the service (generate discovery information).
 Compared to Kubernetes' Services, this list is provided _regardless_ of the type of the backing Service.
 
-NOTE: All addresses may not be able to reach all backing Pods. Clients should connect to a _random_ address in the list, not just the first one.
-
 Ports may be remapped from the Service definition.
 Never assume that the exposed port on an address will match your declared port.
 Instead, read the port numbers from `.ports.\{portname\}`.
