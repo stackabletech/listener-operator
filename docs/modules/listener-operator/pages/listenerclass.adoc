@@ -116,7 +116,7 @@ If you use ServiceLB, use the `stable-nodes` preset instead.
 
 == Creating Custom ListenerClasses
 
-If the presets don't meet your needs, you can create custom ListenerClasses.
+If these presets are inadequate, you can create custom ListenerClasses.
 The key is understanding your environment's requirements.
 
 === Choosing the Right Service Type
