@@ -12,5 +12,5 @@ The Listener Operator solves a common Kubernetes challenge for Stackable data ap
 Instead of manually creating Services with different types (LoadBalancer, NodePort, ClusterIP) that work differently on each platform, Stackable operators automatically handle this when you specify a `listenerClass` (like "external-stable") in your cluster configuration.
 The Listener Operator automatically creates the appropriate Kubernetes Service resources for your environment and injects the actual connection details (IP addresses, remapped ports) into the application Pods via a special CSI volume.
 
-This means the same Stackable cluster definition works identically whether you're running on GKE with LoadBalancers, on-premise with NodePorts, or any other Kubernetes setup.
+This means the same Stackable cluster definition works identically whether you are running on GKE with LoadBalancers, on-premise with NodePorts, or any other Kubernetes setup.
 All you need to adapt are the xref:listenerclass.adoc[ListenerClasses] to match your infrastructure, enabling truly portable data platform configurations across any environment.
