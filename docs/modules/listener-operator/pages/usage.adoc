@@ -64,7 +64,7 @@ status:
 ----
 
 .Connection methods:
-- **From within Kubernetes**: Use the service name (`nifi-node.default.svc.cluster.local`)
+- **From within Kubernetes**: Use the service name (`nifi-node.<namespace>.svc.cluster.local`)
 - **From outside Kubernetes**: Use the ingress addresses shown in the Listener status
 
 
