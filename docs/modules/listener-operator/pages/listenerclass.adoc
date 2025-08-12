@@ -2,7 +2,7 @@
 :description: The ListenerClass defines listener types and exposure rules for Kubernetes Pods, supporting various service types like ClusterIP, NodePort, and LoadBalancer.
 
 A ListenerClass defines a category of listeners and how to expose them in your specific Kubernetes environment.
-Think of it as a policy that says "when an application asks for 'external-stable' networking, here's how we provide it in this cluster.
+Think of it as a policy that says "when an application asks for 'external-stable' networking, here's how we provide it in this cluster".
 
 == Common Examples
 
