@@ -4,7 +4,7 @@ The Listener Operator is used differently depending on whether you are using Sta
 
 == For Stackable Data Platform Users
 
-If you're using Stackable data platform operators (NiFi, Kafka, Druid, etc.), the Listener Operator works automatically behind the scenes when you specify a `listenerClass` in your cluster configuration.
+If you are using Stackable data platform operators (NiFi, Kafka, Druid, etc.), the Listener Operator works automatically behind the scenes when you specify a `listenerClass` in your cluster configuration.
 
 This example shows how it works for NiFi.
 Check the specific operator's documentation for the exact configuration syntax:
