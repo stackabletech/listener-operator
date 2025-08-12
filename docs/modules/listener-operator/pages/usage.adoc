@@ -1,5 +1,84 @@
 = Usage
 
+The Listener Operator is used differently depending on whether you're using Stackable data platform operators or building custom applications.
+
+== For Stackable Data Platform Users
+
+If you're using Stackable data platform operators (NiFi, Kafka, Druid, etc.), the Listener Operator works automatically behind the scenes when you specify a `listenerClass` in your cluster configuration.
+
+This example shows how it works for NiFi.
+Check the specific operator's documentation for the exact configuration syntax:
+
+[source,yaml]
+----
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: my-nifi
+spec:
+  nodes:
+    roleConfig:
+      listenerClass: external-stable  # <1>
+----
+<1> The operator automatically creates listener volumes and configures networking
+
+=== What Happens Automatically
+
+The Stackable operator will automatically:
+
+* Create Listener and Service resources based on your `listenerClass`
+* Configure the appropriate service type (LoadBalancer, NodePort, ClusterIP) for your environment
+* Handle port remapping and expose the correct ports
+* Inject connection details into the application pods, making them aware of their own external addresses and ports
+
+
+=== Finding Your Services
+
+After deployment, you can find your services and connection information using the cluster and role names:
+
+[source,bash]
+----
+# List all services - look for services matching your cluster
+kubectl get services
+
+# For a NiFi cluster named "nifi", the service will typically be named:
+# nifi-node (for the node role)
+
+# List listeners (same names as services)
+kubectl get listeners
+
+# Get detailed connection information from the listener
+kubectl get listener nifi-node -o yaml
+----
+
+The Listener status shows the exact addresses and ports for connections:
+
+[source,yaml]
+----
+status:
+  ingressAddresses:
+    - address: 172.21.0.3
+      addressType: IP
+      ports:
+        https: 8443
+----
+
+.Connection methods:
+- **From within Kubernetes**: Use the service name (`nifi-node.default.svc.cluster.local`)
+- **From outside Kubernetes**: Use the ingress addresses shown in the Listener status
+
+
+=== Adapting Across Environments
+
+The Stackable platform uses *presets* to automatically configure the right ListenerClasses for your environment.
+When installing the Listener Operator, you choose a preset that matches your infrastructure.
+You can change this preset or create entirely custom ListenerClasses.
+
+Please see the dedicated xref:listenerclass.adoc[] documentation for details on the presets and how to customize ListenerClasses.
+
+
+== For Custom Applications
+
 The operator creates a xref:listener.adoc[] for each mounted CSI volume with `storageClassName: listeners.stackable.tech`.
 
 A minimal exposed `Pod` looks like this:
@@ -9,8 +88,9 @@ A minimal exposed `Pod` looks like this:
 include::example$usage-pod.yaml[]
 ----
 <1> Defines an _ephemeral_ listener, meaning that it will automatically be deleted when the `Pod` is.
-<2> Defines that we want to expose this pod by automatically creating a service according to the xref:listenerclass.adoc[] `public`.
-<3> Mounts metadata about the `Listener` (such as the port mapping and IP address) into `/listener`. The volume *must* be mounted, even if this data is never used by the `Pod` itself.
+<2> Defines that we want to expose this pod by automatically creating a service according to the xref:listenerclass.adoc[] `external-stable`.
+<3> Mounts metadata about the `Listener` (such as the port mapping and IP address) into `/listener`.
+The volume *must* be mounted, even if this data is never used by the `Pod` itself.
 
 The exact xref:listenerclass.adoc[] is going to depend on the Kubernetes environment, but should often look like this for public clouds:
 
