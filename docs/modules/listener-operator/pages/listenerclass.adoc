@@ -6,7 +6,7 @@ Think of it as a policy that says "when an application asks for 'external-stable
 
 == Common Examples
 
-=== Cloud Environment (GKE, EKS, AKS)
+=== Cloud Environment (GKE, EKS, AKS and others)
 
 In managed cloud environments, you typically want to use LoadBalancers since nodes are short-lived:
 
@@ -201,13 +201,13 @@ spec:
 [#addresstype]
 === Address Types
 
-Control whether clients receive IP addresses or hostnames:
+Control whether IP addresses or hostnames are provided in the Listener status and filesystem:
 
 `IP`:: Returns IP addresses (more compatible, less predictable especially for ClusterIP services)
 `Hostname`:: Returns DNS hostnames (requires proper DNS setup)
 `HostnameConservative`:: _(default)_ Uses hostnames for LoadBalancer/ClusterIP, IPs for NodePort
 
-This means that we default to hostnames where "safe", but don't assume that nodes are resolvable by external clients.
+LoadBalancer and ClusterIP services typically have reliable DNS names, but node hostnames may not be resolvable by external clients, so NodePort services get IP addresses instead.
 
 NOTE: If the preferred address type is not supported for a given environment then another type will be used.
 
