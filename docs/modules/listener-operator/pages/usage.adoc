@@ -88,7 +88,7 @@ A minimal exposed `Pod` looks like this:
 include::example$usage-pod.yaml[]
 ----
 <1> Defines an _ephemeral_ listener, meaning that it will automatically be deleted when the `Pod` is.
-<2> Defines that we want to expose this pod by automatically creating a service according to the xref:listenerclass.adoc[] `external-stable`.
+<2> Defines the accessibility of this pod by automatically creating a service according to the xref:listenerclass.adoc[] `external-stable`.
 <3> Mounts metadata about the `Listener` (such as the port mapping and IP address) into `/listener`.
 The volume *must* be mounted, even if this data is never used by the `Pod` itself.
 
