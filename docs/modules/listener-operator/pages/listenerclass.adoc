@@ -18,7 +18,7 @@ include::example$listenerclass-public-gke.yaml[]
 === On-Premise Environment
 
 In on-premise clusters with stable, long-lived nodes, a NodePort Service is often preferred.
-Sometimes these clusters don't even have the necessary LoadBalancer infrastructure in place:
+Sometimes these clusters lack the necessary LoadBalancer infrastructure:
 
 [source,yaml]
 ----
