@@ -1,6 +1,6 @@
 = Usage
 
-The Listener Operator is used differently depending on whether you're using Stackable data platform operators or building custom applications.
+The Listener Operator is used differently depending on whether you are using Stackable data platform operators or building custom applications.
 
 == For Stackable Data Platform Users
 
