@@ -33,7 +33,7 @@ use stackable_operator::{
     },
     kvp::{Annotations, Labels},
     logging::controller::{ReconcilerError, report_controller_reconciled},
-    time::Duration,
+    shared::time::Duration,
 };
 use strum::IntoStaticStr;
 
