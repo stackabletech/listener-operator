@@ -14,13 +14,14 @@ use csi_server::{
 use futures::{FutureExt, TryStreamExt, pin_mut};
 use stackable_operator::{
     self, YamlSchema,
+    cli::OperatorEnvironmentOptions,
     crd::listener::{
         Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
         PodListenersVersion,
     },
     shared::yaml::SerializeOptions,
     telemetry::{Tracing, tracing::TelemetryOptions},
-    utils::cluster_info::KubernetesClusterInfoOpts,
+    utils::cluster_info::KubernetesClusterInfoOptions,
 };
 use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
@@ -50,10 +51,13 @@ struct ListenerOperatorRun {
     mode: RunMode,
 
     #[command(flatten)]
-    pub telemetry_arguments: TelemetryOptions,
+    operator_environment: OperatorEnvironmentOptions,
 
     #[command(flatten)]
-    pub cluster_info_opts: KubernetesClusterInfoOpts,
+    telemetry: TelemetryOptions,
+
+    #[command(flatten)]
+    cluster_info: KubernetesClusterInfoOptions,
 }
 
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
@@ -84,15 +88,15 @@ async fn main() -> anyhow::Result<()> {
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,
             mode,
-            telemetry_arguments,
-            cluster_info_opts,
+            operator_environment: _,
+            telemetry,
+            cluster_info,
         }) => {
             // NOTE (@NickLarsenNZ): Before stackable-telemetry was used:
             // - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now `CONSOLE_LOG` (when using Tracing::pre_configured).
             // - The file log level was (maybe?) set by `LISTENER_OPERATOR_LOG`, and is now set via `FILE_LOG` (when using Tracing::pre_configured).
             // - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set by `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
-            let _tracing_guard =
-                Tracing::pre_configured(built_info::PKG_NAME, telemetry_arguments).init()?;
+            let _tracing_guard = Tracing::pre_configured(built_info::PKG_NAME, telemetry).init()?;
 
             tracing::info!(
                 run_mode = %mode,
@@ -106,7 +110,7 @@ async fn main() -> anyhow::Result<()> {
             );
             let client = stackable_operator::client::initialize_operator(
                 Some(OPERATOR_KEY.to_string()),
-                &cluster_info_opts,
+                &cluster_info,
             )
             .await?;
             if csi_endpoint
@@ -141,7 +145,7 @@ async fn main() -> anyhow::Result<()> {
                         .map_err(|err| err.factor_first().0)?;
                 }
                 RunMode::Node => {
-                    let node_name = &cluster_info_opts.kubernetes_node_name;
+                    let node_name = &cluster_info.kubernetes_node_name;
                     csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
