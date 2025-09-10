@@ -62,7 +62,10 @@ struct ListenerOperatorRun {
 
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
+    /// CSI Controller Service
     Controller,
+
+    /// CSI Node Service
     Node,
 }
 
