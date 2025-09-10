@@ -1,27 +1,26 @@
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: {{ include "operator.fullname" . }}-deployment
+  name: {{ include "operator.fullname" . }}-csi-node-driver
   labels:
     {{- include "operator.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/role: controller
+      app.kubernetes.io/role: node-driver
       {{- include "operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
       annotations:
-        internal.stackable.tech/image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- end }}
       labels:
-        app.kubernetes.io/role: controller
+        app.kubernetes.io/role: node-driver
         {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -29,16 +28,16 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ include "operator.appname" . }}
+        - name: csi-node-service
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            {{ .Values.controller.resources | toYaml | nindent 12 }}
+            {{ .Values.node.driver.resources | toYaml | nindent 12 }}
           args:
             - run
-            - controller
+            - node
           env:
             # The following env vars are passed as clap (think CLI) arguments to the operator.
             # They are picked up by clap using the structs defied in the operator.
@@ -83,21 +82,33 @@ spec:
           volumeMounts:
             - name: csi
               mountPath: /csi
-        - name: external-provisioner
-          image: "{{ .Values.csiProvisioner.image.repository }}:{{ .Values.csiProvisioner.image.tag }}"
-          imagePullPolicy: {{ .Values.csiProvisioner.image.pullPolicy }}
+            - name: mountpoint
+              mountPath: {{ .Values.kubeletDir }}/pods
+        - name: node-driver-registrar
+          image: "{{ .Values.csiNodeDriverRegistrar.image.repository }}:{{ .Values.csiNodeDriverRegistrar.image.tag }}"
+          imagePullPolicy: {{ .Values.csiNodeDriverRegistrar.image.pullPolicy }}
           resources:
-            {{ .Values.csiProvisioner.resources | toYaml | nindent 12 }}
+            {{ .Values.csiNodeDriverRegistrar.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
-            - --feature-gates=Topology=true
-            - --extra-create-metadata
+            - --kubelet-registration-path={{ .Values.kubeletDir }}/plugins/listeners.stackable.tech/csi.sock
           volumeMounts:
+            - name: registration-sock
+              mountPath: /registration
             - name: csi
               mountPath: /csi
       volumes:
+        - name: registration-sock
+          hostPath:
+            # node-driver-registrar appends a driver-unique filename to this path to avoid conflicts
+            # see https://github.com/stackabletech/secret-operator/issues/229 for why this path should not be too long
+            path: {{ .Values.kubeletDir }}/plugins_registry
         - name: csi
-          emptyDir: {}
+          hostPath:
+            path: {{ .Values.kubeletDir }}/plugins/listeners.stackable.tech/
+        - name: mountpoint
+          hostPath:
+            path: {{ .Values.kubeletDir }}/pods/
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
