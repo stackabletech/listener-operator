@@ -17,7 +17,7 @@ csiProvisioner:
     limits:
       cpu: 100m
       memory: 128Mi
-csiNodeDriverRegistrar:
+csiNodeDriver:
   image:
     repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
     tag: v2.13.0
