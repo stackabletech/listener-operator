@@ -1,5 +1,6 @@
 # Default values for listener-operator.
 ---
+# Used by both the Controller Service and Node Service containers
 image:
   repository: oci.stackable.tech/sdp/listener-operator
   pullPolicy: IfNotPresent
