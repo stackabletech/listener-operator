@@ -43,30 +43,66 @@ csiProvisioner:
       # runAsUser: 1000
 
   externalProvisioner:
-  image:
-    repository: oci.stackable.tech/sdp/sig-storage/csi-provisioner
-    tag: v5.2.0
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
+    image:
+      repository: oci.stackable.tech/sdp/sig-storage/csi-provisioner
+      tag: v5.2.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
 
 csiNodeDriver:
-  image:
-    repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
-    tag: v2.13.0
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  nodeService:
+    resources:
+      # Resource requests and limits for the controller pod
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    securityContext:
+      # listener-operator requires root permissions
+      runAsUser: 0
+      seLinuxOptions:
+        # Run as "Super Privileged Container" to be allowed to write into
+        # the Listener volumes
+        type: spc_t
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+
+  nodeRegistrar:
+    image:
+      repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
+      tag: v2.13.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
 
 nameOverride: ""
 fullnameOverride: ""
@@ -80,55 +116,9 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
-
 # Provide additional labels which get attached to all deployed resources
 labels:
   stackable.tech/vendor: Stackable
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext:
-  # listener-operator requires root permissions
-  runAsUser: 0
-  seLinuxOptions:
-    # Run as "Super Privileged Container" to be allowed to write into
-    # the Listener volumes
-    type: spc_t
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-controller:
-  resources:
-    # Resource requests and limits for the controller pod
-    limits:
-      cpu: 100m
-      memory: 128Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-
-node:
-  driver:
-    resources:
-      # Resource requests and limits for the per node driver container
-      limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
 
 # When running on a non-default Kubernetes cluster domain, the cluster domain can be configured here.
 # See the https://docs.stackable.tech/home/stable/guides/kubernetes-cluster-domain guide for details.
