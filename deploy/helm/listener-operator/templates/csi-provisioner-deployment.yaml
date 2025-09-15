@@ -1,42 +1,41 @@
 ---
-{{- with .Values.csiProvisioner }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "operator.fullname" $ }}-csi-provisioner
+  name: {{ include "operator.fullname" . }}-csi-provisioner
   labels:
-    {{- include "operator.labels" $ | nindent 4 }}
+    {{- include "operator.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/role: provisioner
-      {{- include "operator.selectorLabels" $ | nindent 6 }}
+      {{- include "operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
-        internal.stackable.tech/image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
-        {{- with .podAnnotations }}
+        internal.stackable.tech/image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        {{- with .Values.csiProvisioner.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
         app.kubernetes.io/role: provisioner
-        {{- include "operator.selectorLabels" $ | nindent 8 }}
+        {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with $.Values.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "operator.fullname" $ }}-serviceaccount
+      serviceAccountName: {{ include "operator.fullname" . }}-serviceaccount
       securityContext:
-        {{- toYaml .podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.csiProvisioner.podSecurityContext | nindent 8 }}
       containers:
         - name: csi-controller-service
           securityContext:
-            {{- toYaml .controllerService.securityContext | nindent 12 }}
-          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
-          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+            {{- toYaml .Values.csiProvisioner.controllerService.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            {{- .controllerService.resources | toYaml | nindent 12 }}
+            {{- .Values.csiProvisioner.controllerService.resources | toYaml | nindent 12 }}
           args:
             - run
             - controller
@@ -67,7 +66,7 @@ spec:
             # The name of the Kubernetes Service that point to the operator Pod, e.g. used to
             # construct the conversion webhook endpoint.
             - name: OPERATOR_SERVICE_NAME
-              value: {{ include "operator.fullname" $ }}
+              value: {{ include "operator.fullname" . }}
 
             # Operators need to know the node name they are running on, to e.g. discover the
             # Kubernetes domain name from the kubelet API.
@@ -76,19 +75,19 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
 
-            {{- if $.Values.kubernetesClusterDomain }}
+            {{- if .Values.kubernetesClusterDomain }}
             - name: KUBERNETES_CLUSTER_DOMAIN
-              value: {{ $.Values.kubernetesClusterDomain | quote }}
+              value: {{ .Values.kubernetesClusterDomain | quote }}
             {{- end }}
-            {{- include "telemetry.envVars" $ | nindent 12 }}
+            {{- include "telemetry.envVars" . | nindent 12 }}
           volumeMounts:
             - name: csi
               mountPath: /csi
         - name: external-provisioner
-          image: "{{ .externalProvisioner.image.repository }}:{{ .externalProvisioner.image.tag }}"
-          imagePullPolicy: {{ .externalProvisioner.image.pullPolicy }}
+          image: "{{ .Values.csiProvisioner.externalProvisioner.image.repository }}:{{ .Values.csiProvisioner.externalProvisioner.image.tag }}"
+          imagePullPolicy: {{ .Values.csiProvisioner.externalProvisioner.image.pullPolicy }}
           resources:
-            {{ .externalProvisioner.resources | toYaml | nindent 12 }}
+            {{ .Values.csiProvisioner.externalProvisioner.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
             - --feature-gates=Topology=true
@@ -99,16 +98,15 @@ spec:
       volumes:
         - name: csi
           emptyDir: {}
-      {{- with .nodeSelector }}
+      {{- with .Values.csiProvisioner.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .affinity }}
+      {{- with .Values.csiProvisioner.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .tolerations }}
+      {{- with .Values.csiProvisioner.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}

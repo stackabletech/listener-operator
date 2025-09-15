@@ -1,41 +1,40 @@
 ---
-{{- with .Values.csiNodeDriver }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "operator.fullname" $ }}-csi-node-driver
+  name: {{ include "operator.fullname" . }}-csi-node-driver
   labels:
-    {{- include "operator.labels" $ | nindent 4 }}
+    {{- include "operator.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/role: node-driver
-      {{- include "operator.selectorLabels" $ | nindent 6 }}
+      {{- include "operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .podAnnotations }}
+      {{- with .Values.csiNodeDriver.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         app.kubernetes.io/role: node-driver
-        {{- include "operator.selectorLabels" $ | nindent 8 }}
+        {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with $.Values.image.pullSecrets }}
+      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "operator.fullname" $ }}-serviceaccount
+      serviceAccountName: {{ include "operator.fullname" . }}-serviceaccount
       securityContext:
-        {{- toYaml .podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.csiNodeDriver.podSecurityContext | nindent 8 }}
       containers:
         - name: csi-node-service
           securityContext:
-            {{- toYaml .nodeService.securityContext | nindent 12 }}
-          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
-          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+            {{- toYaml .Values.csiNodeDriver.nodeService.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            {{ .nodeService.resources | toYaml | nindent 12 }}
+            {{ .Values.csiNodeDriver.nodeService.resources | toYaml | nindent 12 }}
           args:
             - run
             - node
@@ -66,7 +65,7 @@ spec:
             # The name of the Kubernetes Service that point to the operator Pod, e.g. used to
             # construct the conversion webhook endpoint.
             - name: OPERATOR_SERVICE_NAME
-              value: {{ include "operator.fullname" $ }}
+              value: {{ include "operator.fullname" . }}
 
             # Operators need to know the node name they are running on, to e.g. discover the
             # Kubernetes domain name from the kubelet API.
@@ -75,24 +74,24 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
 
-            {{- if $.Values.kubernetesClusterDomain }}
+            {{- if .Values.kubernetesClusterDomain }}
             - name: KUBERNETES_CLUSTER_DOMAIN
-              value: {{ $.Values.kubernetesClusterDomain | quote }}
+              value: {{ .Values.kubernetesClusterDomain | quote }}
             {{- end }}
-            {{- include "telemetry.envVars" $ | nindent 12 }}
+            {{- include "telemetry.envVars" . | nindent 12 }}
           volumeMounts:
             - name: csi
               mountPath: /csi
             - name: mountpoint
-              mountPath: {{ $.Values.kubeletDir }}/pods
+              mountPath: {{ .Values.kubeletDir }}/pods
         - name: node-driver-registrar
-          image: "{{ .nodeRegistrar.image.repository }}:{{ .nodeRegistrar.image.tag }}"
-          imagePullPolicy: {{ .nodeRegistrar.image.pullPolicy }}
+          image: "{{ .Values.csiNodeDriver.nodeRegistrar.image.repository }}:{{ .Values.csiNodeDriver.nodeRegistrar.image.tag }}"
+          imagePullPolicy: {{ .Values.csiNodeDriver.nodeRegistrar.image.pullPolicy }}
           resources:
-            {{ .nodeRegistrar.resources | toYaml | nindent 12 }}
+            {{ .Values.csiNodeDriver.nodeRegistrar.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
-            - --kubelet-registration-path={{ $.Values.kubeletDir }}/plugins/listeners.stackable.tech/csi.sock
+            - --kubelet-registration-path={{ .Values.kubeletDir }}/plugins/listeners.stackable.tech/csi.sock
           volumeMounts:
             - name: registration-sock
               mountPath: /registration
@@ -103,23 +102,22 @@ spec:
           hostPath:
             # node-driver-registrar appends a driver-unique filename to this path to avoid conflicts
             # see https://github.com/stackabletech/secret-operator/issues/229 for why this path should not be too long
-            path: {{ $.Values.kubeletDir }}/plugins_registry
+            path: {{ .Values.kubeletDir }}/plugins_registry
         - name: csi
           hostPath:
-            path: {{ $.Values.kubeletDir }}/plugins/listeners.stackable.tech/
+            path: {{ .Values.kubeletDir }}/plugins/listeners.stackable.tech/
         - name: mountpoint
           hostPath:
-            path: {{ $.Values.kubeletDir }}/pods/
-      {{- with .nodeSelector }}
+            path: {{ .Values.kubeletDir }}/pods/
+      {{- with .Values.csiNodeDriver.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .affinity }}
+      {{- with .Values.csiNodeDriver.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .tolerations }}
+      {{- with .Values.csiNodeDriver.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}
