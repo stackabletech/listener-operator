@@ -19,6 +19,10 @@ csiProvisioner:
 
   affinity: {}
 
+  # priority: ...
+  # priorityClassName: ...
+  # preemptionPolicy: ...
+
   controllerService:
     resources:
       # Resource requests and limits for the controller pod
@@ -67,6 +71,10 @@ csiNodeDriver:
   tolerations: []
 
   affinity: {}
+
+  # priority: ...
+  # priorityClassName: ...
+  # preemptionPolicy: ...
 
   nodeService:
     resources:
