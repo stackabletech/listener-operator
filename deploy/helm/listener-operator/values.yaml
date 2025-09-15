@@ -7,6 +7,42 @@ image:
   pullSecrets: []
 
 csiProvisioner:
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  controllerService:
+    resources:
+      # Resource requests and limits for the controller pod
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    securityContext:
+      # listener-operator requires root permissions
+      runAsUser: 0
+      seLinuxOptions:
+        # Run as "Super Privileged Container" to be allowed to write into
+        # the Listener volumes
+        type: spc_t
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+
+  externalProvisioner:
   image:
     repository: oci.stackable.tech/sdp/sig-storage/csi-provisioner
     tag: v5.2.0
@@ -18,6 +54,7 @@ csiProvisioner:
     limits:
       cpu: 100m
       memory: 128Mi
+
 csiNodeDriver:
   image:
     repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar

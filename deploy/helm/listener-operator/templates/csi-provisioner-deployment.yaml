@@ -15,7 +15,7 @@ spec:
     metadata:
       annotations:
         internal.stackable.tech/image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
-        {{- with $.Values.podAnnotations }}
+        {{- with .podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
@@ -28,15 +28,15 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "operator.fullname" $ }}-serviceaccount
       securityContext:
-        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .podSecurityContext | nindent 8 }}
       containers:
         - name: csi-controller-service
           securityContext:
-            {{- toYaml $.Values.securityContext | nindent 12 }}
+            {{- toYaml .controllerService.securityContext | nindent 12 }}
           image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           resources:
-            {{- $.Values.controller.resources | toYaml | nindent 12 }}
+            {{- .controllerService.resources | toYaml | nindent 12 }}
           args:
             - run
             - controller
@@ -85,10 +85,10 @@ spec:
             - name: csi
               mountPath: /csi
         - name: external-provisioner
-          image: "{{ .image.repository }}:{{ .image.tag }}"
-          imagePullPolicy: {{ .image.pullPolicy }}
+          image: "{{ .externalProvisioner.image.repository }}:{{ .externalProvisioner.image.tag }}"
+          imagePullPolicy: {{ .externalProvisioner.image.pullPolicy }}
           resources:
-            {{ .resources | toYaml | nindent 12 }}
+            {{ .externalProvisioner.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
             - --feature-gates=Topology=true
@@ -99,15 +99,15 @@ spec:
       volumes:
         - name: csi
           emptyDir: {}
-      {{- with $.Values.nodeSelector }}
+      {{- with .nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $.Values.affinity }}
+      {{- with .affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $.Values.tolerations }}
+      {{- with .tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
