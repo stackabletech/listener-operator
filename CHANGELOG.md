@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- New helm values for `*.priority`, `*.priorityClassName`, and `*.preemptionPolicy` ([#334]).
+- New helm values for `csiProvisioner.priorityClassName` and `csiNodeDriver.priorityClassName` ([#334]).
 
 ### Changed
 
