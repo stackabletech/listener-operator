@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Split helm values for independent configuration ([#334]).
+- BREAKING: Split helm values for independent configuration ([#334]).
   - `controller` values have been moved to `csiProvisioner.controllerService`.
   - `csiProvisioner` values have been moved to `csiProvisioner.externalProvisioner`
   - `csiNodeDriverRegistrar` values have been moved to `csiNodeDriver.nodeRegistrar`.
