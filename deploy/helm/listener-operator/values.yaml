@@ -100,7 +100,7 @@ csiNodeDriver:
       # runAsNonRoot: true
       # runAsUser: 1000
 
-  nodeRegistrar:
+  nodeDriverRegistrar:
     image:
       repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
       tag: v2.13.0

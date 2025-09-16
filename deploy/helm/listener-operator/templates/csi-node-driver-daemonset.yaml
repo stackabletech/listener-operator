@@ -85,10 +85,10 @@ spec:
             - name: mountpoint
               mountPath: {{ .Values.kubeletDir }}/pods
         - name: node-driver-registrar
-          image: "{{ .Values.csiNodeDriver.nodeRegistrar.image.repository }}:{{ .Values.csiNodeDriver.nodeRegistrar.image.tag }}"
-          imagePullPolicy: {{ .Values.csiNodeDriver.nodeRegistrar.image.pullPolicy }}
+          image: "{{ .Values.csiNodeDriver.nodeDriverRegistrar.image.repository }}:{{ .Values.csiNodeDriver.nodeDriverRegistrar.image.tag }}"
+          imagePullPolicy: {{ .Values.csiNodeDriver.nodeDriverRegistrar.image.pullPolicy }}
           resources:
-            {{ .Values.csiNodeDriver.nodeRegistrar.resources | toYaml | nindent 12 }}
+            {{ .Values.csiNodeDriver.nodeDriverRegistrar.resources | toYaml | nindent 12 }}
           args:
             - --csi-address=/csi/csi.sock
             - --kubelet-registration-path={{ .Values.kubeletDir }}/plugins/listeners.stackable.tech/csi.sock
