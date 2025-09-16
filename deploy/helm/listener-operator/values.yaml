@@ -1,34 +1,117 @@
 # Default values for listener-operator.
 ---
+# Used by both the Controller Service and Node Service containers
 image:
   repository: oci.stackable.tech/sdp/listener-operator
+  # tag: 0.0.0-dev
   pullPolicy: IfNotPresent
   pullSecrets: []
 
 csiProvisioner:
-  image:
-    repository: oci.stackable.tech/sdp/sig-storage/csi-provisioner
-    tag: v5.2.0
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
-csiNodeDriverRegistrar:
-  image:
-    repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
-    tag: v2.13.0
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  # priority: ...
+  # priorityClassName: ...
+  # preemptionPolicy: ...
+
+  controllerService:
+    resources:
+      # Resource requests and limits for the controller pod
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    securityContext:
+      # listener-operator requires root permissions
+      runAsUser: 0
+      seLinuxOptions:
+        # Run as "Super Privileged Container" to be allowed to write into
+        # the Listener volumes
+        type: spc_t
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+
+  externalProvisioner:
+    image:
+      repository: oci.stackable.tech/sdp/sig-storage/csi-provisioner
+      tag: v5.2.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+csiNodeDriver:
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  # priority: ...
+  # priorityClassName: ...
+  # preemptionPolicy: ...
+
+  nodeService:
+    resources:
+      # Resource requests and limits for the controller pod
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    securityContext:
+      # listener-operator requires root permissions
+      runAsUser: 0
+      seLinuxOptions:
+        # Run as "Super Privileged Container" to be allowed to write into
+        # the Listener volumes
+        type: spc_t
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+
+  nodeDriverRegistrar:
+    image:
+      repository: oci.stackable.tech/sdp/sig-storage/csi-node-driver-registrar
+      tag: v2.13.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
 
 nameOverride: ""
 fullnameOverride: ""
@@ -42,55 +125,9 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
-
 # Provide additional labels which get attached to all deployed resources
 labels:
   stackable.tech/vendor: Stackable
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext:
-  # listener-operator requires root permissions
-  runAsUser: 0
-  seLinuxOptions:
-    # Run as "Super Privileged Container" to be allowed to write into
-    # the Listener volumes
-    type: spc_t
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-controller:
-  resources:
-    # Resource requests and limits for the controller pod
-    limits:
-      cpu: 100m
-      memory: 128Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-
-node:
-  driver:
-    resources:
-      # Resource requests and limits for the per node driver container
-      limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
 
 # When running on a non-default Kubernetes cluster domain, the cluster domain can be configured here.
 # See the https://docs.stackable.tech/home/stable/guides/kubernetes-cluster-domain guide for details.
@@ -100,7 +137,7 @@ affinity: {}
 kubeletDir: /var/lib/kubelet
 
 # Options: none, stable-nodes, ephemeral-nodes
-# none: No ListenerClasses are preinstalled, the administrator must supply them themself
+# none: No ListenerClasses are preinstalled, administrators must supply them themselves
 # stable-nodes: ListenerClasses are preinstalled that are suitable for on-prem/"pet" environments, assuming long-running Nodes but not requiring a LoadBalancer controller
 # ephemeral-nodes: ListenerClasses are preinstalled that are suitable for cloud/"cattle" environments with short-lived nodes, however this requires a LoadBalancer controller to be installed
 preset: stable-nodes

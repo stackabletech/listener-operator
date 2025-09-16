@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- New helm values for `csiProvisioner.priorityClassName` and `csiNodeDriver.priorityClassName` ([#334]).
+
+### Changed
+
+- BREAKING: Split helm values for independent configuration ([#334]).
+  - `controller` values have been moved to `csiProvisioner.controllerService`.
+  - `csiProvisioner` values have been moved to `csiProvisioner.externalProvisioner`
+  - `csiNodeDriverRegistrar` values have been moved to `csiNodeDriver.nodeRegistrar`.
+  - `node.driver` values have been moved to `csiNodeDriver.nodeService`.
+  - `podAnnotations` has been split into `csiProvisioner.podAnnotations` and `csiNodeDriver.podAnnotations`.
+  - `podSecurityContext` has been split into `csiProvisioner.podSecurityContext` and `csiNodeDriver.podSecurityContext`.
+  - `nodeSelector` has been split into `csiProvisioner.nodeSelector` and `csiNodeDriver.nodeSelector`.
+  - `tolerations` has been split into `csiProvisioner.tolerations` and `csiNodeDriver.tolerations`.
+  - `affinity` has been split into `csiProvisioner.affinity` and `csiNodeDriver.affinity`.
+
+[#334]: https://github.com/stackabletech/listener-operator/pull/334
+
 ## [25.7.0] - 2025-07-23
 
 ## [25.7.0-rc1] - 2025-07-18
