@@ -121,12 +121,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.csiNodeDriver.priority }}
-      priority: {{ . }}
-      {{- end }}
       {{- with .Values.csiNodeDriver.priorityClassName }}
       priorityClassName: {{ . }}
-      {{- end }}
-      {{- with .Values.csiNodeDriver.preemptionPolicy }}
-      preemptionPolicy: {{ . }}
       {{- end }}
