@@ -72,9 +72,7 @@ csiNodeDriver:
 
   affinity: {}
 
-  # priority: ...
   # priorityClassName: ...
-  # preemptionPolicy: ...
 
   nodeService:
     resources:

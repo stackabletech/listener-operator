@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Split helm values for independent configuration ([#334]).
   - `controller` values have been moved to `csiProvisioner.controllerService`.
   - `csiProvisioner` values have been moved to `csiProvisioner.externalProvisioner`
-  - `csiNodeDriverRegistrar` values have been moved to `csiNodeDriver.nodeRegistrar`.
+  - `csiNodeDriverRegistrar` values have been moved to `csiNodeDriver.nodeDriverRegistrar`.
   - `node.driver` values have been moved to `csiNodeDriver.nodeService`.
   - `podAnnotations` has been split into `csiProvisioner.podAnnotations` and `csiNodeDriver.podAnnotations`.
   - `podSecurityContext` has been split into `csiProvisioner.podSecurityContext` and `csiNodeDriver.podSecurityContext`.
