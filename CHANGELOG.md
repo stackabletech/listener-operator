@@ -20,8 +20,10 @@ All notable changes to this project will be documented in this file.
   - `nodeSelector` has been split into `csiProvisioner.nodeSelector` and `csiNodeDriver.nodeSelector`.
   - `tolerations` has been split into `csiProvisioner.tolerations` and `csiNodeDriver.tolerations`.
   - `affinity` has been split into `csiProvisioner.affinity` and `csiNodeDriver.affinity`.
+- Bump csi-node-driver-registrar to `v2.15.0` ([#337]).
 
 [#334]: https://github.com/stackabletech/listener-operator/pull/334
+[#337]: https://github.com/stackabletech/listener-operator/pull/337
 
 ## [25.7.0] - 2025-07-23
 
