@@ -134,11 +134,11 @@ labels:
 # Kubelet dir may vary in environments such as microk8s, see https://github.com/stackabletech/secret-operator/issues/229
 kubeletDir: /var/lib/kubelet
 
-# Options: none, stable-nodes, ephemeral-nodes
+# Options: none, stable-nodes, ephemeral-nodes (default)
 # none: No ListenerClasses are preinstalled, administrators must supply them themselves
 # stable-nodes: ListenerClasses are preinstalled that are suitable for on-prem/"pet" environments, assuming long-running Nodes but not requiring a LoadBalancer controller
 # ephemeral-nodes: ListenerClasses are preinstalled that are suitable for cloud/"cattle" environments with short-lived nodes, however this requires a LoadBalancer controller to be installed
-preset: stable-nodes
+preset: ephemeral-nodes
 
 # See all available options and detailed explanations about the concept here:
 # https://docs.stackable.tech/home/stable/concepts/telemetry/
