@@ -3,6 +3,7 @@
 #![allow(clippy::result_large_err)]
 use std::{os::unix::prelude::FileTypeExt, path::PathBuf};
 
+use anyhow::anyhow;
 use clap::Parser;
 use csi_grpc::v1::{
     controller_server::ControllerServer, identity_server::IdentityServer, node_server::NodeServer,
@@ -11,17 +12,17 @@ use csi_server::{
     controller::ListenerOperatorController, identity::ListenerOperatorIdentity,
     node::ListenerOperatorNode,
 };
-use futures::{FutureExt, TryStreamExt, pin_mut};
+use futures::{FutureExt, TryFutureExt, TryStreamExt};
 use stackable_operator::{
     self, YamlSchema,
-    cli::OperatorEnvironmentOptions,
+    cli::{CommonOptions, MaintenanceOptions, OperatorEnvironmentOptions},
     crd::listener::{
         Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
         PodListenersVersion,
     },
+    eos::EndOfSupportChecker,
     shared::yaml::SerializeOptions,
-    telemetry::{Tracing, tracing::TelemetryOptions},
-    utils::cluster_info::KubernetesClusterInfoOptions,
+    telemetry::Tracing,
 };
 use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
@@ -50,14 +51,16 @@ struct ListenerOperatorRun {
     #[clap(subcommand)]
     mode: RunMode,
 
+    // IMPORTANT: All (flattened) sub structs should be placed at the end to ensure the help
+    // headings are correct.
+    #[command(flatten)]
+    common: CommonOptions,
+
+    #[command(flatten)]
+    maintenance: MaintenanceOptions,
+
     #[command(flatten)]
     operator_environment: OperatorEnvironmentOptions,
-
-    #[command(flatten)]
-    telemetry: TelemetryOptions,
-
-    #[command(flatten)]
-    cluster_info: KubernetesClusterInfoOptions,
 }
 
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
@@ -91,15 +94,16 @@ async fn main() -> anyhow::Result<()> {
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
             csi_endpoint,
             mode,
+            common,
+            maintenance,
             operator_environment: _,
-            telemetry,
-            cluster_info,
         }) => {
             // NOTE (@NickLarsenNZ): Before stackable-telemetry was used:
             // - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now `CONSOLE_LOG` (when using Tracing::pre_configured).
             // - The file log level was (maybe?) set by `LISTENER_OPERATOR_LOG`, and is now set via `FILE_LOG` (when using Tracing::pre_configured).
             // - The file log directory was set by `LISTENER_OPERATOR_LOG_DIRECTORY`, and is now set by `ROLLING_LOGS_DIR` (or via `--rolling-logs <DIRECTORY>`).
-            let _tracing_guard = Tracing::pre_configured(built_info::PKG_NAME, telemetry).init()?;
+            let _tracing_guard =
+                Tracing::pre_configured(built_info::PKG_NAME, common.telemetry).init()?;
 
             tracing::info!(
                 run_mode = %mode,
@@ -111,17 +115,25 @@ async fn main() -> anyhow::Result<()> {
                 "Starting {description}",
                 description = built_info::PKG_DESCRIPTION
             );
+
+            let eos_checker =
+                EndOfSupportChecker::new(built_info::BUILT_TIME_UTC, maintenance.end_of_support)?
+                    .run()
+                    .map(anyhow::Ok);
+
             let client = stackable_operator::client::initialize_operator(
                 Some(OPERATOR_KEY.to_string()),
-                &cluster_info,
+                &common.cluster_info,
             )
             .await?;
+
             if csi_endpoint
                 .symlink_metadata()
                 .is_ok_and(|meta| meta.file_type().is_socket())
             {
                 let _ = std::fs::remove_file(&csi_endpoint);
             }
+
             let mut sigterm = signal(SignalKind::terminate())?;
             let csi_listener =
                 UnixListenerStream::new(uds_bind_private(csi_endpoint)?).map_ok(TonicUnixStream);
@@ -140,22 +152,23 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(ControllerServer::new(ListenerOperatorController {
                             client: client.clone(),
                         }))
-                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()));
-                    let controller = listener_controller::run(client).map(Ok);
-                    pin_mut!(csi_server, controller);
-                    futures::future::try_select(csi_server, controller)
-                        .await
-                        .map_err(|err| err.factor_first().0)?;
+                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
+                        .map_err(|err| anyhow!(err).context("failed to run csi server"));
+                    let controller = listener_controller::run(client).map(anyhow::Ok);
+
+                    futures::try_join!(csi_server, controller, eos_checker)?;
                 }
                 RunMode::Node => {
-                    let node_name = &cluster_info.kubernetes_node_name;
-                    csi_server
+                    let node_name = &common.cluster_info.kubernetes_node_name;
+                    let csi_server = csi_server
                         .add_service(NodeServer::new(ListenerOperatorNode {
                             client: client.clone(),
                             node_name: node_name.to_owned(),
                         }))
                         .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
-                        .await?;
+                        .map_err(|err| anyhow!(err).context("failed to run csi server"));
+
+                    futures::try_join!(csi_server, eos_checker)?;
                 }
             }
         }
