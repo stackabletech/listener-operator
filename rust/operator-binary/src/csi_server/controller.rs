@@ -127,26 +127,32 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
                     .within(&ns)
                     .erase(),
             })?;
+
+        // We only configure a node stickiness in case it is enabled and the Service is of type
+        // NodePort.
+        let accessible_topology = if listener_class.spec.sticky_node_ports
+            && listener_class.spec.service_type == listener::v1alpha1::ServiceType::NodePort
+        {
+            // Pick the top node (as selected by the CSI client) and "stick" to that
+            // Since we want clients to have a stable address to connect to
+            request
+                .accessibility_requirements
+                .unwrap_or_default()
+                .preferred
+                .into_iter()
+                .take(1)
+                .collect()
+        } else {
+            Vec::new()
+        };
+
         Ok(Response::new(csi::v1::CreateVolumeResponse {
             volume: Some(csi::v1::Volume {
                 capacity_bytes: 0,
                 volume_id: request.name,
                 volume_context: raw_volume_context.into_iter().collect(),
                 content_source: None,
-                accessible_topology: match listener_class.spec.service_type {
-                    // Pick the top node (as selected by the CSI client) and "stick" to that
-                    // Since we want clients to have a stable address to connect to
-                    listener::v1alpha1::ServiceType::NodePort => request
-                        .accessibility_requirements
-                        .unwrap_or_default()
-                        .preferred
-                        .into_iter()
-                        .take(1)
-                        .collect(),
-                    // Load balancers and services of type ClusterIP have no relationship to any particular node, so don't try to be sticky
-                    listener::v1alpha1::ServiceType::LoadBalancer
-                    | listener::v1alpha1::ServiceType::ClusterIP => Vec::new(),
-                },
+                accessible_topology,
             }),
         }))
     }
