@@ -48,7 +48,7 @@ The Stackable Data Platform expects these three ListenerClasses to exist:
 == Presets
 
 To help users get started, the Stackable Listener Operator ships different ListenerClass _presets_ for different environments.
-These are configured using the `preset` Helm value, with `stable-nodes` being the default.
+These are configured using the `preset` Helm value, with `ephemeral-nodes` being the default.
 
 === Installation Commands
 
@@ -83,21 +83,25 @@ Both `stable-nodes` and `ephemeral-nodes` create the same three ListenerClasses 
 |ClusterIP
 
 |`external-unstable`
-|NodePort
-|NodePort
+|NodePort (non-sticky)
+|NodePort (non-sticky)
 
 |`external-stable`
-|NodePort
+|NodePort (sticky)
 |LoadBalancer
 |===
 
+A sticky NodePort pins the Pod to a particular Kubernetes node, so that the endpoint is stable across Pod restarts.
+This is achieved via the `volume.kubernetes.io/selected-node` annotation on the Listener PVC.
+
 ==== Why the Difference?
 
-* **stable-nodes**: Uses NodePort for external access and pins pods to specific nodes for address stability.
+* **stable-nodes**: Uses NodePort for external access and pins external-stable pods to specific nodes for address stability.
 +
 [CAUTION]
 ====
-This creates a dependency on specific nodes. If a pinned node becomes unavailable, the pod cannot start on other nodes until you either restore the node or manually delete the PVC to allow rescheduling.
+This creates a dependency on specific nodes when external-stable is used.
+If a pinned node becomes unavailable, the pod cannot start on other nodes until you either restore the node or manually delete the PVC to allow rescheduling.
 ====
 +
 .To recover from node failures:
@@ -131,7 +135,7 @@ The key is understanding your environment's requirements.
 ==== NodePort
 * **Use for**: External access (from outside the Kubernetes cluster) in environments with stable nodes
 * **Access**: From outside the cluster via `<NodeIP>:<NodePort>`
-* **Behavior**: Pins pods to specific nodes for address stability
+* **Behavior**: You can configure if Pods should be pinned to specific nodes for address stability
 
 [WARNING]
 ====
@@ -139,14 +143,15 @@ NodePort services may expose your applications to the internet if your Kubernete
 Ensure you understand your cluster's network topology and have appropriate firewall rules in place.
 ====
 
+===== Node stickiness
+
+Using `.spec.stickyNodePorts` (defaults to `false`) you can enable that Pods are xref:volume.adoc#pinning[pinned] to a specific Kubernetes node.
+
 [CAUTION]
 ====
-When using NodePort with pinned pods, service addresses depend on specific nodes. If a pinned node becomes unavailable, the service may become unreachable until the pod can be rescheduled to a new node, potentially changing the service address.
+When using NodePort with pinned pods, service addresses depend on specific nodes.
+If a pinned node becomes unavailable, the service may become unreachable until the pod can be rescheduled to a new node, potentially changing the service address.
 ====
-
-Pods bound to `NodePort` listeners will be xref:volume.adoc#pinning[pinned] to a specific Node for address stability.
-If this behavior is undesirable, consider using xref:#servicetype-loadbalancer[] instead.
-
 
 [#servicetype-loadbalancer]
 ==== LoadBalancer
