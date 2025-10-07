@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - New helm values for `csiProvisioner.priorityClassName` and `csiNodeDriver.priorityClassName` ([#334]).
+- Add end-of-support checker which can be controlled with environment variables and CLI arguments ([#339]).
+  - `EOS_CHECK_MODE` (`--eos-check-mode`) to set the EoS check mode. Currently, only "offline" is supported.
+  - `EOS_INTERVAL` (`--eos-interval`) to set the interval in which the operator checks if it is EoS.
+  - `EOS_DISABLED` (`--eos-disabled`) to disable the EoS checker completely.
 
 ### Changed
 
@@ -26,6 +30,7 @@ All notable changes to this project will be documented in this file.
 [#334]: https://github.com/stackabletech/listener-operator/pull/334
 [#337]: https://github.com/stackabletech/listener-operator/pull/337
 [#338]: https://github.com/stackabletech/listener-operator/pull/338
+[#339]: https://github.com/stackabletech/listener-operator/pull/339
 
 ## [25.7.0] - 2025-07-23
 

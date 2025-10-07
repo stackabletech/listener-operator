@@ -22,7 +22,10 @@ spec:
           description: Auto-generated derived type for ListenerClassSpec via `CustomResource`
           properties:
             spec:
-              description: Defines a policy for how [Listeners](https://docs.stackable.tech/home/nightly/listener-operator/listener) should be exposed. Read the [ListenerClass documentation](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass) for more information.
+              description: |-
+                Defines a policy for how [Listeners](https://docs.stackable.tech/home/nightly/listener-operator/listener) should be exposed.
+                Read the [ListenerClass documentation](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass)
+                for more information.
               properties:
                 loadBalancerAllocateNodePorts:
                   default: true
@@ -33,7 +36,9 @@ spec:
                   type: boolean
                 loadBalancerClass:
                   description: |-
-                    Configures a custom Service loadBalancerClass, which can be used to access secondary load balancer controllers that are installed in the cluster, or to provision custom addresses manually.
+                    Configures a custom Service loadBalancerClass, which can be used to access secondary
+                    load balancer controllers that are installed in the cluster, or to provision
+                    custom addresses manually.
 
                     Ignored unless serviceType is LoadBalancer.
                   nullable: true
@@ -41,7 +46,8 @@ spec:
                 preferredAddressType:
                   default: HostnameConservative
                   description: |-
-                    Whether addresses should prefer using the IP address (`IP`) or the hostname (`Hostname`). Can also be set to `HostnameConservative`, which will use `IP` for `NodePort` service types, but `Hostname` for everything else.
+                    Whether addresses should prefer using the IP address (`IP`) or the hostname (`Hostname`).
+                    Can also be set to `HostnameConservative`, which will use `IP` for `NodePort` service types, but `Hostname` for everything else.
 
                     The other type will be used if the preferred type is not available.
 
@@ -62,7 +68,9 @@ spec:
                   description: |-
                     `externalTrafficPolicy` that should be set on the created [`Service`] objects.
 
-                    The default is `Local` (in contrast to `Cluster`), as we aim to direct traffic to a node running the workload and we should keep testing that as the primary configuration. Cluster is a fallback option for providers that break Local mode (IONOS so far).
+                    The default is `Local` (in contrast to `Cluster`), as we aim to direct traffic to a node running the workload
+                    and we should keep testing that as the primary configuration. Cluster is a fallback option for providers that
+                    break Local mode (IONOS so far).
                   enum:
                     - Cluster
                     - Local
@@ -111,7 +119,11 @@ spec:
               description: |-
                 Exposes a set of pods to the outside world.
 
-                Essentially a Stackable extension of a Kubernetes Service. Compared to a Service, a Listener changes three things: 1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works 2. It has a consistent API for reading back the exposed address(es) of the service 3. The Pod must mount a Volume referring to the Listener, which also allows ["sticky" scheduling](https://docs.stackable.tech/home/nightly/listener-operator/listener#_sticky_scheduling).
+                Essentially a Stackable extension of a Kubernetes Service. Compared to a Service, a Listener changes three things:
+                1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works
+                2. It has a consistent API for reading back the exposed address(es) of the service
+                3. The Pod must mount a Volume referring to the Listener, which also allows
+                   ["sticky" scheduling](https://docs.stackable.tech/home/nightly/listener-operator/listener#_sticky_scheduling).
 
                 Learn more in the [Listener documentation](https://docs.stackable.tech/home/nightly/listener-operator/listener).
               properties:
@@ -193,7 +205,8 @@ spec:
                   description: |-
                     Port mappings for accessing the Listener on each Node that the Pods are currently running on.
 
-                    This is only intended for internal use by listener-operator itself. This will be left unset if using a ListenerClass that does not require Node-local access.
+                    This is only intended for internal use by listener-operator itself. This will be left unset if using a ListenerClass that does
+                    not require Node-local access.
                   nullable: true
                   type: object
                 serviceName:
@@ -236,7 +249,9 @@ spec:
               description: |-
                 Informs users about Listeners that are bound by a given Pod.
 
-                This is not expected to be created or modified by users. It will be created by the Stackable Listener Operator when mounting the listener volume, and is always named `pod-{pod.metadata.uid}`.
+                This is not expected to be created or modified by users. It will be created by
+                the Stackable Listener Operator when mounting the listener volume, and is always
+                named `pod-{pod.metadata.uid}`.
               properties:
                 listeners:
                   additionalProperties:
