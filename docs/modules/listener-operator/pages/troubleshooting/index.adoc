@@ -1,0 +1,19 @@
+= Troubleshooting
+
+== LoadBalancer inaccessible on IONOS cloud from external
+
+Currently on IONOS cloud, if you want to use a `LoadBalancer` service, you need to adopt your `listenerClass` to
+
+[source,yaml]
+----
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: lb-stable
+spec:
+  serviceType: LoadBalancer
+  serviceExternalTrafficPolicy: Cluster
+----
+
+NOTE: `serviceExternalTrafficPolicy` is set to `Cluster`, which is an implementation detail of IONOS LB services
