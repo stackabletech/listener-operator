@@ -129,7 +129,8 @@ impl csi::v1::controller_server::Controller for ListenerOperatorController {
             })?;
 
         // We only configure a node stickiness in case it is enabled and the Service is of type
-        // NodePort.
+        // NodePort. Load balancers and services of type ClusterIP have no relationship to any
+        // particular node, so don't try to be sticky.
         let accessible_topology = if listener_class.spec.sticky_node_ports
             && listener_class.spec.service_type == listener::v1alpha1::ServiceType::NodePort
         {
