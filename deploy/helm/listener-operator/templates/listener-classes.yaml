@@ -14,7 +14,7 @@ metadata:
   name: external-unstable
 spec:
   serviceType: NodePort
-  stickyNodePorts: false
+  pinnedNodePorts: false
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
@@ -37,7 +37,7 @@ metadata:
   name: external-unstable
 spec:
   serviceType: NodePort
-  stickyNodePorts: false
+  pinnedNodePorts: false
 ---
 apiVersion: listeners.stackable.tech/v1alpha1
 kind: ListenerClass
@@ -53,7 +53,7 @@ spec:
   # or on-premise environments that don't support external LoadBalancer peering (such as Calico (https://docs.tigera.io/calico/latest/networking/configuring/advertise-service-ips)
   # or MetalLB (https://metallb.org/)).
   serviceType: NodePort
-  stickyNodePorts: true
+  pinnedNodePorts: true
 {{ else }}
 {{ fail "An invalid preset was configured" }}
 {{ end }}

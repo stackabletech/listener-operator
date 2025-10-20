@@ -83,15 +83,15 @@ Both `stable-nodes` and `ephemeral-nodes` create the same three ListenerClasses 
 |ClusterIP
 
 |`external-unstable`
-|NodePort (non-sticky)
-|NodePort (non-sticky)
+|NodePort (non-pinning)
+|NodePort (non-pinning)
 
 |`external-stable`
-|NodePort (sticky)
+|NodePort (pinning)
 |LoadBalancer
 |===
 
-A sticky NodePort pins the Pod to a particular Kubernetes node, so that the endpoint is stable across Pod restarts.
+A pinning NodePort pins the Pod to a particular Kubernetes node, so that the endpoint is stable across Pod restarts.
 This is achieved via the `volume.kubernetes.io/selected-node` annotation on the Listener PVC.
 
 ==== Why the Difference?
@@ -145,7 +145,7 @@ Ensure you understand your cluster's network topology and have appropriate firew
 
 ===== Node stickiness
 
-Using `.spec.stickyNodePorts` (defaults to `false`) you can enable that Pods are xref:volume.adoc#pinning[pinned] to a specific Kubernetes node.
+Using `.spec.pinnedNodePorts` (defaults to `false`) you can enable that Pods are xref:volume.adoc#pinning[pinned] to a specific Kubernetes node.
 
 [CAUTION]
 ====
