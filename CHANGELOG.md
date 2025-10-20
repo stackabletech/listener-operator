@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
   - `EOS_CHECK_MODE` (`--eos-check-mode`) to set the EoS check mode. Currently, only "offline" is supported.
   - `EOS_INTERVAL` (`--eos-interval`) to set the interval in which the operator checks if it is EoS.
   - `EOS_DISABLED` (`--eos-disabled`) to disable the EoS checker completely.
+- One can now configure if NodePorts should pin Pods to nodes using the ListenerClass `.spec.pinnedNodePorts`. Read on the [issue](https://github.com/stackabletech/issues/issues/770) for details ([#340]).
 
 ### Changed
 
@@ -26,11 +27,13 @@ All notable changes to this project will be documented in this file.
   - `affinity` has been split into `csiProvisioner.affinity` and `csiNodeDriver.affinity`.
 - Bump csi-node-driver-registrar to `v2.15.0` ([#337]).
 - Bump csi-provisioner to `v5.3.0` ([#338]).
+- We now default to the `ephemeral-nodes` helm preset. Read on the [issue](https://github.com/stackabletech/issues/issues/770) for details ([#340]).
 
 [#334]: https://github.com/stackabletech/listener-operator/pull/334
 [#337]: https://github.com/stackabletech/listener-operator/pull/337
 [#338]: https://github.com/stackabletech/listener-operator/pull/338
 [#339]: https://github.com/stackabletech/listener-operator/pull/339
+[#340]: https://github.com/stackabletech/listener-operator/pull/340
 
 ## [25.7.0] - 2025-07-23
 
