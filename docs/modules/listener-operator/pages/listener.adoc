@@ -1,5 +1,5 @@
 = Listener
-:description: The Listener exposes Pods based on ListenerClass rules, provides address info via Ingress_addresses, supports PVC mounting, and enables sticky scheduling.
+:description: The Listener exposes Pods based on ListenerClass rules, provides address info via Ingress_addresses, supports PVC mounting, and enables pinning scheduling.
 
 :fn-kubernetes-service: footnote:[It is actually implemented using them, but don't rely on that.]
 
