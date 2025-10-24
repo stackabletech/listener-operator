@@ -51,7 +51,6 @@ struct Opts {
 struct OlmDeployerRun {
     #[arg(
         long,
-        short,
         default_value = "false",
         help = "Keep running after manifests have been successfully applied."
     )]
@@ -59,18 +58,17 @@ struct OlmDeployerRun {
 
     #[arg(
         long,
-        short,
         help = "Name of ClusterServiceVersion object that owns this Deployment."
     )]
     csv: String,
 
-    #[arg(long, short, help = "Name of deployment object that owns this Pod.")]
+    #[arg(long, help = "Name of deployment object that owns this Pod.")]
     deployer: String,
 
-    #[arg(long, short, help = "Namespace of the ClusterServiceVersion object.")]
+    #[arg(long, help = "Namespace of the ClusterServiceVersion object.")]
     namespace: String,
 
-    #[arg(long, short, help = "Directory with manifests to patch and apply.")]
+    #[arg(long, help = "Directory with manifests to patch and apply.")]
     dir: std::path::PathBuf,
 
     #[command(flatten)]
