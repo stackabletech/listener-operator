@@ -25,7 +25,7 @@ impl<'a> AddressCandidates<'a> {
 }
 
 /// Try to guess the primary addresses of a Node, which it is expected that external clients should be able to reach it on
-pub fn node_primary_addresses(node: &Node) -> AddressCandidates {
+pub fn node_primary_addresses(node: &'_ Node) -> AddressCandidates<'_> {
     let addrs = node
         .status
         .as_ref()
