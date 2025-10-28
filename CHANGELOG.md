@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Bump csi-provisioner to `v5.3.0` ([#338]).
 - We now default to the `ephemeral-nodes` helm preset. Read on the [issue](https://github.com/stackabletech/issues/issues/770) for details ([#340]).
 - olm-deployer: update to align with new operator configuration ([#344]).
+- Bump stackable-operator to `0.100.1` ([#346]).
 
 [#334]: https://github.com/stackabletech/listener-operator/pull/334
 [#337]: https://github.com/stackabletech/listener-operator/pull/337
@@ -36,6 +37,7 @@ All notable changes to this project will be documented in this file.
 [#339]: https://github.com/stackabletech/listener-operator/pull/339
 [#340]: https://github.com/stackabletech/listener-operator/pull/340
 [#344]: https://github.com/stackabletech/listener-operator/pull/344
+[#346]: https://github.com/stackabletech/listener-operator/pull/346
 
 ## [25.7.0] - 2025-07-23
 
