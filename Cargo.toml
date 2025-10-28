@@ -10,7 +10,7 @@ edition = "2021"
 repository = "https://github.com/stackabletech/listener-operator"
 
 [workspace.dependencies]
-stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.100.0", features = ["telemetry", "versioned"] }
+stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.100.1", features = ["telemetry", "versioned"] }
 
 anyhow = "1.0"
 built = { version = "0.8", features = ["chrono", "git2"] }
