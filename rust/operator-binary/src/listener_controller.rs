@@ -319,15 +319,14 @@ pub async fn reconcile(
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
     pod_selector.extend([listener_mounted_pod_label(listener).context(ListenerPodSelectorSnafu)?]);
 
-    // ClusterIP services have no external traffic to apply policies to
     let external_traffic_policy = match listener_class.spec.service_type {
         listener::v1alpha1::ServiceType::NodePort
-        | listener::v1alpha1::ServiceType::LoadBalancer => Some(
-            listener_class
-                .spec
-                .service_external_traffic_policy
-                .to_string(),
-        ),
+        | listener::v1alpha1::ServiceType::LoadBalancer => listener_class
+            .spec
+            .service_external_traffic_policy
+            .as_ref()
+            .map(|policy| policy.to_string()),
+        // ClusterIP services have no external traffic to apply policies to
         listener::v1alpha1::ServiceType::ClusterIP => None,
     };
 

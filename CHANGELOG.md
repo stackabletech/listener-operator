@@ -31,6 +31,10 @@ All notable changes to this project will be documented in this file.
 - olm-deployer: update to align with new operator configuration ([#344]).
 - Bump stackable-operator to `0.100.1` ([#346]).
 
+### Fixed
+
+- BREAKING: Default ListenerClass `.spec.externalTrafficPolicy` to `null` so that LoadBalancers work everywhere ([#XXX]).
+
 [#334]: https://github.com/stackabletech/listener-operator/pull/334
 [#337]: https://github.com/stackabletech/listener-operator/pull/337
 [#338]: https://github.com/stackabletech/listener-operator/pull/338
