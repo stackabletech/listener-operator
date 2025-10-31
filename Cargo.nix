@@ -162,9 +162,9 @@ rec {
       };
       "aho-corasick" = rec {
         crateName = "aho-corasick";
-        version = "1.1.3";
+        version = "1.1.4";
         edition = "2021";
-        sha256 = "05mrpkvdgp5d20y2p989f187ry9diliijgwrs254fs9s1m1x6q4f";
+        sha256 = "00a32wb2h07im3skkikc495jvncf62jl6s96vwc7bhi70h9imlyx";
         libName = "aho_corasick";
         authors = [
           "Andrew Gallant <jamslam@gmail.com>"
@@ -3486,9 +3486,9 @@ rec {
       };
       "icu_collections" = rec {
         crateName = "icu_collections";
-        version = "2.0.0";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "0izfgypv1hsxlz1h8fc2aak641iyvkak16aaz5b4aqg3s3sp4010";
+        sha256 = "0hsblchsdl64q21qwrs4hvc2672jrf466zivbj1bwyv606bn8ssc";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -3524,16 +3524,16 @@ rec {
           }
         ];
         features = {
-          "alloc" = [ "zerovec/alloc" ];
+          "alloc" = [ "serde?/alloc" "zerovec/alloc" ];
           "databake" = [ "dep:databake" "zerovec/databake" ];
           "serde" = [ "dep:serde" "zerovec/serde" "potential_utf/serde" "alloc" ];
         };
       };
       "icu_locale_core" = rec {
         crateName = "icu_locale_core";
-        version = "2.0.0";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "02phv7vwhyx6vmaqgwkh2p4kc2kciykv2px6g4h8glxfrh02gphc";
+        sha256 = "1djvdc2f5ylmp1ymzv4gcnmq1s4hqfim9nxlcm173lsd01hpifpd";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -3547,13 +3547,11 @@ rec {
             name = "litemap";
             packageId = "litemap";
             usesDefaultFeatures = false;
-            features = [ "alloc" ];
           }
           {
             name = "tinystr";
             packageId = "tinystr";
             usesDefaultFeatures = false;
-            features = [ "alloc" ];
           }
           {
             name = "writeable";
@@ -3568,26 +3566,22 @@ rec {
           }
         ];
         features = {
+          "alloc" = [ "litemap/alloc" "tinystr/alloc" "writeable/alloc" "serde?/alloc" ];
           "databake" = [ "dep:databake" "alloc" ];
-          "serde" = [ "dep:serde" "tinystr/serde" "alloc" ];
+          "serde" = [ "dep:serde" "tinystr/serde" ];
           "zerovec" = [ "dep:zerovec" "tinystr/zerovec" ];
         };
         resolvedDefaultFeatures = [ "zerovec" ];
       };
       "icu_normalizer" = rec {
         crateName = "icu_normalizer";
-        version = "2.0.0";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "0ybrnfnxx4sf09gsrxri8p48qifn54il6n3dq2xxgx4dw7l80s23";
+        sha256 = "16dmn5596la2qm0r3vih0bzjfi0vx9a20yqjha6r1y3vnql8hv2z";
         authors = [
           "The ICU4X Project Developers"
         ];
         dependencies = [
-          {
-            name = "displaydoc";
-            packageId = "displaydoc";
-            usesDefaultFeatures = false;
-          }
           {
             name = "icu_collections";
             packageId = "icu_collections";
@@ -3627,17 +3621,16 @@ rec {
           "default" = [ "compiled_data" "utf8_iter" "utf16_iter" ];
           "icu_properties" = [ "dep:icu_properties" ];
           "serde" = [ "dep:serde" "icu_collections/serde" "zerovec/serde" "icu_properties?/serde" "icu_provider/serde" ];
-          "utf16_iter" = [ "dep:utf16_iter" "write16" ];
+          "utf16_iter" = [ "dep:utf16_iter" "dep:write16" ];
           "utf8_iter" = [ "dep:utf8_iter" ];
-          "write16" = [ "dep:write16" ];
         };
         resolvedDefaultFeatures = [ "compiled_data" ];
       };
       "icu_normalizer_data" = rec {
         crateName = "icu_normalizer_data";
-        version = "2.0.0";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "1lvjpzxndyhhjyzd1f6vi961gvzhj244nribfpdqxjdgjdl0s880";
+        sha256 = "02jnzizg6q75m41l6c13xc7nkc5q8yr1b728dcgfhpzw076wrvbs";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -3645,18 +3638,13 @@ rec {
       };
       "icu_properties" = rec {
         crateName = "icu_properties";
-        version = "2.0.1";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "0az349pjg8f18lrjbdmxcpg676a7iz2ibc09d2wfz57b3sf62v01";
+        sha256 = "16gvnnxr1xry6vn5275a1s0z0c8scp7gdkzqla6hqv3nawqwsgz9";
         authors = [
           "The ICU4X Project Developers"
         ];
         dependencies = [
-          {
-            name = "displaydoc";
-            packageId = "displaydoc";
-            usesDefaultFeatures = false;
-          }
           {
             name = "icu_collections";
             packageId = "icu_collections";
@@ -3680,12 +3668,6 @@ rec {
             usesDefaultFeatures = false;
           }
           {
-            name = "potential_utf";
-            packageId = "potential_utf";
-            usesDefaultFeatures = false;
-            features = [ "zerovec" ];
-          }
-          {
             name = "zerotrie";
             packageId = "zerotrie";
             usesDefaultFeatures = false;
@@ -3699,20 +3681,20 @@ rec {
           }
         ];
         features = {
-          "alloc" = [ "zerovec/alloc" "icu_collections/alloc" ];
+          "alloc" = [ "zerovec/alloc" "icu_collections/alloc" "serde?/alloc" ];
           "compiled_data" = [ "dep:icu_properties_data" "icu_provider/baked" ];
-          "datagen" = [ "serde" "dep:databake" "potential_utf/databake" "zerovec/databake" "icu_collections/databake" "icu_locale_core/databake" "zerotrie/databake" "icu_provider/export" ];
+          "datagen" = [ "serde" "dep:databake" "zerovec/databake" "icu_collections/databake" "icu_locale_core/databake" "zerotrie/databake" "icu_provider/export" ];
           "default" = [ "compiled_data" ];
-          "serde" = [ "dep:serde" "icu_locale_core/serde" "potential_utf/serde" "zerovec/serde" "icu_collections/serde" "icu_provider/serde" "zerotrie/serde" ];
+          "serde" = [ "dep:serde" "icu_locale_core/serde" "zerovec/serde" "icu_collections/serde" "icu_provider/serde" "zerotrie/serde" ];
           "unicode_bidi" = [ "dep:unicode-bidi" ];
         };
         resolvedDefaultFeatures = [ "compiled_data" ];
       };
       "icu_properties_data" = rec {
         crateName = "icu_properties_data";
-        version = "2.0.1";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "0cnn3fkq6k88w7p86w7hsd1254s4sl783rpz4p6hlccq74a5k119";
+        sha256 = "16a80p8j371jkl10x26rh9gw6d1gyl7limpc008my15v8wv5p102";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -3720,9 +3702,9 @@ rec {
       };
       "icu_provider" = rec {
         crateName = "icu_provider";
-        version = "2.0.0";
+        version = "2.1.1";
         edition = "2021";
-        sha256 = "1bz5v02gxv1i06yhdhs2kbwxkw3ny9r2vvj9j288fhazgfi0vj03";
+        sha256 = "0576b7dizgyhpfa74kacv86y4g1p7v5ffd6c56kf1q82rvq2r5l5";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -3738,31 +3720,22 @@ rec {
             usesDefaultFeatures = false;
           }
           {
-            name = "stable_deref_trait";
-            packageId = "stable_deref_trait";
-            usesDefaultFeatures = false;
-          }
-          {
-            name = "tinystr";
-            packageId = "tinystr";
-            usesDefaultFeatures = false;
-          }
-          {
             name = "writeable";
             packageId = "writeable";
+            optional = true;
             usesDefaultFeatures = false;
           }
           {
             name = "yoke";
             packageId = "yoke";
             usesDefaultFeatures = false;
-            features = [ "alloc" "derive" ];
+            features = [ "derive" ];
           }
           {
             name = "zerofrom";
             packageId = "zerofrom";
             usesDefaultFeatures = false;
-            features = [ "alloc" "derive" ];
+            features = [ "derive" ];
           }
           {
             name = "zerotrie";
@@ -3778,8 +3751,8 @@ rec {
           }
         ];
         features = {
-          "alloc" = [ "icu_locale_core/alloc" "zerovec/alloc" "zerotrie/alloc" ];
-          "baked" = [ "zerotrie" ];
+          "alloc" = [ "icu_locale_core/alloc" "serde?/alloc" "yoke/alloc" "zerofrom/alloc" "zerovec/alloc" "zerotrie?/alloc" "dep:stable_deref_trait" "dep:writeable" ];
+          "baked" = [ "dep:zerotrie" "dep:writeable" ];
           "deserialize_bincode_1" = [ "serde" "dep:bincode" "std" ];
           "deserialize_json" = [ "serde" "dep:serde_json" ];
           "deserialize_postcard_1" = [ "serde" "dep:postcard" ];
@@ -3787,9 +3760,8 @@ rec {
           "logging" = [ "dep:log" ];
           "serde" = [ "dep:serde" "yoke/serde" ];
           "std" = [ "alloc" ];
-          "zerotrie" = [ "dep:zerotrie" ];
         };
-        resolvedDefaultFeatures = [ "baked" "zerotrie" ];
+        resolvedDefaultFeatures = [ "baked" ];
       };
       "ident_case" = rec {
         crateName = "ident_case";
@@ -4242,8 +4214,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         libName = "k8s_version";
         authors = [
@@ -4274,7 +4246,12 @@ rec {
         crateName = "kube";
         version = "2.0.1";
         edition = "2024";
-        sha256 = "0kh1m9w0nhd3fai4pcshl7z5rx0s83zvcxa51v12ql26d85vprs8";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/stackabletech/kube-rs";
+          rev = "26543e85dc7daaf82d8f7dbd902b26775798879e";
+          sha256 = "1a7bcl0w1jg71jc4iml0vjp8dpzy71mhxl012grxcy2xp5i6xvgf";
+        };
         authors = [
           "clux <sszynrae@gmail.com>"
           "Natalie Klestrup Röijezon <nat@nullable.se>"
@@ -4347,7 +4324,12 @@ rec {
         crateName = "kube-client";
         version = "2.0.1";
         edition = "2024";
-        sha256 = "0dksaqk698bciyda6k8ss9lr92bqyb3pygddzna54asd31xdb1s9";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/stackabletech/kube-rs";
+          rev = "26543e85dc7daaf82d8f7dbd902b26775798879e";
+          sha256 = "1a7bcl0w1jg71jc4iml0vjp8dpzy71mhxl012grxcy2xp5i6xvgf";
+        };
         libName = "kube_client";
         authors = [
           "clux <sszynrae@gmail.com>"
@@ -4580,7 +4562,12 @@ rec {
         crateName = "kube-core";
         version = "2.0.1";
         edition = "2024";
-        sha256 = "0wzfc1q78s5a3k1gfa6i8xjd9gmssbnw0f1mdsh23dvv1rvvnjwi";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/stackabletech/kube-rs";
+          rev = "26543e85dc7daaf82d8f7dbd902b26775798879e";
+          sha256 = "1a7bcl0w1jg71jc4iml0vjp8dpzy71mhxl012grxcy2xp5i6xvgf";
+        };
         libName = "kube_core";
         authors = [
           "clux <sszynrae@gmail.com>"
@@ -4662,7 +4649,12 @@ rec {
         crateName = "kube-derive";
         version = "2.0.1";
         edition = "2024";
-        sha256 = "1ljhw6xmrj1v8ni144bpxrifwzbrrn0qnl5kd8m7fdz15cjyiph3";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/stackabletech/kube-rs";
+          rev = "26543e85dc7daaf82d8f7dbd902b26775798879e";
+          sha256 = "1a7bcl0w1jg71jc4iml0vjp8dpzy71mhxl012grxcy2xp5i6xvgf";
+        };
         procMacro = true;
         libName = "kube_derive";
         authors = [
@@ -4711,7 +4703,12 @@ rec {
         crateName = "kube-runtime";
         version = "2.0.1";
         edition = "2024";
-        sha256 = "1zg34fih2r72y9sr58gmgyjizbkl6jv0nc0hmf4wrib2npj4vska";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/stackabletech/kube-rs";
+          rev = "26543e85dc7daaf82d8f7dbd902b26775798879e";
+          sha256 = "1a7bcl0w1jg71jc4iml0vjp8dpzy71mhxl012grxcy2xp5i6xvgf";
+        };
         libName = "kube_runtime";
         authors = [
           "clux <sszynrae@gmail.com>"
@@ -4959,20 +4956,19 @@ rec {
       };
       "litemap" = rec {
         crateName = "litemap";
-        version = "0.8.0";
+        version = "0.8.1";
         edition = "2021";
-        sha256 = "0mlrlskwwhirxk3wsz9psh6nxcy491n0dh8zl02qgj0jzpssw7i4";
+        sha256 = "0xsy8pfp9s802rsj1bq2ys2kbk1g36w5dr3gkfip7gphb5x60wv3";
         authors = [
           "The ICU4X Project Developers"
         ];
         features = {
           "databake" = [ "dep:databake" ];
           "default" = [ "alloc" ];
-          "serde" = [ "dep:serde" "alloc" ];
+          "serde" = [ "dep:serde_core" "alloc" ];
           "testing" = [ "alloc" ];
           "yoke" = [ "dep:yoke" ];
         };
-        resolvedDefaultFeatures = [ "alloc" ];
       };
       "lock_api" = rec {
         crateName = "lock_api";
@@ -6092,9 +6088,9 @@ rec {
       };
       "potential_utf" = rec {
         crateName = "potential_utf";
-        version = "0.1.3";
+        version = "0.1.4";
         edition = "2021";
-        sha256 = "12mhwvhpvvim6xqp6ifgkh1sniv9j2cmid6axn10fnjvpsnikpw4";
+        sha256 = "0xxg0pkfpq299wvwln409z4fk80rbv55phh3f1jhjajy5x1ljfdp";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -6107,10 +6103,11 @@ rec {
           }
         ];
         features = {
-          "alloc" = [ "serde?/alloc" "zerovec?/alloc" ];
+          "alloc" = [ "serde_core?/alloc" "writeable/alloc" "zerovec?/alloc" ];
           "databake" = [ "dep:databake" ];
-          "serde" = [ "dep:serde" ];
-          "writeable" = [ "dep:writeable" "alloc" ];
+          "default" = [ "alloc" ];
+          "serde" = [ "dep:serde_core" ];
+          "writeable" = [ "dep:writeable" ];
           "zerovec" = [ "dep:zerovec" ];
         };
         resolvedDefaultFeatures = [ "zerovec" ];
@@ -7359,9 +7356,9 @@ rec {
       };
       "rustls-webpki" = rec {
         crateName = "rustls-webpki";
-        version = "0.103.7";
+        version = "0.103.8";
         edition = "2021";
-        sha256 = "1gqlsd0yqiqch97g0wbsnbmyrp75j6nbzfpf8dmhxa78j50ky2z1";
+        sha256 = "0lpymb84bi5d2pm017n39nbiaa5cd046hgz06ir29ql6a8pzmz9g";
         libName = "webpki";
         dependencies = [
           {
@@ -8291,7 +8288,6 @@ rec {
           "default" = [ "std" ];
           "std" = [ "alloc" ];
         };
-        resolvedDefaultFeatures = [ "alloc" ];
       };
       "stackable-listener-operator" = rec {
         crateName = "stackable-listener-operator";
@@ -8466,13 +8462,13 @@ rec {
       };
       "stackable-operator" = rec {
         crateName = "stackable-operator";
-        version = "0.100.1";
+        version = "0.100.2";
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         libName = "stackable_operator";
         authors = [
@@ -8640,8 +8636,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         procMacro = true;
         libName = "stackable_operator_derive";
@@ -8675,8 +8671,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         libName = "stackable_shared";
         authors = [
@@ -8757,8 +8753,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         libName = "stackable_telemetry";
         authors = [
@@ -8867,8 +8863,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         libName = "stackable_versioned";
         authors = [
@@ -8911,8 +8907,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/stackabletech/operator-rs.git";
-          rev = "184423db7409f853bd69db7eeecd1affbf97ef40";
-          sha256 = "1a98klljvifnc168f1wc3d6szcry1lamxgjjdq89plr99p4b953l";
+          rev = "e1134e44a055baaa22a9b854db2e2dea167638dd";
+          sha256 = "1csgrq6d3393i5j4p5f2jgafsf11v49v5lnbwfvn2yaxalhmsjq8";
         };
         procMacro = true;
         libName = "stackable_versioned_macros";
@@ -9438,9 +9434,9 @@ rec {
       };
       "tinystr" = rec {
         crateName = "tinystr";
-        version = "0.8.1";
+        version = "0.8.2";
         edition = "2021";
-        sha256 = "12sc6h3hnn6x78iycm5v6wrs2xhxph0ydm43yyn7gdfw8l8nsksx";
+        sha256 = "0sa8z88axdsf088hgw5p4xcyi6g3w3sgbb6qdp81bph9bk2fkls2";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -9458,13 +9454,13 @@ rec {
           }
         ];
         features = {
-          "alloc" = [ "zerovec?/alloc" ];
+          "alloc" = [ "serde_core?/alloc" "zerovec?/alloc" ];
           "databake" = [ "dep:databake" ];
           "default" = [ "alloc" ];
-          "serde" = [ "dep:serde" ];
+          "serde" = [ "dep:serde_core" ];
           "zerovec" = [ "dep:zerovec" ];
         };
-        resolvedDefaultFeatures = [ "alloc" "zerovec" ];
+        resolvedDefaultFeatures = [ "zerovec" ];
       };
       "tokio" = rec {
         crateName = "tokio";
@@ -12947,13 +12943,14 @@ rec {
       };
       "writeable" = rec {
         crateName = "writeable";
-        version = "0.6.1";
+        version = "0.6.2";
         edition = "2021";
-        sha256 = "1fx29zncvbrqzgz7li88vzdm8zvgwgwy2r9bnjqxya09pfwi0bza";
+        sha256 = "1fg08y97n6vk7l0rnjggw3xyrii6dcqg54wqaxldrlk98zdy1pcy";
         authors = [
           "The ICU4X Project Developers"
         ];
         features = {
+          "default" = [ "alloc" ];
           "either" = [ "dep:either" ];
         };
       };
@@ -12970,19 +12967,13 @@ rec {
       };
       "yoke" = rec {
         crateName = "yoke";
-        version = "0.8.0";
+        version = "0.8.1";
         edition = "2021";
-        sha256 = "1k4mfr48vgi7wh066y11b7v1ilakghlnlhw9snzz8vi2p00vnhaz";
+        sha256 = "0m29dm0bf5iakxgma0bj6dbmc3b8qi9b1vaw9sa76kdqmz3fbmkj";
         authors = [
           "Manish Goregaokar <manishsmail@gmail.com>"
         ];
         dependencies = [
-          {
-            name = "serde";
-            packageId = "serde";
-            optional = true;
-            usesDefaultFeatures = false;
-          }
           {
             name = "stable_deref_trait";
             packageId = "stable_deref_trait";
@@ -13001,27 +12992,19 @@ rec {
             usesDefaultFeatures = false;
           }
         ];
-        devDependencies = [
-          {
-            name = "serde";
-            packageId = "serde";
-            usesDefaultFeatures = false;
-          }
-        ];
         features = {
-          "alloc" = [ "stable_deref_trait/alloc" "serde?/alloc" "zerofrom/alloc" ];
+          "alloc" = [ "stable_deref_trait/alloc" "zerofrom/alloc" ];
           "default" = [ "alloc" "zerofrom" ];
           "derive" = [ "dep:yoke-derive" "zerofrom/derive" ];
-          "serde" = [ "dep:serde" ];
           "zerofrom" = [ "dep:zerofrom" ];
         };
-        resolvedDefaultFeatures = [ "alloc" "derive" "zerofrom" ];
+        resolvedDefaultFeatures = [ "derive" "zerofrom" ];
       };
       "yoke-derive" = rec {
         crateName = "yoke-derive";
-        version = "0.8.0";
+        version = "0.8.1";
         edition = "2021";
-        sha256 = "1dha5jrjz9jaq8kmxq1aag86b98zbnm9lyjrihy5sv716sbkrniq";
+        sha256 = "0pbyja133jnng4mrhimzdq4a0y26421g734ybgz8wsgbfhl0andn";
         procMacro = true;
         libName = "yoke_derive";
         authors = [
@@ -13132,7 +13115,7 @@ rec {
           "default" = [ "alloc" ];
           "derive" = [ "dep:zerofrom-derive" ];
         };
-        resolvedDefaultFeatures = [ "alloc" "derive" ];
+        resolvedDefaultFeatures = [ "derive" ];
       };
       "zerofrom-derive" = rec {
         crateName = "zerofrom-derive";
@@ -13184,9 +13167,9 @@ rec {
       };
       "zerotrie" = rec {
         crateName = "zerotrie";
-        version = "0.2.2";
+        version = "0.2.3";
         edition = "2021";
-        sha256 = "15gmka7vw5k0d24s0vxgymr2j6zn2iwl12wpmpnpjgsqg3abpw1n";
+        sha256 = "0lbqznlqazmrwwzslw0ci7p3pqxykrbfhq29npj0gmb2amxc2n9a";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -13213,7 +13196,7 @@ rec {
         features = {
           "databake" = [ "dep:databake" "zerovec?/databake" ];
           "litemap" = [ "dep:litemap" "alloc" ];
-          "serde" = [ "dep:serde" "dep:litemap" "alloc" "litemap/serde" "zerovec?/serde" ];
+          "serde" = [ "dep:serde_core" "dep:litemap" "alloc" "litemap/serde" "zerovec?/serde" ];
           "yoke" = [ "dep:yoke" ];
           "zerofrom" = [ "dep:zerofrom" ];
           "zerovec" = [ "dep:zerovec" ];
@@ -13222,9 +13205,9 @@ rec {
       };
       "zerovec" = rec {
         crateName = "zerovec";
-        version = "0.11.4";
+        version = "0.11.5";
         edition = "2021";
-        sha256 = "0fz7j1ns8d86m2fqg2a4bzi5gnh5892bxv4kcr9apwc6a3ajpap7";
+        sha256 = "00m0p47k2g9mkv505hky5xh3r6ps7v8qc0dy4pspg542jj972a3c";
         authors = [
           "The ICU4X Project Developers"
         ];
@@ -13247,28 +13230,21 @@ rec {
             usesDefaultFeatures = false;
           }
         ];
-        devDependencies = [
-          {
-            name = "yoke";
-            packageId = "yoke";
-            usesDefaultFeatures = false;
-            features = [ "derive" ];
-          }
-        ];
         features = {
+          "alloc" = [ "serde?/alloc" ];
           "databake" = [ "dep:databake" ];
           "derive" = [ "dep:zerovec-derive" ];
           "hashmap" = [ "dep:twox-hash" "alloc" ];
-          "serde" = [ "dep:serde" "alloc" ];
+          "serde" = [ "dep:serde" ];
           "yoke" = [ "dep:yoke" ];
         };
-        resolvedDefaultFeatures = [ "alloc" "derive" "yoke" ];
+        resolvedDefaultFeatures = [ "derive" "yoke" ];
       };
       "zerovec-derive" = rec {
         crateName = "zerovec-derive";
-        version = "0.11.1";
+        version = "0.11.2";
         edition = "2021";
-        sha256 = "13zms8hj7vzpfswypwggyfr4ckmyc7v3di49pmj8r1qcz9z275jv";
+        sha256 = "1wsig4h5j7a1scd5hrlnragnazjny9qjc44hancb6p6a76ay7p7a";
         procMacro = true;
         libName = "zerovec_derive";
         authors = [
