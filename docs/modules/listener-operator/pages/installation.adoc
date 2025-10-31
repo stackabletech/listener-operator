@@ -18,8 +18,46 @@ Resource sizing depends on cluster type(s), usage and scope, but as a starting p
 * 0.2 cores (e.g. i5 or similar)
 * 256MB RAM
 
+== ListenerClass presets
+
+When installing the listener-operator you need choose a ListenerClass preset (or use the default one).
+A ListenerClass controls two important things:
+
+* Service type: If ClusterIP, NodePort or LoadBalancer is used
+* Pinning: When using NodePorts (and only then) if pinning is enabled, the Pods are pinned to a particular Kubernetes node, so that the Pods always starts on the same node and has a stable endpoint without the need for an (e.g. expensive) LoadBalancer.
+  However, this pinning causes problems when you rotate your nodes (e.g. on a regular basis), as Pod will be stuck in `Pending` when the node they are pinned to is gone.
+
+Use the following decision tree to decide on the ListenerClass preset to use:
+
+[plantuml, svg]
+....
+@startuml
+if (LoadBalancers supported?) is (yes) then
+  #palegreen:Use ephermal-nodes;
+  kill
+else (no)
+  if (Nodes regularly rotated?) is (yes) then
+    #yellow:Use stable-nodes to prefer NodePort
+    over LoadBalancers. However, don't use
+    the external-stable ListenerClass at all,
+    use external-unstable instead;
+    kill
+  else (no)
+    #palegreen:Use stable-nodes;
+    kill
+endif
+@enduml
+....
+
+== stackablectl
+
+The recommended way to install the operator is using `stackablectl`.
+Starting with 1.2.0 it automatically detects `kind` and `k3s` cluster and uses `stable-nodes`
+
 == Helm
-Helm allows you to download and deploy Stackable operators on Kubernetes and is by far the easiest installation method.
+
+As `stackablectl` internally invokes Helm, you can absolutely install the operator only using Helm.
+Helm allows you to download and deploy Stackable operators on Kubernetes.
 
 NOTE: `helm repo` subcommands are not supported for OCI registries. The operators are installed directly, without adding the Helm Chart repository first.
 
