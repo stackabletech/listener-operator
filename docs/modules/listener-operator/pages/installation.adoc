@@ -20,12 +20,12 @@ Resource sizing depends on cluster type(s), usage and scope, but as a starting p
 
 == ListenerClass presets
 
-When installing the listener-operator you need choose a ListenerClass preset (or use the default one).
-A ListenerClass controls two important things:
+When installing the listener-operator you need to choose a ListenerClass preset (or use the default one).
+A ListenerClass controls two important aspects:
 
-* Service type: If ClusterIP, NodePort or LoadBalancer is used
-* Pinning: When using NodePorts (and only then) if pinning is enabled, the Pods are pinned to a particular Kubernetes node, so that the Pods always starts on the same node and has a stable endpoint without the need for an (e.g. expensive) LoadBalancer.
-  However, this pinning causes problems when you rotate your nodes (e.g. on a regular basis), as Pod will be stuck in `Pending` when the node they are pinned to is gone.
+* Service type: Determines whether ClusterIP, NodePort or LoadBalancer is used
+* Pinning: When using NodePorts (and only then) if pinning is enabled, the Pods are bound to a specific Kubernetes node. This allows the Pods to always start on the same node and keep a stable endpoint without the need for an (e.g. expensive) LoadBalancer.
+  However, this pinning can cause problems during node rotation (e.g. on a regular basis), as Pod will be stuck in `Pending` when the node they are pinned to is gone.
 
 Use the following decision tree to decide on the ListenerClass preset to use:
 
