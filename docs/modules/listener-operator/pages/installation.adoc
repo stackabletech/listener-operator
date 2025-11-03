@@ -29,24 +29,15 @@ A ListenerClass controls two important things:
 
 Use the following decision tree to decide on the ListenerClass preset to use:
 
-[plantuml, svg]
+[mermaid, width=100%]
 ....
-@startuml
-if (LoadBalancers supported?) is (yes) then
-  #palegreen:Use ephermal-nodes;
-  kill
-else (no)
-  if (Nodes regularly rotated?) is (yes) then
-    #yellow:Use stable-nodes to prefer NodePort
-    over LoadBalancers. However, don't use
-    the external-stable ListenerClass at all,
-    use external-unstable instead;
-    kill
-  else (no)
-    #palegreen:Use stable-nodes;
-    kill
-endif
-@enduml
+flowchart LR
+    LB{LoadBalancer supported?}
+    LB -->|yes| ephermal-nodes[Use ephermal-nodes]
+    LB -->|no| node-rotation{Nodes regularly rotated?}
+
+    node-rotation -->|yes| complicated[Use stable-nodes to prefer NodePort<br> over LoadBalancers.<br> However, don't use the<br> external-stable ListenerClass at all,<br> use external-unstable instead]
+    node-rotation -->|no| stable-nodes[Use stable-nodes]
 ....
 
 == stackablectl
