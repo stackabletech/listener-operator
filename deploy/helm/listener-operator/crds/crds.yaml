@@ -23,8 +23,8 @@ spec:
           properties:
             spec:
               description: |-
-                Defines a policy for how [Listeners](https://docs.stackable.tech/home/nightly/listener-operator/listener) should be exposed.
-                Read the [ListenerClass documentation](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass)
+                Defines a policy for how [Listeners](https://docs.stackable.tech/home/25.11/listener-operator/listener) should be exposed.
+                Read the [ListenerClass documentation](https://docs.stackable.tech/home/25.11/listener-operator/listenerclass)
                 for more information.
               properties:
                 loadBalancerAllocateNodePorts:
@@ -139,12 +139,12 @@ spec:
                 1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works
                 2. It has a consistent API for reading back the exposed address(es) of the service
                 3. The Pod must mount a Volume referring to the Listener, which also allows
-                   ["sticky" scheduling](https://docs.stackable.tech/home/nightly/listener-operator/listener#_sticky_scheduling).
+                   ["sticky" scheduling](https://docs.stackable.tech/home/25.11/listener-operator/listener#_sticky_scheduling).
 
-                Learn more in the [Listener documentation](https://docs.stackable.tech/home/nightly/listener-operator/listener).
+                Learn more in the [Listener documentation](https://docs.stackable.tech/home/25.11/listener-operator/listener).
               properties:
                 className:
-                  description: The name of the [ListenerClass](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass).
+                  description: The name of the [ListenerClass](https://docs.stackable.tech/home/25.11/listener-operator/listenerclass).
                   nullable: true
                   type: string
                 extraPodSelectorLabels:
