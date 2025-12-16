@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- OLM deployer doesn't add owner references to cluster scoped objects anymore ([#360]).
+  Owner references ensure that objects are garbage collected by OpenShift upon operator removal but they cause problems when the operator is updated.
+  This means that cluster wide objects are not removed anymore when the operator is uninstalled.
+  This behaviour is in line with the default behaviour of Helm and OLM.
+
 ## [25.11.0] - 2025-11-07
 
 ## [25.11.0-rc1] - 2025-11-06
