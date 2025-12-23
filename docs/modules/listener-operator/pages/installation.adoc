@@ -68,10 +68,10 @@ Microk8s uses a non-standard Kubelet state directory.
 Installing listener-operator on Microk8s requires the argument
 `--set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet` to be added to the `helm install` command.
 
-=== k0S
+=== k0s
 
-k0S uses a non-standard Kubelet state directory.
-Installing listener-operator on k0S requires the argument
+k0s uses a non-standard Kubelet state directory.
+Installing listener-operator on k0s requires the argument
 `--set kubeletDir=/var/lib/k0s/kubelet` to be added to the `helm install` command.
 
 === HUAWEI cloud
