@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Support objectOverrides using `.spec.objectOverrides` on the `Listener`.
+  See [objectOverrides concepts page](https://docs.stackable.tech/home/nightly/concepts/overrides/#object-overrides) for details ([#364]).
+
 ### Changed
 
 - OLM deployer doesn't add owner references to cluster scoped objects anymore ([#360]).
@@ -14,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 [#360]: https://github.com/stackabletech/listener-operator/pull/360
 [#363]: https://github.com/stackabletech/listener-operator/pull/363
+[#364]: https://github.com/stackabletech/listener-operator/pull/364
 
 ## [25.11.0] - 2025-11-07
 
