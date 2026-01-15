@@ -274,6 +274,7 @@ pub async fn reconcile(
         &listener.object_ref(&()),
         // Listeners don't currently support pausing
         ClusterResourceApplyStrategy::Default,
+        &listener.spec.object_overrides,
     )
     .context(CreateClusterResourcesSnafu)?;
 
