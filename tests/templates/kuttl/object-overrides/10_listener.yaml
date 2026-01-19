@@ -1,0 +1,18 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener
+spec:
+  className: cluster-internal
+  ports:
+    - name: http
+      port: 80
+  objectOverrides:
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: listener
+        namespace: $NAMESPACE
+      spec:
+        internalTrafficPolicy: Local
