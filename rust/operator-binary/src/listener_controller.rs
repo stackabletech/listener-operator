@@ -17,6 +17,7 @@ use stackable_operator::{
     crd::listener,
     iter::TryFromIterator,
     k8s_openapi::{
+        DeepMerge,
         api::core::v1::{Endpoints, Node, PersistentVolume, Service, ServicePort, ServiceSpec},
         apimachinery::pkg::apis::meta::v1::LabelSelector,
     },
@@ -348,7 +349,7 @@ pub async fn reconcile(
         }
     };
 
-    let svc = Service {
+    let mut svc = Service {
         metadata: ObjectMetaBuilder::new()
             .namespace(ns)
             .name(&svc_name)
@@ -402,6 +403,12 @@ pub async fn reconcile(
         }),
         ..Default::default()
     };
+
+    // The overrides need to come last!
+    svc.merge_from(listener_class.spec.service_overrides.clone());
+    // Prevent accidental further modification by removing mutability
+    let svc = svc;
+
     let svc_ref = ObjectRef::from_obj(&svc);
     let svc = cluster_resources
         .add(&ctx.client, svc)

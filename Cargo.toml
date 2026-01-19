@@ -44,4 +44,4 @@ kube = { git = "https://github.com/stackabletech/kube-rs", branch = "2.0.1-fix-s
 
 [patch."https://github.com/stackabletech/operator-rs.git"]
 # stackable-operator = { path = "../operator-rs/crates/stackable-operator" }
-# stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "main" }
+stackable-operator = { git = "https://github.com/stackabletech//operator-rs.git", branch = "feat/listener-service-overrides" }

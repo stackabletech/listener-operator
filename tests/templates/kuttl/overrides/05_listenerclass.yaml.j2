@@ -1,0 +1,17 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: listener-operator-test-overrides-$NAMESPACE
+spec:
+  serviceType: ClusterIP
+  serviceAnnotations:
+    deprecated: was here
+    winner: deprecated
+  serviceOverrides:
+    metadata:
+      annotations:
+        serviceOverrides: was here
+        winner: serviceOverrides
+    spec:
+      sessionAffinity: ClientIP

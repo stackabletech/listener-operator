@@ -4,7 +4,7 @@ kind: Listener
 metadata:
   name: listener
 spec:
-  className: cluster-internal
+  className: listener-operator-test-overrides-$NAMESPACE
   ports:
     - name: http
       port: 80
@@ -14,5 +14,8 @@ spec:
       metadata:
         name: listener
         namespace: $NAMESPACE
+        annotations:
+          listener: was here
+          winner: listener
       spec:
         internalTrafficPolicy: Local
