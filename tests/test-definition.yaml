@@ -23,6 +23,8 @@ tests:
     dimensions:
       - openshift
       - loadbalancer-allocatenodeports
+  - name: overrides
+    dimensions: []
 suites:
   - name: nightly
   - name: openshift
