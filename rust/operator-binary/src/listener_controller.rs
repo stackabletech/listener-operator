@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    future::Future,
     sync::Arc,
 };
 
@@ -48,7 +49,10 @@ const OPERATOR_NAME: &str = "listeners.stackable.tech";
 const CONTROLLER_NAME: &str = "listener";
 pub const FULL_CONTROLLER_NAME: &str = concatcp!(CONTROLLER_NAME, '.', OPERATOR_NAME);
 
-pub async fn run(client: stackable_operator::client::Client) {
+pub async fn run<F>(client: stackable_operator::client::Client, shutdown_signal: F)
+where
+    F: Future<Output = ()> + Send + Sync + 'static,
+{
     let controller = controller::Controller::new(
         client.get_all_api::<DeserializeGuard<listener::v1alpha1::Listener>>(),
         watcher::Config::default(),
@@ -119,7 +123,7 @@ pub async fn run(client: stackable_operator::client::Client) {
                     })
             },
         )
-        .shutdown_on_signal()
+        .graceful_shutdown_on(shutdown_signal)
         .run(
             reconcile,
             error_policy,
