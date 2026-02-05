@@ -23,8 +23,8 @@ use stackable_operator::{
     eos::EndOfSupportChecker,
     shared::yaml::SerializeOptions,
     telemetry::Tracing,
+    utils::signal::SignalWatcher,
 };
-use tokio::signal::unix::{SignalKind, signal};
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::unix_stream::{TonicUnixStream, uds_bind_private};
@@ -116,9 +116,13 @@ async fn main() -> anyhow::Result<()> {
                 description = built_info::PKG_DESCRIPTION
             );
 
+            // Watches for the SIGTERM signal and sends a signal to all receivers, which gracefully
+            // shuts down all concurrent tasks below (EoS checker, controller).
+            let sigterm_watcher = SignalWatcher::sigterm()?;
+
             let eos_checker =
                 EndOfSupportChecker::new(built_info::BUILT_TIME_UTC, maintenance.end_of_support)?
-                    .run()
+                    .run(sigterm_watcher.handle())
                     .map(anyhow::Ok);
 
             let client = stackable_operator::client::initialize_operator(
@@ -134,9 +138,9 @@ async fn main() -> anyhow::Result<()> {
                 let _ = std::fs::remove_file(&csi_endpoint);
             }
 
-            let mut sigterm = signal(SignalKind::terminate())?;
             let csi_listener =
                 UnixListenerStream::new(uds_bind_private(csi_endpoint)?).map_ok(TonicUnixStream);
+
             let csi_server = Server::builder()
                 .add_service(
                     tonic_reflection::server::Builder::configure()
@@ -152,9 +156,10 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(ControllerServer::new(ListenerOperatorController {
                             client: client.clone(),
                         }))
-                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
+                        .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
-                    let controller = listener_controller::run(client).map(anyhow::Ok);
+                    let controller =
+                        listener_controller::run(client, sigterm_watcher.handle()).map(anyhow::Ok);
 
                     futures::try_join!(csi_server, controller, eos_checker)?;
                 }
@@ -165,7 +170,7 @@ async fn main() -> anyhow::Result<()> {
                             client: client.clone(),
                             node_name: node_name.to_owned(),
                         }))
-                        .serve_with_incoming_shutdown(csi_listener, sigterm.recv().map(|_| ()))
+                        .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
                     futures::try_join!(csi_server, eos_checker)?;
