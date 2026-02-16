@@ -9787,6 +9787,10 @@ rec {
             packageId = "serde";
           }
           {
+            name = "serde_yaml";
+            packageId = "serde_yaml";
+          }
+          {
             name = "snafu";
             packageId = "snafu 0.8.9";
           }

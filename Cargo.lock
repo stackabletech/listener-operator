@@ -2921,6 +2921,7 @@ dependencies = [
  "pin-project",
  "prost",
  "serde",
+ "serde_yaml",
  "snafu 0.8.9",
  "socket2",
  "stackable-operator",

@@ -15,16 +15,18 @@ use csi_server::{
 use futures::{FutureExt, TryFutureExt, TryStreamExt};
 use stackable_operator::{
     self, YamlSchema,
-    cli::{CommonOptions, MaintenanceOptions, OperatorEnvironmentOptions},
+    cli::{Command, CommonOptions, MaintenanceOptions, OperatorEnvironmentOptions},
+    client::Client,
     crd::listener::{
         Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
-        PodListenersVersion,
+        PodListenersVersion, v1alpha1,
     },
     eos::EndOfSupportChecker,
     shared::yaml::SerializeOptions,
     telemetry::Tracing,
     utils::signal::SignalWatcher,
 };
+use tokio::sync::oneshot;
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::unix_stream::{TonicUnixStream, uds_bind_private};
@@ -42,14 +44,14 @@ const FIELD_MANAGER: &str = "listener-operator";
 
 #[derive(clap::Parser)]
 #[clap(author, version)]
-struct Opts {
+struct Cli {
     #[clap(subcommand)]
-    cmd: stackable_operator::cli::Command<ListenerOperatorRun>,
+    cmd: Command<ListenerOperatorRun>,
 }
 
 #[derive(clap::Parser)]
 struct ListenerOperatorRun {
-    #[clap(long, env)]
+    #[arg(long, env)]
     csi_endpoint: PathBuf,
 
     #[clap(subcommand)]
@@ -70,10 +72,32 @@ struct ListenerOperatorRun {
 #[derive(Debug, clap::Parser, strum::AsRefStr, strum::Display)]
 enum RunMode {
     /// CSI Controller Service
-    Controller,
+    Controller(ControllerArguments),
 
     /// CSI Node Service
     Node,
+}
+
+#[derive(Debug, clap::Args)]
+struct ControllerArguments {
+    #[arg(long, env, default_value_t)]
+    listener_class_preset: ListenerClassPreset,
+}
+
+#[derive(Clone, Debug, Default, clap::Parser, strum::Display, strum::EnumString)]
+#[strum(serialize_all = "kebab-case")]
+enum ListenerClassPreset {
+    /// Deploys no listener class preset.
+    None,
+
+    /// Deploys listener classes for environments in which pods can move freely
+    /// between nodes. This is common for many managed cloud environments.
+    #[default]
+    EphemeralNodes,
+
+    /// Deploys listener classes for environments with reliable, long-living
+    /// nodes and pods don't move between nodes.
+    StableNodes,
 }
 
 mod built_info {
@@ -85,9 +109,9 @@ pub const ENV_VAR_CONSOLE_LOG: &str = "LISTENER_OPERATOR_LOG";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let opts = Opts::parse();
+    let opts = Cli::parse();
     match opts.cmd {
-        stackable_operator::cli::Command::Crd => {
+        Command::Crd => {
             ListenerClass::merged_crd(ListenerClassVersion::V1Alpha1)?
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
             Listener::merged_crd(ListenerVersion::V1Alpha1)?
@@ -95,7 +119,7 @@ async fn main() -> anyhow::Result<()> {
             PodListeners::merged_crd(PodListenersVersion::V1Alpha1)?
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
         }
-        stackable_operator::cli::Command::Run(ListenerOperatorRun {
+        Command::Run(ListenerOperatorRun {
             operator_environment,
             csi_endpoint,
             maintenance,
@@ -154,29 +178,47 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .add_service(IdentityServer::new(ListenerOperatorIdentity));
 
-            let webhook_server = create_webhook_server(
-                &operator_environment,
-                maintenance.disable_crd_maintenance,
-                client.as_kube_client(),
-            )
-            .await?;
-
-            let webhook_server = webhook_server
-                .run(sigterm_watcher.handle())
-                .map_err(|err| anyhow!(err).context("failed to run webhook server"));
-
             match mode {
-                RunMode::Controller => {
+                RunMode::Controller(ControllerArguments {
+                    listener_class_preset,
+                }) => {
+                    let (webhook_server, initial_reconcile_rx) = create_webhook_server(
+                        &operator_environment,
+                        maintenance.disable_crd_maintenance,
+                        client.as_kube_client(),
+                    )
+                    .await?;
+
+                    let webhook_server = webhook_server
+                        .run(sigterm_watcher.handle())
+                        .map_err(|err| anyhow!(err).context("failed to run webhook server"));
+
+                    let listener_classes = create_listener_classes(
+                        initial_reconcile_rx,
+                        listener_class_preset,
+                        client.clone(),
+                    )
+                    .map_err(|err| {
+                        anyhow!(err).context("failed to apply listener classes selected by preset")
+                    });
+
                     let csi_server = csi_server
                         .add_service(ControllerServer::new(ListenerOperatorController {
                             client: client.clone(),
                         }))
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
+
                     let controller =
                         listener_controller::run(client, sigterm_watcher.handle()).map(anyhow::Ok);
 
-                    futures::try_join!(csi_server, controller, eos_checker, webhook_server)?;
+                    futures::try_join!(
+                        listener_classes,
+                        webhook_server,
+                        eos_checker,
+                        csi_server,
+                        controller,
+                    )?;
                 }
                 RunMode::Node => {
                     let node_name = &common.cluster_info.kubernetes_node_name;
@@ -188,10 +230,38 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
-                    futures::try_join!(csi_server, eos_checker, webhook_server)?;
+                    futures::try_join!(csi_server, eos_checker)?;
                 }
             }
         }
     }
+
+    Ok(())
+}
+
+async fn create_listener_classes(
+    initial_reconcile_rx: oneshot::Receiver<()>,
+    listener_class_preset: ListenerClassPreset,
+    client: Client,
+) -> anyhow::Result<()> {
+    initial_reconcile_rx.await?;
+
+    tracing::info!("applying \"{listener_class_preset}\" listener class preset");
+
+    #[rustfmt::skip]
+    let bytes = match listener_class_preset {
+        ListenerClassPreset::None => return Ok(()),
+        ListenerClassPreset::EphemeralNodes => include_bytes!("manifests/ephemeral-nodes.yaml").to_vec(),
+        ListenerClassPreset::StableNodes => include_bytes!("manifests/stable-nodes.yaml").to_vec(),
+    };
+
+    for document in serde_yaml::Deserializer::from_slice(&bytes) {
+        let class: v1alpha1::ListenerClass =
+            serde_yaml::with::singleton_map_recursive::deserialize(document)
+                .expect("compile-time included listener classes must be valid YAML");
+
+        client.create_if_missing(&class).await?;
+    }
+
     Ok(())
 }

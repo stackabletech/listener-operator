@@ -119,6 +119,10 @@ rules:
       - listenerclasses
       - listeners
     verbs:
+      {{- if .Values.maintenance.customResourceDefinitions.maintain }}
+      - create
+      - patch
+      {{- end }}
       - get
       - list
       - watch
@@ -149,9 +153,9 @@ rules:
 {{ if .Values.maintenance.customResourceDefinitions.maintain }}
   - apiGroups:
       - apiextensions.k8s.io
-  - resources:
+    resources:
       - customresourcedefinitions
-  - verbs:
+    verbs:
       - create
       - patch
 {{ end }}
