@@ -19,6 +19,9 @@ spec:
         {{- end }}
       labels:
         app.kubernetes.io/role: provisioner
+        {{- if .Values.maintenance.customResourceDefinitions.maintain }}
+        webhook.stackable.tech/conversion: enabled
+        {{- end }}
         {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -79,7 +82,9 @@ spec:
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ .Values.kubernetesClusterDomain | quote }}
             {{- end }}
+
             {{- include "telemetry.envVars" . | nindent 12 }}
+            {{- include "maintenance.envVars" . | nindent 12 }}
           volumeMounts:
             - name: csi
               mountPath: /csi

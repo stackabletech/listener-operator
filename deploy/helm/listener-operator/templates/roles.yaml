@@ -136,11 +136,22 @@ rules:
       - update
 {{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
   - apiGroups:
-    - security.openshift.io
+      - security.openshift.io
     resourceNames:
-    - listener-scc
+      - listener-scc
     resources:
-    - securitycontextconstraints
+      - securitycontextconstraints
     verbs:
-    - use
+      - use
 {{ end  }}
+# Required to maintain the CRD. The operator needs to do this, as it needs to enter e.g. it's
+# generated certificate in the conversion webhook.
+{{ if .Values.maintenance.customResourceDefinitions.maintain }}
+  - apiGroups:
+      - apiextensions.k8s.io
+  - resources:
+      - customresourcedefinitions
+  - verbs:
+      - create
+      - patch
+{{ end }}

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add conversion webhook ([#368]).
 - Support objectOverrides using `.spec.objectOverrides` on the `Listener`.
   See [objectOverrides concepts page](https://docs.stackable.tech/home/nightly/concepts/overrides/#object-overrides) for details ([#364]).
 - Support serviceOverrides using `.spec.serviceOverrides` on the `ListenerClass` ([#365]).
@@ -24,6 +25,7 @@ All notable changes to this project will be documented in this file.
 [#364]: https://github.com/stackabletech/listener-operator/pull/364
 [#365]: https://github.com/stackabletech/listener-operator/pull/365
 [#366]: https://github.com/stackabletech/listener-operator/pull/366
+[#368]: https://github.com/stackabletech/listener-operator/pull/368
 
 ## [25.11.0] - 2025-11-07
 
