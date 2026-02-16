@@ -140,6 +140,15 @@ kubeletDir: /var/lib/kubelet
 # ephemeral-nodes: ListenerClasses are preinstalled that are suitable for cloud/"cattle" environments with short-lived nodes, however this requires a LoadBalancer controller to be installed
 preset: ephemeral-nodes
 
+maintenance:
+  endOfSupportCheck:
+    enabled: true
+    # mode: offline
+    # interval: 24h
+
+  customResourceDefinitions:
+    maintain: true
+
 # See all available options and detailed explanations about the concept here:
 # https://docs.stackable.tech/home/stable/concepts/telemetry/
 telemetry:
