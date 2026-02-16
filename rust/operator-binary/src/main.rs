@@ -29,12 +29,16 @@ use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::unix_stream::{TonicUnixStream, uds_bind_private};
 
+use crate::webhooks::conversion::create_webhook_server;
+
 mod csi_server;
 mod listener_controller;
 mod utils;
+mod webhooks;
 
 const APP_NAME: &str = "listener";
 const OPERATOR_KEY: &str = "listeners.stackable.tech";
+const FIELD_MANAGER: &str = "listener-operator";
 
 #[derive(clap::Parser)]
 #[clap(author, version)]
@@ -92,11 +96,11 @@ async fn main() -> anyhow::Result<()> {
                 .print_yaml_schema(built_info::PKG_VERSION, SerializeOptions::default())?;
         }
         stackable_operator::cli::Command::Run(ListenerOperatorRun {
+            operator_environment,
             csi_endpoint,
-            mode,
-            common,
             maintenance,
-            operator_environment: _,
+            common,
+            mode,
         }) => {
             // NOTE (@NickLarsenNZ): Before stackable-telemetry was used:
             // - The console log level was set by `LISTENER_OPERATOR_LOG`, and is now `CONSOLE_LOG` (when using Tracing::pre_configured).
@@ -150,6 +154,17 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .add_service(IdentityServer::new(ListenerOperatorIdentity));
 
+            let webhook_server = create_webhook_server(
+                &operator_environment,
+                maintenance.disable_crd_maintenance,
+                client.as_kube_client(),
+            )
+            .await?;
+
+            let webhook_server = webhook_server
+                .run(sigterm_watcher.handle())
+                .map_err(|err| anyhow!(err).context("failed to run webhook server"));
+
             match mode {
                 RunMode::Controller => {
                     let csi_server = csi_server
@@ -161,7 +176,7 @@ async fn main() -> anyhow::Result<()> {
                     let controller =
                         listener_controller::run(client, sigterm_watcher.handle()).map(anyhow::Ok);
 
-                    futures::try_join!(csi_server, controller, eos_checker)?;
+                    futures::try_join!(csi_server, controller, eos_checker, webhook_server)?;
                 }
                 RunMode::Node => {
                     let node_name = &common.cluster_info.kubernetes_node_name;
@@ -173,7 +188,7 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
-                    futures::try_join!(csi_server, eos_checker)?;
+                    futures::try_join!(csi_server, eos_checker, webhook_server)?;
                 }
             }
         }
