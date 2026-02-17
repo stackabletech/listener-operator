@@ -1,7 +1,10 @@
 use snafu::{ResultExt, Snafu};
 use stackable_operator::{
     cli::OperatorEnvironmentOptions,
-    crd::listener::{Listener, ListenerClass, ListenerClassVersion, ListenerVersion},
+    crd::listener::{
+        Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
+        PodListenersVersion,
+    },
     kube::{Client, core::crd::MergeError},
     webhook::{
         WebhookServer, WebhookServerError, WebhookServerOptions,
@@ -33,6 +36,10 @@ pub async fn create_webhook_server(
         (
             ListenerClass::merged_crd(ListenerClassVersion::V1Alpha1).context(MergeCrdSnafu)?,
             ListenerClass::try_convert as fn(_) -> _,
+        ),
+        (
+            PodListeners::merged_crd(PodListenersVersion::V1Alpha1).context(MergeCrdSnafu)?,
+            PodListeners::try_convert as fn(_) -> _,
         ),
         (
             Listener::merged_crd(ListenerVersion::V1Alpha1).context(MergeCrdSnafu)?,
