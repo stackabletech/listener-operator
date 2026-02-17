@@ -1,0 +1,22 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: cluster-internal
+spec:
+  serviceType: ClusterIP
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-unstable
+spec:
+  serviceType: NodePort
+  pinnedNodePorts: false
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: external-stable
+spec:
+  serviceType: LoadBalancer

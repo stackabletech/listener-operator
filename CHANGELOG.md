@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- The operator now deploys the selected ListenerClass preset instead of relying on Helm ([#369]).
+  - This mechanism is currently tied to CRD maintenance.
 - Gracefully shutdown all concurrent tasks by forwarding the SIGTERM signal ([#366]).
 - OLM deployer doesn't add owner references to cluster scoped objects anymore ([#360]).
   Owner references ensure that objects are garbage collected by OpenShift upon operator removal but they cause problems when the operator is updated.
@@ -26,6 +28,7 @@ All notable changes to this project will be documented in this file.
 [#365]: https://github.com/stackabletech/listener-operator/pull/365
 [#366]: https://github.com/stackabletech/listener-operator/pull/366
 [#368]: https://github.com/stackabletech/listener-operator/pull/368
+[#369]: https://github.com/stackabletech/listener-operator/pull/369
 
 ## [25.11.0] - 2025-11-07
 

@@ -12,10 +12,11 @@ spec:
       {{- include "operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.csiNodeDriver.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        internal.stackable.tech/image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        {{- with .Values.csiNodeDriver.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         app.kubernetes.io/role: node-driver
         {{- include "operator.selectorLabels" . | nindent 8 }}

@@ -10,7 +10,7 @@ edition = "2021"
 repository = "https://github.com/stackabletech/listener-operator"
 
 [workspace.dependencies]
-stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.105.0", features = [
+stackable-operator = { git = "https://github.com/stackabletech/operator-rs.git", tag = "stackable-operator-0.106.1", features = [
   "telemetry",
   "versioned",
   "webhook",
@@ -42,9 +42,9 @@ tracing = "0.1.40"
 walkdir = "2.5.0"
 
 # We pin the kube version, as we use a patch for 2.0.1 below
-kube = "=2.0.1"
-[patch.crates-io]
-kube = { git = "https://github.com/stackabletech/kube-rs", branch = "2.0.1-fix-schema-hoisting" }
+# kube = "=2.0.1"
+# [patch.crates-io]
+# kube = { git = "https://github.com/stackabletech/kube-rs", branch = "2.0.1-fix-schema-hoisting" }
 
 [patch."https://github.com/stackabletech/operator-rs.git"]
 # stackable-operator = { path = "../operator-rs/crates/stackable-operator" }

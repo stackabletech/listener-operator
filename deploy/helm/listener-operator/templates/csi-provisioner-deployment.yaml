@@ -78,6 +78,11 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
 
+            # Pass the selected preset which gets picked by via the CLI and env var and instructs
+            # the controller to create the appropriate listener classes.
+            - name: LISTENER_CLASS_PRESET
+              value: {{ .Values.preset }}
+
             {{- if .Values.kubernetesClusterDomain }}
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ .Values.kubernetesClusterDomain | quote }}

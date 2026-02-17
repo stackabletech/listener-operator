@@ -1,13 +1,17 @@
 use snafu::{ResultExt, Snafu};
 use stackable_operator::{
     cli::OperatorEnvironmentOptions,
-    crd::listener::{Listener, ListenerClass, ListenerClassVersion, ListenerVersion},
+    crd::listener::{
+        Listener, ListenerClass, ListenerClassVersion, ListenerVersion, PodListeners,
+        PodListenersVersion,
+    },
     kube::{Client, core::crd::MergeError},
     webhook::{
         WebhookServer, WebhookServerError, WebhookServerOptions,
         webhooks::{ConversionWebhook, ConversionWebhookOptions},
     },
 };
+use tokio::sync::oneshot;
 
 use crate::FIELD_MANAGER;
 
@@ -27,11 +31,15 @@ pub async fn create_webhook_server(
     operator_environment: &OperatorEnvironmentOptions,
     disable_crd_maintenance: bool,
     client: Client,
-) -> Result<WebhookServer, Error> {
+) -> Result<(WebhookServer, oneshot::Receiver<()>), Error> {
     let crds_and_handlers = vec![
         (
             ListenerClass::merged_crd(ListenerClassVersion::V1Alpha1).context(MergeCrdSnafu)?,
             ListenerClass::try_convert as fn(_) -> _,
+        ),
+        (
+            PodListeners::merged_crd(PodListenersVersion::V1Alpha1).context(MergeCrdSnafu)?,
+            PodListeners::try_convert as fn(_) -> _,
         ),
         (
             Listener::merged_crd(ListenerVersion::V1Alpha1).context(MergeCrdSnafu)?,
@@ -44,7 +52,7 @@ pub async fn create_webhook_server(
         field_manager: FIELD_MANAGER.to_owned(),
     };
 
-    let (conversion_webhook, _initial_reconcile_rx) =
+    let (conversion_webhook, initial_reconcile_rx) =
         ConversionWebhook::new(crds_and_handlers, client, conversion_webhook_options);
 
     let webhook_server_options = WebhookServerOptions {
@@ -53,7 +61,10 @@ pub async fn create_webhook_server(
         webhook_service_name: operator_environment.operator_service_name.to_owned(),
     };
 
-    WebhookServer::new(vec![Box::new(conversion_webhook)], webhook_server_options)
-        .await
-        .context(CreateWebhookSnafu)
+    let webhook_server =
+        WebhookServer::new(vec![Box::new(conversion_webhook)], webhook_server_options)
+            .await
+            .context(CreateWebhookSnafu)?;
+
+    Ok((webhook_server, initial_reconcile_rx))
 }
