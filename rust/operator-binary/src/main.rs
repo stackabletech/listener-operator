@@ -22,6 +22,7 @@ use stackable_operator::{
         PodListenersVersion, v1alpha1,
     },
     eos::EndOfSupportChecker,
+    kube::ResourceExt,
     shared::yaml::SerializeOptions,
     telemetry::Tracing,
     utils::signal::SignalWatcher,
@@ -246,20 +247,24 @@ async fn create_listener_classes(
 ) -> anyhow::Result<()> {
     initial_reconcile_rx.await?;
 
-    tracing::info!("applying \"{listener_class_preset}\" listener class preset");
+    tracing::info!(
+        preset = %listener_class_preset,
+        "apply listener class preset"
+    );
 
     #[rustfmt::skip]
-    let bytes = match listener_class_preset {
+    let contents = match listener_class_preset {
         ListenerClassPreset::None => return Ok(()),
-        ListenerClassPreset::EphemeralNodes => include_bytes!("manifests/ephemeral-nodes.yaml").to_vec(),
-        ListenerClassPreset::StableNodes => include_bytes!("manifests/stable-nodes.yaml").to_vec(),
+        ListenerClassPreset::EphemeralNodes => include_str!("manifests/ephemeral-nodes.yaml"),
+        ListenerClassPreset::StableNodes => include_str!("manifests/stable-nodes.yaml"),
     };
 
-    for document in serde_yaml::Deserializer::from_slice(&bytes) {
+    for document in serde_yaml::Deserializer::from_str(contents) {
         let class: v1alpha1::ListenerClass =
             serde_yaml::with::singleton_map_recursive::deserialize(document)
                 .expect("compile-time included listener classes must be valid YAML");
 
+        tracing::debug!(name = class.name_any(), preset = %listener_class_preset, "create listener class if needed");
         client.create_if_missing(&class).await?;
     }
 
