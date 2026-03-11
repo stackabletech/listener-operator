@@ -22,10 +22,10 @@ use stackable_operator::{
         PodListenersVersion, v1alpha1,
     },
     eos::EndOfSupportChecker,
-    kube::ResourceExt,
+    kube::{CustomResourceExt, ResourceExt},
     shared::yaml::SerializeOptions,
     telemetry::Tracing,
-    utils::signal::SignalWatcher,
+    utils::signal::{self, SignalWatcher},
 };
 use tokio::sync::oneshot;
 use tokio_stream::wrappers::UnixListenerStream;
@@ -210,15 +210,18 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
-                    let controller =
-                        listener_controller::run(client, sigterm_watcher.handle()).map(anyhow::Ok);
+                    let delayed_controller = async {
+                        signal::crd_established(&client, v1alpha1::Listener::crd_name(), None)
+                            .await?;
+                        listener_controller::run(client, sigterm_watcher.handle()).await
+                    };
 
                     futures::try_join!(
+                        delayed_controller,
                         listener_classes,
                         webhook_server,
                         eos_checker,
                         csi_server,
-                        controller,
                     )?;
                 }
                 RunMode::Node => {

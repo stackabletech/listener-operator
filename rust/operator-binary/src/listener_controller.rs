@@ -6,7 +6,7 @@ use std::{
 
 use const_format::concatcp;
 use futures::{
-    StreamExt,
+    FutureExt, StreamExt,
     future::{try_join, try_join_all},
 };
 use snafu::{OptionExt, ResultExt, Snafu};
@@ -49,7 +49,10 @@ const OPERATOR_NAME: &str = "listeners.stackable.tech";
 const CONTROLLER_NAME: &str = "listener";
 pub const FULL_CONTROLLER_NAME: &str = concatcp!(CONTROLLER_NAME, '.', OPERATOR_NAME);
 
-pub async fn run<F>(client: stackable_operator::client::Client, shutdown_signal: F)
+pub fn run<F>(
+    client: stackable_operator::client::Client,
+    shutdown_signal: F,
+) -> impl Future<Output = Result<(), anyhow::Error>>
 where
     F: Future<Output = ()> + Send + Sync + 'static,
 {
@@ -134,7 +137,7 @@ where
         // We can let the reporting happen in the background
         .for_each_concurrent(
             16, // concurrency limit
-            |result| {
+            move |result| {
                 // The event_recorder needs to be shared across all invocations, so that
                 // events are correctly aggregated
                 let event_recorder = event_recorder.clone();
@@ -144,7 +147,7 @@ where
                 }
             },
         )
-        .await;
+        .map(anyhow::Ok)
 }
 
 pub struct Ctx {
