@@ -44,8 +44,7 @@ fn deployment_resources(deployment: &Deployment) -> Option<&ResourceRequirements
         .as_ref()?
         .containers
         .iter()
-        .filter(|c| c.name == "listener-operator-deployer")
-        .next_back()?
+        .rfind(|c| c.name == "listener-operator-deployer")?
         .resources
         .as_ref()
 }
