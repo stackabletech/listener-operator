@@ -62,8 +62,7 @@ fn deployer_env_var(deployment: &Deployment) -> Option<&Vec<EnvVar>> {
         .as_ref()?
         .containers
         .iter()
-        .filter(|c| c.name == "listener-operator-deployer")
-        .next_back()?
+        .rfind(|c| c.name == "listener-operator-deployer")?
         .env
         .as_ref()
 }

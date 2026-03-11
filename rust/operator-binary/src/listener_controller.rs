@@ -124,17 +124,11 @@ where
             },
         )
         .graceful_shutdown_on(shutdown_signal)
-        .run(
-            reconcile,
-            error_policy,
-            Arc::new(Ctx {
-                client: client.clone(),
-            }),
-        )
+        .run(reconcile, error_policy, Arc::new(Ctx { client }))
         // We can let the reporting happen in the background
         .for_each_concurrent(
             16, // concurrency limit
-            |result| {
+            move |result| {
                 // The event_recorder needs to be shared across all invocations, so that
                 // events are correctly aggregated
                 let event_recorder = event_recorder.clone();
