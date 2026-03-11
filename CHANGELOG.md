@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Bump stackable-operator to 0.106.2 and strum to 0.28 ([#373]).
+- Bump stackable-operator to 0.108.0 and strum to 0.28 ([#373], [#375]).
 - The operator now deploys the selected ListenerClass preset instead of relying on Helm ([#369]).
   - This mechanism is currently tied to CRD maintenance.
 - Gracefully shutdown all concurrent tasks by forwarding the SIGTERM signal ([#366]).
@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file.
   This behaviour is in line with the default behaviour of Helm and OLM.
 - Bump testing-tools to `0.3.0-stackable0.0.0-dev` ([#363]).
 
+### Fixed
+
+- Fix "404 page not found" error for the initial object list ([#375]).
+
 [#360]: https://github.com/stackabletech/listener-operator/pull/360
 [#363]: https://github.com/stackabletech/listener-operator/pull/363
 [#364]: https://github.com/stackabletech/listener-operator/pull/364
@@ -31,6 +35,7 @@ All notable changes to this project will be documented in this file.
 [#368]: https://github.com/stackabletech/listener-operator/pull/368
 [#369]: https://github.com/stackabletech/listener-operator/pull/369
 [#373]: https://github.com/stackabletech/listener-operator/pull/373
+[#375]: https://github.com/stackabletech/listener-operator/pull/375
 
 ## [25.11.0] - 2025-11-07
 
