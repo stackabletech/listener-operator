@@ -210,10 +210,14 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
+                    let controller =
+                        listener_controller::run(client.clone(), sigterm_watcher.handle())
+                            .map(anyhow::Ok);
+
                     let delayed_controller = async {
                         signal::crd_established(&client, v1alpha1::Listener::crd_name(), None)
                             .await?;
-                        listener_controller::run(client, sigterm_watcher.handle()).await
+                        controller.await
                     };
 
                     futures::try_join!(
