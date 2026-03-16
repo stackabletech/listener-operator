@@ -21,8 +21,8 @@ spec:
         properties:
           spec:
             description: |-
-              Defines a policy for how [Listeners](https://docs.stackable.tech/home/nightly/listener-operator/listener) should be exposed.
-              Read the [ListenerClass documentation](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass)
+              Defines a policy for how [Listeners](https://docs.stackable.tech/home/26.3/listener-operator/listener) should be exposed.
+              Read the [ListenerClass documentation](https://docs.stackable.tech/home/26.3/listener-operator/listenerclass)
               for more information.
             properties:
               loadBalancerAllocateNodePorts:
@@ -100,7 +100,7 @@ spec:
                   to override any property that can be set on a Kubernetes Service.
 
                   This mechanism is similar to the `podOverrides`, which are documented in the
-                  [Pod overrides documentation](https://docs.stackable.tech/home/nightly/concepts/overrides#pod-overrides).
+                  [Pod overrides documentation](https://docs.stackable.tech/home/26.3/concepts/overrides#pod-overrides).
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               serviceType:
@@ -149,12 +149,12 @@ spec:
               1. It uses a cluster-level policy object (ListenerClass) to define how exactly the exposure works
               2. It has a consistent API for reading back the exposed address(es) of the service
               3. The Pod must mount a Volume referring to the Listener, which also allows
-                 ["sticky" scheduling](https://docs.stackable.tech/home/nightly/listener-operator/listener#_sticky_scheduling).
+                 ["sticky" scheduling](https://docs.stackable.tech/home/26.3/listener-operator/listener#_sticky_scheduling).
 
-              Learn more in the [Listener documentation](https://docs.stackable.tech/home/nightly/listener-operator/listener).
+              Learn more in the [Listener documentation](https://docs.stackable.tech/home/26.3/listener-operator/listener).
             properties:
               className:
-                description: The name of the [ListenerClass](https://docs.stackable.tech/home/nightly/listener-operator/listenerclass).
+                description: The name of the [ListenerClass](https://docs.stackable.tech/home/26.3/listener-operator/listenerclass).
                 nullable: true
                 type: string
               extraPodSelectorLabels:
@@ -171,7 +171,7 @@ spec:
 
                   List entries are arbitrary YAML objects, which need to be valid Kubernetes objects.
 
-                  Read the [Object overrides documentation](https://docs.stackable.tech/home/nightly/concepts/overrides#object-overrides)
+                  Read the [Object overrides documentation](https://docs.stackable.tech/home/26.3/concepts/overrides#object-overrides)
                   for more information.
                 items:
                   type: object
