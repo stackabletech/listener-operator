@@ -50,18 +50,27 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 rules:
+  # Services are created per Listener via Server-Side Apply (create + patch). The
+  # ReconciliationPaused strategy fetches existing Services instead of re-applying (get).
+  # The controller watches owned Services to retrigger reconciliation (list + watch).
+  # Orphaned Services are cleaned up by ClusterResources (delete).
   - apiGroups:
       - ""
     resources:
-      - events
       - services
     verbs:
       - get
       - list
       - watch
       - create
-      - delete # Needed to set an ownerRef on already existing Services
       - patch
+      - delete
+  # PersistentVolumes are watched by the controller to retrigger Listener reconciliation
+  # when PV node affinity changes (list + watch). They are listed by label selector to
+  # find which nodes back a NodePort Listener, and fetched by the CSI node driver during
+  # volume publish (get). The CSI node driver patches PV labels via Server-Side Apply to
+  # associate PVs with their Listener (patch + create for SSA). The external-provisioner
+  # sidecar creates and deletes PVs in response to PVC lifecycle events (create + delete).
   - apiGroups:
       - ""
     resources:
@@ -70,9 +79,18 @@ rules:
       - get
       - list
       - watch
-      - patch
       - create
+      - patch
       - delete
+  # Nodes are fetched to resolve external addresses for NodePort Listeners (get). The
+  # external-provisioner sidecar lists and watches Nodes to resolve CSI volume topology
+  # (required by --feature-gates=Topology=true).
+  # PersistentVolumeClaims are fetched by the CSI controller and node driver to determine
+  # the Listener selector for a volume (get). The external-provisioner sidecar watches
+  # PVCs to trigger provisioning (list + watch).
+  # Endpoints are watched to identify which nodes host the pods backing a NodePort
+  # Listener, as a fallback for older volumes that predate PV-label-based node discovery
+  # (get + list + watch).
   - apiGroups:
       - ""
     resources:
@@ -83,13 +101,16 @@ rules:
       - get
       - list
       - watch
-  # For automatic cluster domain detection
+  # For automatic cluster domain detection via the local kubelet's configz API.
   - apiGroups:
       - ""
     resources:
       - nodes/proxy
     verbs:
       - get
+  # The external-provisioner sidecar reads CSINode objects to discover the topology keys
+  # supported by this driver, and reads StorageClasses to determine the provisioner name
+  # and volume binding mode.
   - apiGroups:
       - storage.k8s.io
     resources:
@@ -99,6 +120,8 @@ rules:
       - get
       - list
       - watch
+  # The CSI node driver reads the Pod to discover container ports and node assignment
+  # (get), and labels the Pod so the Listener's Service selector can target it (patch).
   - apiGroups:
       - ""
     resources:
@@ -106,6 +129,8 @@ rules:
     verbs:
       - get
       - patch
+  # Publish reconciliation errors as Kubernetes Events. The kube-rs Recorder uses the
+  # events.k8s.io/v1 API: create for new events, merge-patch to increment repeated ones.
   - apiGroups:
       - events.k8s.io
     resources:
@@ -113,31 +138,54 @@ rules:
     verbs:
       - create
       - patch
+  # ListenerClasses define how Listeners are exposed. They are watched to trigger
+  # re-reconciliation of all Listeners using a changed class (list + watch + get).
+  # The operator creates preset ListenerClasses at startup via create-if-missing (create).
   - apiGroups:
       - listeners.stackable.tech
     resources:
       - listenerclasses
-      - listeners
     verbs:
       {{- if .Values.maintenance.customResourceDefinitions.maintain }}
-      - create
       - patch
       {{- end }}
       - get
       - list
       - watch
+      - create
+  # Listeners are the primary reconciled resource: the controller watches all of them
+  # (list + watch + get). The CSI node driver creates or updates Listeners via
+  # Server-Side Apply for volumes that reference a ListenerClass directly (create + patch).
+  # Orphaned Listeners created by the CSI node driver are removed by ClusterResources
+  # (delete).
   - apiGroups:
       - listeners.stackable.tech
     resources:
       - listeners
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - delete
+  # Update the Listener's status with resolved ingress addresses after each reconciliation.
+  - apiGroups:
+      - listeners.stackable.tech
+    resources:
       - listeners/status
-      - listeners/finalizers
-      - podlisteners
     verbs:
       - patch
+  # PodListeners record the resolved listener addresses for each volume mounted in a Pod.
+  # The CSI node driver creates a PodListeners object when a Pod first mounts a Listener
+  # volume (create), then merge-patches it to add entries for additional volumes (patch).
+  - apiGroups:
+      - listeners.stackable.tech
+    resources:
+      - podlisteners
+    verbs:
       - create
-      - delete
-      - update
+      - patch
 {{ if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
   - apiGroups:
       - security.openshift.io
