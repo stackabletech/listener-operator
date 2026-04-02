@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Helm deployed RBAC permissions documented, with unnecessary permissions removed ([#380]).
+- Document Helm deployed RBAC permissions and remove unnecessary permissions ([#380]).
 
 [#380]: https://github.com/stackabletech/listener-operator/pull/380
 
