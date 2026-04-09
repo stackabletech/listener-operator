@@ -50,6 +50,17 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 rules:
+  # Required by the external-provisioner sidecar, which still uses the legacy core/v1 events
+  # API (not events.k8s.io). See upstream RBAC:
+  # https://github.com/kubernetes-csi/external-provisioner/blob/v5.3.0/deploy/kubernetes/rbac.yaml
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
   # Service created per Listener. Applied via SSA and tracked for orphan cleanup.
   - apiGroups:
       - ""
