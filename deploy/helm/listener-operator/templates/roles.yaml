@@ -50,10 +50,7 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 rules:
-  # Services are created per Listener via Server-Side Apply (create + patch). The
-  # ReconciliationPaused strategy fetches existing Services instead of re-applying (get).
-  # The controller watches owned Services to retrigger reconciliation (list + watch).
-  # Orphaned Services are cleaned up by ClusterResources (delete).
+  # Service created per Listener. Applied via SSA and tracked for orphan cleanup.
   - apiGroups:
       - ""
     resources:
@@ -65,12 +62,10 @@ rules:
       - create
       - patch
       - delete
-  # PersistentVolumes are watched by the controller to retrigger Listener reconciliation
-  # when PV node affinity changes (list + watch). They are listed by label selector to
-  # find which nodes back a NodePort Listener, and fetched by the CSI node driver during
-  # volume publish (get). The CSI node driver patches PV labels via Server-Side Apply to
-  # associate PVs with their Listener (patch + create for SSA). The external-provisioner
-  # sidecar creates and deletes PVs in response to PVC lifecycle events (create + delete).
+  # PersistentVolumes are watched to retrigger Listener reconciliation on node affinity
+  # changes. The CSI node driver patches PV labels via Server-Side Apply to associate PVs
+  # with their Listener. The external-provisioner sidecar creates and deletes PVs for PVC
+  # lifecycle events.
   - apiGroups:
       - ""
     resources:
@@ -82,15 +77,13 @@ rules:
       - create
       - patch
       - delete
-  # Nodes are fetched to resolve external addresses for NodePort Listeners (get). The
-  # external-provisioner sidecar lists and watches Nodes to resolve CSI volume topology
-  # (required by --feature-gates=Topology=true).
-  # PersistentVolumeClaims are fetched by the CSI controller and node driver to determine
-  # the Listener selector for a volume (get). The external-provisioner sidecar watches
-  # PVCs to trigger provisioning (list + watch).
-  # Endpoints are watched to identify which nodes host the pods backing a NodePort
-  # Listener, as a fallback for older volumes that predate PV-label-based node discovery
-  # (get + list + watch).
+  # Nodes are fetched to resolve external addresses for NodePort Listeners. The
+  # external-provisioner sidecar lists and watches Nodes for CSI volume topology
+  # (--feature-gates=Topology=true).
+  # PersistentVolumeClaims are read by the CSI controller and node driver for Listener
+  # selector annotations. The external-provisioner sidecar watches PVCs to trigger PV provisioning.
+  # Endpoints are watched to discover which nodes back a NodePort Listener, as a fallback
+  # for older volumes that predate PV-label-based node discovery.
   - apiGroups:
       - ""
     resources:
@@ -108,9 +101,8 @@ rules:
       - nodes/proxy
     verbs:
       - get
-  # The external-provisioner sidecar reads CSINode objects to discover the topology keys
-  # supported by this driver, and reads StorageClasses to determine the provisioner name
-  # and volume binding mode.
+  # Required by the external-provisioner sidecar to discover driver topology keys (CSINodes)
+  # and determine volume binding mode (StorageClasses).
   - apiGroups:
       - storage.k8s.io
     resources:
@@ -120,8 +112,8 @@ rules:
       - get
       - list
       - watch
-  # The CSI node driver reads the Pod to discover container ports and node assignment
-  # (get), and labels the Pod so the Listener's Service selector can target it (patch).
+  # The CSI node driver reads the Pod to discover container ports and node assignment,
+  # and labels the Pod so the Listener's Service selector can target it.
   - apiGroups:
       - ""
     resources:
@@ -129,8 +121,7 @@ rules:
     verbs:
       - get
       - patch
-  # Publish reconciliation errors as Kubernetes Events. The kube-rs Recorder uses the
-  # events.k8s.io/v1 API: create for new events, merge-patch to increment repeated ones.
+  # Publish reconciliation errors as Kubernetes Events.
   - apiGroups:
       - events.k8s.io
     resources:
@@ -138,9 +129,8 @@ rules:
     verbs:
       - create
       - patch
-  # ListenerClasses define how Listeners are exposed. They are watched to trigger
-  # re-reconciliation of all Listeners using a changed class (list + watch + get).
-  # The operator creates preset ListenerClasses at startup via create-if-missing (create).
+  # ListenerClasses define how Listeners are exposed. Watched to retrigger reconciliation
+  # when a ListenerClass changes. The operator creates preset ListenerClasses at startup.
   - apiGroups:
       - listeners.stackable.tech
     resources:
@@ -153,11 +143,9 @@ rules:
       - list
       - watch
       - create
-  # Listeners are the primary reconciled resource: the controller watches all of them
-  # (list + watch + get). The CSI node driver creates or updates Listeners via
-  # Server-Side Apply for volumes that reference a ListenerClass directly (create + patch).
-  # Orphaned Listeners created by the CSI node driver are removed by ClusterResources
-  # (delete).
+  # Listeners are the primary reconciled resource. The CSI node driver creates or updates
+  # Listeners via Server-Side Apply for volumes that reference a ListenerClass directly.
+  # Orphaned Listeners are cleaned up.
   - apiGroups:
       - listeners.stackable.tech
     resources:
@@ -177,8 +165,8 @@ rules:
     verbs:
       - patch
   # PodListeners record the resolved listener addresses for each volume mounted in a Pod.
-  # The CSI node driver creates a PodListeners object when a Pod first mounts a Listener
-  # volume (create), then merge-patches it to add entries for additional volumes (patch).
+  # Created by the CSI node driver when a Pod first mounts a Listener volume, then patched
+  # to add entries for additional volumes.
   - apiGroups:
       - listeners.stackable.tech
     resources:
@@ -198,16 +186,15 @@ rules:
     verbs:
       - use
 {{ end  }}
-  # Required for maintaining the CRDs within the operator (including the conversion webhook info).
-  # Also for the startup condition check before the controller can run.
+  # Required for maintaining the CRDs (including the conversion webhook configuration) and
+  # for the startup condition check.
   - apiGroups:
       - apiextensions.k8s.io
     resources:
       - customresourcedefinitions
     verbs:
       {{ if .Values.maintenance.customResourceDefinitions.maintain }}
-      # Required to maintain the CRD. The operator needs to do this, as it needs to enter e.g. it's
-      # generated certificate in the conversion webhook.
+      # Required to maintain the CRD (e.g. conversion webhook certificate).
       - create
       - patch
       {{ end }}
