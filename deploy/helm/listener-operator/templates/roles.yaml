@@ -175,6 +175,15 @@ rules:
       - listeners/status
     verbs:
       - patch
+  # Required by Kubernetes to allow setting blockOwnerDeletion on resources (e.g. Services)
+  # owned by a Listener. This is needed when the OwnerReferencesPermissionEnforcement admission
+  # controller is enabled (which is by default in OpenShift)
+  - apiGroups:
+      - listeners.stackable.tech
+    resources:
+      - listeners/finalizers
+    verbs:
+      - update
   # PodListeners record the resolved listener addresses for each volume mounted in a Pod.
   # Created by the CSI node driver when a Pod first mounts a Listener volume, then patched
   # to add entries for additional volumes.
