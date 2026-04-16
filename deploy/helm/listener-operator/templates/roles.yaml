@@ -176,7 +176,8 @@ rules:
     verbs:
       - patch
   # Required by Kubernetes to allow setting blockOwnerDeletion on resources (e.g. Services)
-  # owned by a Listener.
+  # owned by a Listener. This is needed when the OwnerReferencesPermissionEnforcement admission
+  # controller is enabled (which is by default in OpenShift)
   - apiGroups:
       - listeners.stackable.tech
     resources:
