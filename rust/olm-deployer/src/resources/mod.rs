@@ -19,15 +19,15 @@ pub(super) fn maybe_copy_resources(
     target_gvk: &GroupVersionKind,
 ) -> anyhow::Result<()> {
     let target_kind_set = ["DaemonSet", "Deployment"];
-    if target_kind_set.contains(&target_gvk.kind.as_str()) {
-        if let Some(res) = deployment_resources(source) {
-            for container in containers(target)? {
-                match container {
-                    serde_json::Value::Object(c) => {
-                        c.insert("resources".to_string(), serde_json::json!(res));
-                    }
-                    _ => anyhow::bail!("no containers found in object {}", target.name_any()),
+    if target_kind_set.contains(&target_gvk.kind.as_str())
+        && let Some(res) = deployment_resources(source)
+    {
+        for container in containers(target)? {
+            match container {
+                serde_json::Value::Object(c) => {
+                    c.insert("resources".to_string(), serde_json::json!(res));
                 }
+                _ => anyhow::bail!("no containers found in object {}", target.name_any()),
             }
         }
     }

@@ -154,7 +154,7 @@ async fn main() -> Result<()> {
                             env::maybe_copy_env(&deployment, &mut obj, &gvk)?;
                             resources::maybe_copy_resources(&deployment, &mut obj, &gvk)?;
                             // ---------- apply
-                            apply(&api, obj, &gvk.kind).await?
+                            apply(&api, obj, &gvk.kind).await?;
                         }
                     }
                 }
