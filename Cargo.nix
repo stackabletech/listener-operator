@@ -1544,7 +1544,7 @@ rec {
       "csi-grpc" = rec {
         crateName = "csi-grpc";
         version = "0.0.0-dev";
-        edition = "2021";
+        edition = "2024";
         src = lib.cleanSourceWith { filter = sourceFilter;  src = ./rust/csi-grpc; };
         libName = "csi_grpc";
         authors = [
@@ -8763,9 +8763,9 @@ rec {
       };
       "rustls-webpki" = rec {
         crateName = "rustls-webpki";
-        version = "0.103.9";
+        version = "0.103.13";
         edition = "2021";
-        sha256 = "0lwg1nnyv7pp2lfwwjhy81bxm233am99jnsp3iymdhd6k8827pyp";
+        sha256 = "0vkm7z9pnxz5qz66p2kmyy2pwx0g4jnsbqk5xzfhs4czcjl2ki31";
         libName = "webpki";
         dependencies = [
           {
@@ -9985,7 +9985,7 @@ rec {
       "stackable-listener-operator" = rec {
         crateName = "stackable-listener-operator";
         version = "0.0.0-dev";
-        edition = "2021";
+        edition = "2024";
         crateBin = [
           {
             name = "stackable-listener-operator";
@@ -10096,7 +10096,7 @@ rec {
       "stackable-listener-operator-olm-deployer" = rec {
         crateName = "stackable-listener-operator-olm-deployer";
         version = "0.0.0-dev";
-        edition = "2021";
+        edition = "2024";
         crateBin = [
           {
             name = "stackable-listener-operator-olm-deployer";

@@ -19,33 +19,33 @@ pub(super) fn maybe_copy_env(
     target_gvk: &GroupVersionKind,
 ) -> anyhow::Result<()> {
     let target_kind_set = ["DaemonSet", "Deployment"];
-    if target_kind_set.contains(&target_gvk.kind.as_str()) {
-        if let Some(env) = deployer_env_var(source) {
-            for container in containers(target)? {
-                match container {
-                    serde_json::Value::Object(c) => {
-                        let json_env = env
-                            .iter()
-                            .map(|e| serde_json::json!(e))
-                            .collect::<Vec<serde_json::Value>>();
+    if target_kind_set.contains(&target_gvk.kind.as_str())
+        && let Some(env) = deployer_env_var(source)
+    {
+        for container in containers(target)? {
+            match container {
+                serde_json::Value::Object(c) => {
+                    let json_env = env
+                        .iter()
+                        .map(|e| serde_json::json!(e))
+                        .collect::<Vec<serde_json::Value>>();
 
-                        match c.get_mut("env") {
-                            Some(env) => match env {
-                                v @ serde_json::Value::Null => {
-                                    *v = serde_json::json!(json_env);
-                                }
-                                serde_json::Value::Array(container_env) => {
-                                    container_env.extend_from_slice(&json_env)
-                                }
-                                _ => anyhow::bail!("env is not null or an array"),
-                            },
-                            None => {
-                                c.insert("env".to_string(), serde_json::json!(json_env));
+                    match c.get_mut("env") {
+                        Some(env) => match env {
+                            v @ serde_json::Value::Null => {
+                                *v = serde_json::json!(json_env);
                             }
+                            serde_json::Value::Array(container_env) => {
+                                container_env.extend_from_slice(&json_env)
+                            }
+                            _ => anyhow::bail!("env is not null or an array"),
+                        },
+                        None => {
+                            c.insert("env".to_string(), serde_json::json!(json_env));
                         }
                     }
-                    _ => anyhow::bail!("no containers found in object {}", target.name_any()),
                 }
+                _ => anyhow::bail!("no containers found in object {}", target.name_any()),
             }
         }
     }
