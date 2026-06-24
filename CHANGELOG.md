@@ -6,7 +6,14 @@ All notable changes to this project will be documented in this file.
 
 - Document Helm deployed RBAC permissions and remove unnecessary permissions ([#380]).
 
+### Fixed
+
+- Refuse to overwrite a pre-existing Service that is not owned by the reconciled `Listener`. This
+  prevents a principal with `create` access on `Listener` from hijacking arbitrary same-named
+  Services in the namespace via the operator's cluster-wide write permissions ([#393]).
+
 [#380]: https://github.com/stackabletech/listener-operator/pull/380
+[#393]: https://github.com/stackabletech/listener-operator/pull/393
 
 ## [26.3.0] - 2026-03-16
 

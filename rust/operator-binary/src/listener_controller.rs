@@ -20,7 +20,7 @@ use stackable_operator::{
     k8s_openapi::{
         DeepMerge,
         api::core::v1::{Endpoints, Node, PersistentVolume, Service, ServicePort, ServiceSpec},
-        apimachinery::pkg::apis::meta::v1::LabelSelector,
+        apimachinery::pkg::apis::meta::v1::{LabelSelector, OwnerReference},
     },
     kube::{
         Resource, ResourceExt,
@@ -158,6 +158,9 @@ pub enum Error {
     #[snafu(display("object has no name"))]
     NoName,
 
+    #[snafu(display("object has no UID"))]
+    NoUid,
+
     #[snafu(display("failed to create cluster resources"))]
     CreateClusterResources {
         source: stackable_operator::cluster_resources::Error,
@@ -208,6 +211,17 @@ pub enum Error {
         source: stackable_operator::builder::meta::Error,
     },
 
+    #[snafu(display("failed to look up pre-existing Service {svc} before applying the Listener"))]
+    GetExistingService {
+        source: stackable_operator::client::Error,
+        svc: ObjectRef<Service>,
+    },
+
+    #[snafu(display(
+        "refusing to overwrite pre-existing Service {svc} that is not owned by this Listener"
+    ))]
+    RefuseToOverwriteForeignService { svc: ObjectRef<Service> },
+
     #[snafu(display("failed to apply {svc}"))]
     ApplyService {
         source: stackable_operator::cluster_resources::Error,
@@ -235,6 +249,7 @@ impl ReconcilerError for Error {
             Self::InvalidListener { source: _ } => None,
             Self::NoNs => None,
             Self::NoName => None,
+            Self::NoUid => None,
             Self::CreateClusterResources { source: _ } => None,
             Self::NoListenerClass => None,
             Self::ListenerPvSelector { source: _ } => None,
@@ -248,6 +263,8 @@ impl ReconcilerError for Error {
             Self::BuildClusterResourcesLabels { source: _ } => None,
             Self::GetObject { source: _, obj } => Some(obj.clone()),
             Self::BuildListenerOwnerRef { .. } => None,
+            Self::GetExistingService { source: _, svc } => Some(svc.clone().erase()),
+            Self::RefuseToOverwriteForeignService { svc } => Some(svc.clone().erase()),
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
             Self::DeleteOrphans { source: _ } => None,
             Self::ApplyStatus { source: _ } => None,
@@ -408,6 +425,16 @@ pub async fn reconcile(
     let svc = svc;
 
     let svc_ref = ObjectRef::from_obj(&svc);
+
+    // The Service is named after the Listener and applied via server-side apply with `force=true`,
+    // and the operator holds cluster-wide write permissions on Services. Without this guard, any
+    // principal who can create a Listener could overwrite a pre-existing same-named foreign Service
+    // in the namespace, hijack its selector/ports and cascade-delete it via the owner reference.
+    // Refuse the reconciliation if a same-named Service already exists but is not owned by us.
+    let listener_uid = listener.metadata.uid.as_deref().context(NoUidSnafu)?;
+    ensure_existing_service_is_not_foreign(&ctx.client, &svc_name, ns, listener_uid, &svc_ref)
+        .await?;
+
     let svc = cluster_resources
         .add(&ctx.client, svc)
         .await
@@ -544,6 +571,50 @@ pub fn error_policy<T>(_obj: Arc<T>, error: &Error, _ctx: Arc<Ctx>) -> controlle
 
         _ => controller::Action::requeue(*Duration::from_secs(10)),
     }
+}
+
+/// Returns `true` if `existing_owners` contain a controller [`OwnerReference`] that points to the
+/// [`listener::v1alpha1::Listener`] with the given UID. Used to ensure we only overwrite output
+/// Services that we previously created ourselves; refusing otherwise prevents the Listener
+/// primitive from being abused to clobber foreign same-named Services via the operator's elevated
+/// cluster-wide write permissions.
+fn is_owned_by_listener(existing_owners: &[OwnerReference], listener_uid: &str) -> bool {
+    let listener_kind = <listener::v1alpha1::Listener as Resource>::kind(&());
+    existing_owners.iter().any(|owner| {
+        owner.controller == Some(true)
+            && owner.kind == listener_kind
+            && owner.api_version.starts_with("listeners.stackable.tech/")
+            && owner.uid == listener_uid
+    })
+}
+
+/// Looks up a pre-existing Service with the same name/namespace as the Listener output and fails if
+/// it exists but is not controlled by this Listener. See [`is_owned_by_listener`] for the security
+/// rationale.
+async fn ensure_existing_service_is_not_foreign(
+    client: &stackable_operator::client::Client,
+    name: &str,
+    namespace: &str,
+    listener_uid: &str,
+    svc_ref: &ObjectRef<Service>,
+) -> Result<()> {
+    let existing =
+        client
+            .get_opt::<Service>(name, namespace)
+            .await
+            .context(GetExistingServiceSnafu {
+                svc: svc_ref.clone(),
+            })?;
+    if let Some(existing) = existing {
+        let owners = existing.metadata.owner_references.as_deref().unwrap_or(&[]);
+        if !is_owned_by_listener(owners, listener_uid) {
+            return RefuseToOverwriteForeignServiceSnafu {
+                svc: svc_ref.clone(),
+            }
+            .fail();
+        }
+    }
+    Ok(())
 }
 
 /// Lists the names of the [`Node`]s backing this [`listener::v1alpha1::Listener`].
@@ -683,4 +754,91 @@ pub fn listener_persistent_volume_label(
         ),
     ]
     .into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn owner_ref(
+        api_version: &str,
+        kind: &str,
+        uid: &str,
+        controller: Option<bool>,
+    ) -> OwnerReference {
+        OwnerReference {
+            api_version: api_version.to_string(),
+            kind: kind.to_string(),
+            name: "some-name".to_string(),
+            uid: uid.to_string(),
+            controller,
+            block_owner_deletion: None,
+        }
+    }
+
+    #[test]
+    fn empty_owner_refs_are_rejected() {
+        assert!(!is_owned_by_listener(&[], "my-uid"));
+    }
+
+    #[test]
+    fn matching_controller_owner_ref_is_accepted() {
+        let owners = [owner_ref(
+            "listeners.stackable.tech/v1alpha1",
+            "Listener",
+            "my-uid",
+            Some(true),
+        )];
+        assert!(is_owned_by_listener(&owners, "my-uid"));
+    }
+
+    #[test]
+    fn non_controller_owner_ref_is_rejected() {
+        let owners = [owner_ref(
+            "listeners.stackable.tech/v1alpha1",
+            "Listener",
+            "my-uid",
+            Some(false),
+        )];
+        assert!(!is_owned_by_listener(&owners, "my-uid"));
+    }
+
+    #[test]
+    fn different_uid_is_rejected() {
+        let owners = [owner_ref(
+            "listeners.stackable.tech/v1alpha1",
+            "Listener",
+            "other-uid",
+            Some(true),
+        )];
+        assert!(!is_owned_by_listener(&owners, "my-uid"));
+    }
+
+    #[test]
+    fn different_kind_is_rejected() {
+        let owners = [owner_ref("v1", "ConfigMap", "my-uid", Some(true))];
+        assert!(!is_owned_by_listener(&owners, "my-uid"));
+    }
+
+    #[test]
+    fn foreign_api_group_is_rejected() {
+        let owners = [owner_ref(
+            "evil.example.com/v1",
+            "Listener",
+            "my-uid",
+            Some(true),
+        )];
+        assert!(!is_owned_by_listener(&owners, "my-uid"));
+    }
+
+    #[test]
+    fn unrelated_controller_owner_ref_is_rejected() {
+        let owners = [owner_ref(
+            "apps/v1",
+            "Deployment",
+            "some-deployment-uid",
+            Some(true),
+        )];
+        assert!(!is_owned_by_listener(&owners, "my-uid"));
+    }
 }
