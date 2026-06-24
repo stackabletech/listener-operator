@@ -15,7 +15,7 @@
 A CSI provider intended to provide an abstract way to expose a single Pod to the outside network, while hiding details about the cluster from the application developer.
 
 <!-- markdownlint-disable MD041 MD051 -->
-It is part of the Stackable Data Platform, a curated selection of the best open source data apps like Apache Kafka, Apache Druid, Trino or Apache Spark, [all](#other-operators) working together seamlessly. Based on Kubernetes, it runs everywhere – [on prem or in the cloud](#supported-platforms).
+It is part of the Stackable Data Platform, a curated selection of the best open source data apps like Apache Kafka®, OpenSearch, Trino or Apache Spark™, [all](#other-operators) working together seamlessly. Based on Kubernetes, it runs everywhere – [on prem or in the cloud](#supported-platforms).
 
 ## Installation
 
