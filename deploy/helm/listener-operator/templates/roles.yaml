@@ -61,6 +61,9 @@ rules:
       - get
       - list
       - watch
+      - create
+      - update
+      - patch
   # Service created per Listener. Applied via SSA and tracked for orphan cleanup.
   - apiGroups:
       - ""
