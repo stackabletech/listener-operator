@@ -61,6 +61,10 @@ rules:
       - get
       - list
       - watch
+      # Write permissions required by e.g. SDP on Openshift
+      - create
+      - update
+      - patch
   # Service created per Listener. Applied via SSA and tracked for orphan cleanup.
   - apiGroups:
       - ""
