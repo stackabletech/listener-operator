@@ -61,7 +61,6 @@ rules:
       - get
       - list
       - watch
-      # Write permissions required by e.g. SDP on Openshift
       - create
       - update
       - patch
