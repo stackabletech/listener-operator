@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Document Helm deployed RBAC permissions and remove unnecessary permissions ([#380]).
+- Document Helm deployed RBAC permissions and remove unnecessary permissions ([#380], [#397]).
 
 ### Fixed
 
@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 [#380]: https://github.com/stackabletech/listener-operator/pull/380
 [#393]: https://github.com/stackabletech/listener-operator/pull/393
+[#397]: https://github.com/stackabletech/listener-operator/pull/397
 
 ## [26.3.0] - 2026-03-16
 
