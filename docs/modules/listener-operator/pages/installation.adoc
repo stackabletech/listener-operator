@@ -59,7 +59,8 @@ Install the Stackable Listener Operator
 $ helm install listener-operator oci://oci.stackable.tech/sdp-charts/listener-operator
 ----
 
-Helm will deploy the operator in Kubernetes containers and apply the CRDs.
+Helm will deploy the operator in Kubernetes containers.
+The operator installs and maintains its own CRDs at startup (see xref:concepts:maintenance/crds.adoc[]).
 You're now ready to expose services!
 
 === Microk8s
