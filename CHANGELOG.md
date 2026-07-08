@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Bump stackable-operator to 0.113.3 and snafu to 0.9 ([#401]).
 - Document Helm deployed RBAC permissions and remove unnecessary permissions ([#380], [#397]).
 
 ### Fixed
@@ -15,6 +18,7 @@ All notable changes to this project will be documented in this file.
 [#380]: https://github.com/stackabletech/listener-operator/pull/380
 [#393]: https://github.com/stackabletech/listener-operator/pull/393
 [#397]: https://github.com/stackabletech/listener-operator/pull/397
+[#401]: https://github.com/stackabletech/listener-operator/pull/401
 
 ## [26.3.0] - 2026-03-16
 
