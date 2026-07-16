@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [26.7.0-rc1] - 2026-07-16
+
 ### Changed
 
 - Bump stackable-operator to 0.113.3 and snafu to 0.9 ([#401]).
