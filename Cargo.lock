@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "csi-grpc"
-version = "26.7.0-rc1"
+version = "26.7.0"
 dependencies = [
  "prost",
  "prost-types",
@@ -3102,7 +3102,7 @@ dependencies = [
 
 [[package]]
 name = "stackable-listener-operator"
-version = "26.7.0-rc1"
+version = "26.7.0"
 dependencies = [
  "anyhow",
  "built",
@@ -3129,7 +3129,7 @@ dependencies = [
 
 [[package]]
 name = "stackable-listener-operator-olm-deployer"
-version = "26.7.0-rc1"
+version = "26.7.0"
 dependencies = [
  "anyhow",
  "built",
