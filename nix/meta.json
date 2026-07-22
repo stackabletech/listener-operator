@@ -1,1 +1,1 @@
-{"operator": {"name": "listener-operator", "pretty_string": "Stackable Listener Operator", "product_string": "listener-operator", "url": "stackabletech/listener-operator.git", "config": {"include_productconfig": false, "has_product": false, "run_as": "custom"}}}
+{"operator": {"name": "listener-operator", "pretty_string": "Stackable Listener Operator", "product_string": "listener-operator", "url": "stackabletech/listener-operator.git", "config": {"has_product": false, "run_as": "custom"}}}
