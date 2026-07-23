@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Bump stackable-operator to 0.114.0 ([#411]).
+
+[#411]: https://github.com/stackabletech/listener-operator/pull/411
+
 ## [26.7.0] - 2026-07-21
 
 ## [26.7.0-rc1] - 2026-07-16
