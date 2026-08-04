@@ -214,6 +214,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # TEMPORARY - DO NOT MERGE
+      # Force this job to fail to reproduce the mergeable-broken-build bug and
+      # verify the fixed `finished` gate now reports failure instead of skipped.
+      - name: TEMP force failure to exercise the finished gate
+        run: |
+          echo "Intentionally failing publish-index-manifest."
+          exit 1
+
       - name: Publish and Sign Image Index to oci.stackable.tech
         id: publish-oci
         uses: stackabletech/actions/publish-image-index-manifest@dc83bb926cc464f0f32454e934777116bd1c7768 # v0.16.3
@@ -372,13 +380,41 @@ jobs:
     # WARNING: Do not change the name unless you will also be changing the
     # Required Checks (in branch protections) in GitHub settings.
     name: Finished Build and Publish
+    # Run even when a dependency failed, was skipped or cancelled, so that this
+    # gate reflects the real outcome. Without `always()` a failed dependency
+    # would *skip* this job, and GitHub treats a skipped required check as
+    # passing - making a broken build mergeable.
+    if: always()
+    # List every leaf job directly. A transitive failure (e.g. a failed
+    # publish-index-manifest that skips openshift-preflight-check) does not
+    # surface as `failure` in `needs.*.result` unless the failing job is a
+    # direct dependency.
     needs:
+      - detect-changes
       - cargo-udeps
-      - openshift-preflight-check
+      - build-container-image
+      - publish-index-manifest
+      - provenance-oci
+      - provenance-quay
       - publish-helm-chart
+      - openshift-preflight-check
     runs-on: ubuntu-latest
     steps:
-      - run: echo "We are done here"
+      # Skipped dependencies are fine (jobs skip legitimately on merge_group
+      # events, forks, or when detect-changes finds no relevant changes). Only
+      # a failure or cancellation must fail this gate.
+      - name: Fail on any failed or cancelled dependency
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Dependency results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              echo "::error::A required job did not succeed (result: $result)"
+              exit 1
+            fi
+          done
+          echo "We are done here"
 
   notify:
     name: Failure Notification
