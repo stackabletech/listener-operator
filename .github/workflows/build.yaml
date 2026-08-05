@@ -214,14 +214,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # TEMPORARY - DO NOT MERGE
-      # Force this job to fail to reproduce the mergeable-broken-build bug and
-      # verify the fixed `finished` gate now reports failure instead of skipped.
-      - name: TEMP force failure to exercise the finished gate
-        run: |
-          echo "Intentionally failing publish-index-manifest."
-          exit 1
-
       - name: Publish and Sign Image Index to oci.stackable.tech
         id: publish-oci
         uses: stackabletech/actions/publish-image-index-manifest@dc83bb926cc464f0f32454e934777116bd1c7768 # v0.16.3
