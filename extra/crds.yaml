@@ -6,15 +6,12 @@ metadata:
 spec:
   group: listeners.stackable.tech
   names:
-    categories: []
     kind: ListenerClass
     plural: listenerclasses
-    shortNames: []
     singular: listenerclass
   scope: Cluster
   versions:
-  - additionalPrinterColumns: []
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Defines a policy for how Listeners should be exposed.
@@ -119,7 +116,6 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -128,15 +124,12 @@ metadata:
 spec:
   group: listeners.stackable.tech
   names:
-    categories: []
     kind: Listener
     plural: listeners
-    shortNames: []
     singular: listener
   scope: Namespaced
   versions:
-  - additionalPrinterColumns: []
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Exposes a set of Pods to the outside world.
@@ -270,15 +263,12 @@ metadata:
 spec:
   group: listeners.stackable.tech
   names:
-    categories: []
     kind: PodListeners
     plural: podlisteners
-    shortNames: []
     singular: podlisteners
   scope: Namespaced
   versions:
-  - additionalPrinterColumns: []
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Informs users about Listeners that are bound by a given Pod.
@@ -349,4 +339,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
