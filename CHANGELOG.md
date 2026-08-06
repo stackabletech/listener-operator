@@ -7,8 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Bump stackable-operator to 0.114.0 ([#411]).
+- Bump stackable-operator to 0.115.0 ([#416]).
 
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
+[#416]: https://github.com/stackabletech/listener-operator/pull/416
 
 ## [26.7.0] - 2026-07-21
 
