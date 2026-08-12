@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD034 -->
-# Helm Chart for Stackable Operator for Stackable Listener Operator
+# Helm Chart for Stackable Listener Operator
 
 Kubernetes operator for exposing pods through listeners, load balancers and NodePorts. Part of the Stackable Data Platform (SDP).
 
