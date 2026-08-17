@@ -9,8 +9,16 @@ All notable changes to this project will be documented in this file.
 - Bump stackable-operator to 0.114.0 ([#411]).
 - Bump stackable-operator to 0.115.0 ([#416]).
 
+### Fixed
+
+- BREAKING: Honour `serviceAccount.name`, which the ServiceAccount and both CSI workloads
+  previously ignored in favour of a hardcoded name. `serviceAccount.create=false` now requires
+  `serviceAccount.name`; it used to fall back to the namespace default ServiceAccount, which lacks
+  the operator ClusterRole ([#418]).
+
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
 [#416]: https://github.com/stackabletech/listener-operator/pull/416
+[#418]: https://github.com/stackabletech/listener-operator/pull/418
 
 ## [26.7.0] - 2026-07-21
 
