@@ -98,7 +98,7 @@ spec:
             - name: csi
               mountPath: /csi
         - name: external-provisioner
-          image: "{{ include "csi-provisioner.image" . }}"
+          image: "{{ include "listener-operator.csi-provisioner.image" . }}"
           imagePullPolicy: {{ .Values.csiProvisioner.externalProvisioner.image.pullPolicy }}
           resources:
             {{ .Values.csiProvisioner.externalProvisioner.resources | toYaml | nindent 12 }}
