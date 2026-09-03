@@ -5,7 +5,7 @@ kind: SecurityContextConstraints
 metadata:
   name: listener-scc
   labels:
-  {{- include "operator.labels" . | nindent 4 }}
+  {{- include "listener-operator.labels" . | nindent 4 }}
   annotations:
     kubernetes.io/description:
       listener-scc includes the minimum required privileges to run the listener-operator.
@@ -46,9 +46,9 @@ volumes:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "operator.fullname" . }}-clusterrole
+  name: {{ include "listener-operator.fullname" . }}-clusterrole
   labels:
-  {{- include "operator.labels" . | nindent 4 }}
+  {{- include "listener-operator.labels" . | nindent 4 }}
 rules:
   # Required by the external-provisioner sidecar, which still uses the legacy core/v1 events
   # API (not events.k8s.io). See upstream RBAC:
