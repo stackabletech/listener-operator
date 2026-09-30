@@ -97,6 +97,14 @@ spec:
           volumeMounts:
             - name: csi
               mountPath: /csi
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 8443
+              scheme: HTTPS
+            periodSeconds: 2
+            failureThreshold: 30
+            timeoutSeconds: 3
         - name: external-provisioner
           image: "{{ include "listener-operator.csi-provisioner.image" . }}"
           imagePullPolicy: {{ .Values.csiProvisioner.externalProvisioner.image.pullPolicy }}
