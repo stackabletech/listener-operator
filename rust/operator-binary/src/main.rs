@@ -26,6 +26,7 @@ use stackable_operator::{
     shared::yaml::SerializeOptions,
     telemetry::Tracing,
     utils::signal::{self, SignalWatcher},
+    webhook::health::HealthCheckRegistry,
 };
 use tokio::sync::oneshot;
 use tokio_stream::wrappers::UnixListenerStream;
@@ -183,9 +184,24 @@ async fn main() -> anyhow::Result<()> {
                 RunMode::Controller(ControllerArguments {
                     listener_class_preset,
                 }) => {
+                    let mut readiness_checks = HealthCheckRegistry::new();
+                    let listener_class_crd_check = readiness_checks.register(format!(
+                        "CRD {crd} established",
+                        crd = v1alpha1::ListenerClass::crd_name()
+                    ));
+                    let pod_listeners_crd_check = readiness_checks.register(format!(
+                        "CRD {crd} established",
+                        crd = v1alpha1::PodListeners::crd_name()
+                    ));
+                    let listener_crd_check = readiness_checks.register(format!(
+                        "CRD {crd} established",
+                        crd = v1alpha1::Listener::crd_name()
+                    ));
+
                     let (webhook_server, initial_reconcile_rx) = create_webhook_server(
                         &operator_environment,
                         maintenance.disable_crd_maintenance,
+                        readiness_checks,
                         client.as_kube_client(),
                     )
                     .await?;
@@ -215,8 +231,14 @@ async fn main() -> anyhow::Result<()> {
                             .map(anyhow::Ok);
 
                     let delayed_controller = async {
-                        signal::crd_established(&client, v1alpha1::Listener::crd_name(), None)
+                        signal::crd_established(&client, v1alpha1::ListenerClass::crd_name())
                             .await?;
+                        listener_class_crd_check.mark_passed();
+                        signal::crd_established(&client, v1alpha1::PodListeners::crd_name())
+                            .await?;
+                        pod_listeners_crd_check.mark_passed();
+                        signal::crd_established(&client, v1alpha1::Listener::crd_name()).await?;
+                        listener_crd_check.mark_passed();
                         controller.await
                     };
 

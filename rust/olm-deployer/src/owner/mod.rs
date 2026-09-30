@@ -20,7 +20,7 @@ use stackable_operator::{
 /// reference to `cluster_owner`, but this turned out to be problematic. First, this is not how OLM
 /// and Helm behave by default. Second, when updating the listener operator, deleting and recreating
 /// the CSI driver definition the cluster was left in a broken state.
-/// See: this comment for more details: https://github.com/stackabletech/issues/issues/799#issuecomment-3601121617
+/// See: this comment for more details: <https://github.com/stackabletech/issues/issues/799#issuecomment-3601121617>
 pub(super) fn maybe_update_owner(
     target: &mut DynamicObject,
     scope: &Scope,
