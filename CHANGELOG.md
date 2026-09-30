@@ -4,10 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Add `/ready` endpoint to the operator Deployment, which reports the CRD installation status ([#434]).
+- Add startup probe to the operator Deployment ([#434]).
+
 ### Changed
 
 - Bump stackable-operator to 0.114.0 ([#411]).
 - Bump stackable-operator to 0.115.0 ([#416]).
+- Bump stackable-operator to 0.119.0 ([#434]).
 
 ### Fixed
 
@@ -19,6 +25,7 @@ All notable changes to this project will be documented in this file.
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
 [#416]: https://github.com/stackabletech/listener-operator/pull/416
 [#418]: https://github.com/stackabletech/listener-operator/pull/418
+[#434]: https://github.com/stackabletech/listener-operator/pull/434
 
 ## [26.7.0] - 2026-07-21
 
