@@ -1,0 +1,17 @@
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: ListenerClass
+metadata:
+  name: listener-operator-test-route-$NAMESPACE
+spec:
+  serviceType: OpenShiftRoute
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener
+spec:
+  className: listener-operator-test-route-$NAMESPACE
+  ports:
+    - name: https
+      port: 8443

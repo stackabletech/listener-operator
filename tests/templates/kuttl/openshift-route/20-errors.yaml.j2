@@ -1,0 +1,10 @@
+{% if test_scenario['values']['openshift'] == 'true' %}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: listener
+spec:
+  tls:
+    termination: passthrough
+{% endif %}
