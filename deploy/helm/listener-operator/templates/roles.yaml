@@ -76,6 +76,17 @@ rules:
       - create
       - patch
       - delete
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - delete
   # PersistentVolumes are watched to retrigger Listener reconciliation on node affinity
   # changes. The CSI node driver patches PV labels via Server-Side Apply to associate PVs
   # with their Listener. The external-provisioner sidecar creates and deletes PVs for PVC

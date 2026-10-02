@@ -1,0 +1,7 @@
+{% if test_scenario['values']['openshift'] == 'true' %}
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: kubectl patch listenerclass listener-operator-test-route-$NAMESPACE --type merge -p '{"spec":{"serviceType":"ClusterIP"}}'
+{% endif %}

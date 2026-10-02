@@ -1,0 +1,12 @@
+{% if test_scenario['values']['openshift'] == 'true' %}
+---
+apiVersion: listeners.stackable.tech/v1alpha1
+kind: Listener
+metadata:
+  name: listener
+status:
+  ingressAddresses:
+    - addressType: Hostname
+      ports:
+        https: 80
+{% endif %}

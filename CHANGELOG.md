@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Add `/ready` endpoint to the operator Deployment, which reports the CRD installation status ([#434]).
 - Add startup probe to the operator Deployment ([#434]).
+- Add the `OpenShiftRoute` ListenerClass service type, which exposes Listeners through OpenShift Routes.
 
 ### Changed
 

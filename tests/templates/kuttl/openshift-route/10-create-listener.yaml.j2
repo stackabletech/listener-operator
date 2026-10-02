@@ -1,0 +1,8 @@
+# Routes only exist on OpenShift
+{% if test_scenario['values']['openshift'] == 'true' %}
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: envsubst '$NAMESPACE' < 10_listener.yaml | kubectl apply -n $NAMESPACE -f -
+{% endif %}
