@@ -161,6 +161,13 @@ If a pinned node becomes unavailable, the service may become unreachable until t
 * **Requirements**: Kubernetes cluster must have a LoadBalancer controller
 * **Cost**: Cloud providers typically charge for load balancer usage
 
+[#servicetype-openshift-route]
+==== OpenShiftRoute
+Exposes a single Listener port through an OpenShift Route, using a hostname assigned by OpenShift.
+Set `openshiftRoute.port` to choose the port if the Listener has more than one.
+By default (`openshiftRoute.tls: Passthrough`), TLS traffic is forwarded to the application on port 443; `tls: None` forwards plain HTTP on port 80.
+Only hostnames that the Route has been admitted for are published.
+
 === Advanced Configuration
 
 [#servicetype-loadbalancer-class]

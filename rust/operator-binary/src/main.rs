@@ -37,6 +37,7 @@ use crate::webhooks::conversion::create_webhook_server;
 
 mod csi_server;
 mod listener_controller;
+mod route;
 mod utils;
 mod webhooks;
 
@@ -226,10 +227,6 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
-                    let controller =
-                        listener_controller::run(client.clone(), sigterm_watcher.handle())
-                            .map(anyhow::Ok);
-
                     let delayed_controller = async {
                         signal::crd_established(&client, v1alpha1::ListenerClass::crd_name())
                             .await?;
@@ -239,7 +236,18 @@ async fn main() -> anyhow::Result<()> {
                         pod_listeners_crd_check.mark_passed();
                         signal::crd_established(&client, v1alpha1::Listener::crd_name()).await?;
                         listener_crd_check.mark_passed();
-                        controller.await
+                        let route_resource = route::discover(client.as_kube_client())
+                            .await
+                            .map_err(|err| {
+                                anyhow!(err).context("failed to discover OpenShift Route API")
+                            })?;
+                        listener_controller::run(
+                            client.clone(),
+                            route_resource,
+                            sigterm_watcher.handle(),
+                        )
+                        .await;
+                        anyhow::Ok(())
                     };
 
                     futures::try_join!(
