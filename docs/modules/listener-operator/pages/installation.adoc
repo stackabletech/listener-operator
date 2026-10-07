@@ -33,7 +33,7 @@ Use the following decision tree to decide on the ListenerClass preset to use:
 ....
 flowchart LR
     LB{LoadBalancer supported?}
-    LB -->|yes| ephermal-nodes[Use ephermal-nodes]
+    LB -->|yes| ephemeral-nodes[Use ephemeral-nodes]
     LB -->|no| node-rotation{Nodes regularly rotated?}
 
     node-rotation -->|yes| complicated[Use stable-nodes to prefer NodePort<br> over LoadBalancers.<br> However, don't use the<br> external-stable ListenerClass at all,<br> use external-unstable instead]
