@@ -1,4 +1,11 @@
 {{/*
+Used by FILE_LOG_DIRECTORY and the log volume mount in deployment.yaml, which have to agree.
+*/}}
+{{- define "listener-operator.telemetry.fileLogDirectory" -}}
+/var/log/{{ include "listener-operator.appname" . }}
+{{- end }}
+
+{{/*
 Create a list of telemetry related env vars.
 */}}
 {{- define "listener-operator.telemetry.envVars" -}}
@@ -17,7 +24,7 @@ Create a list of telemetry related env vars.
 {{ end }}
 {{- if .fileLog.enabled }}
 - name: FILE_LOG_DIRECTORY
-  value: /stackable/logs/{{ include "listener-operator.appname" $ }}
+  value: {{ include "listener-operator.telemetry.fileLogDirectory" $ }}
 {{- end }}
 {{- if and .fileLog.enabled .fileLog.level }}
 - name: FILE_LOG_LEVEL
