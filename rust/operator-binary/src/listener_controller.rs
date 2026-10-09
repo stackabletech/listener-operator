@@ -23,8 +23,8 @@ use stackable_operator::{
         apimachinery::pkg::apis::meta::v1::{LabelSelector, OwnerReference},
     },
     kube::{
-        Resource, ResourceExt,
-        api::{DynamicObject, ObjectMeta},
+        Api, Resource, ResourceExt,
+        api::{ApiResource, DynamicObject, ObjectMeta},
         core::{DeserializeGuard, error_boundary},
         runtime::{
             controller,
@@ -42,6 +42,7 @@ use strum::IntoStaticStr;
 use crate::{
     APP_NAME, OPERATOR_KEY,
     csi_server::node::NODE_TOPOLOGY_LABEL_HOSTNAME,
+    route,
     utils::address::{AddressCandidates, node_primary_addresses},
 };
 
@@ -49,8 +50,11 @@ const OPERATOR_NAME: &str = "listeners.stackable.tech";
 const CONTROLLER_NAME: &str = "listener";
 pub const FULL_CONTROLLER_NAME: &str = concatcp!(CONTROLLER_NAME, '.', OPERATOR_NAME);
 
-pub async fn run<F>(client: stackable_operator::client::Client, shutdown_signal: F)
-where
+pub async fn run<F>(
+    client: stackable_operator::client::Client,
+    route_resource: Option<ApiResource>,
+    shutdown_signal: F,
+) where
     F: Future<Output = ()> + Send + Sync + 'static,
 {
     let controller = controller::Controller::new(
@@ -65,7 +69,7 @@ where
             instance: None,
         },
     ));
-    controller
+    let controller = controller
         .owns(
             client.get_all_api::<DeserializeGuard<Service>>(),
             watcher::Config::default(),
@@ -122,9 +126,25 @@ where
                             .within(ns)
                     })
             },
-        )
+        );
+    let controller = match &route_resource {
+        Some(resource) => controller.owns_with(
+            Api::<DynamicObject>::all_with(client.as_kube_client(), resource),
+            resource.clone(),
+            watcher::Config::default(),
+        ),
+        None => controller,
+    };
+    controller
         .graceful_shutdown_on(shutdown_signal)
-        .run(reconcile, error_policy, Arc::new(Ctx { client }))
+        .run(
+            reconcile,
+            error_policy,
+            Arc::new(Ctx {
+                client,
+                route_resource,
+            }),
+        )
         // We can let the reporting happen in the background
         .for_each_concurrent(
             16, // concurrency limit
@@ -143,6 +163,7 @@ where
 
 pub struct Ctx {
     pub client: stackable_operator::client::Client,
+    pub route_resource: Option<ApiResource>,
 }
 
 #[derive(Debug, Snafu, IntoStaticStr)]
@@ -237,6 +258,16 @@ pub enum Error {
     ApplyStatus {
         source: stackable_operator::client::Error,
     },
+
+    #[snafu(display(
+        "{listener_class} uses serviceType OpenShiftRoute, but the cluster does not support Routes"
+    ))]
+    RoutesNotSupported {
+        listener_class: ObjectRef<listener::v1alpha1::ListenerClass>,
+    },
+
+    #[snafu(display("failed to reconcile OpenShift Route"))]
+    Route { source: route::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 impl ReconcilerError for Error {
@@ -268,6 +299,8 @@ impl ReconcilerError for Error {
             Self::ApplyService { source: _, svc } => Some(svc.clone().erase()),
             Self::DeleteOrphans { source: _ } => None,
             Self::ApplyStatus { source: _ } => None,
+            Self::RoutesNotSupported { listener_class } => Some(listener_class.clone().erase()),
+            Self::Route { source: _ } => None,
         }
     }
 }
@@ -333,6 +366,24 @@ pub async fn reconcile(
         // Deduplicate ports by (protocol, name)
         .collect::<BTreeMap<_, ServicePort>>();
     let svc_name = listener.metadata.name.clone().context(NoNameSnafu)?;
+    let route_config = match listener_class.spec.service_type {
+        listener::v1alpha1::ServiceType::OpenShiftRoute => {
+            let route_resource =
+                ctx.route_resource
+                    .as_ref()
+                    .with_context(|| RoutesNotSupportedSnafu {
+                        listener_class: ObjectRef::from_obj(&listener_class),
+                    })?;
+            let config = listener_class
+                .spec
+                .openshift_route
+                .clone()
+                .unwrap_or_default();
+            let port = route::select_port(listener, &config).context(RouteSnafu)?;
+            Some((route_resource, port, config.tls))
+        }
+        _ => None,
+    };
     let mut pod_selector = listener.spec.extra_pod_selector_labels.clone();
     pod_selector.extend([listener_mounted_pod_label(listener).context(ListenerPodSelectorSnafu)?]);
 
@@ -344,24 +395,25 @@ pub async fn reconcile(
             .as_ref()
             .map(|policy| policy.to_string()),
         // ClusterIP services have no external traffic to apply policies to
-        listener::v1alpha1::ServiceType::ClusterIP => None,
+        listener::v1alpha1::ServiceType::ClusterIP
+        | listener::v1alpha1::ServiceType::OpenShiftRoute => None,
     };
 
     let load_balancer_class = match listener_class.spec.service_type {
         listener::v1alpha1::ServiceType::LoadBalancer => {
             listener_class.spec.load_balancer_class.clone()
         }
-        listener::v1alpha1::ServiceType::NodePort | listener::v1alpha1::ServiceType::ClusterIP => {
-            None
-        }
+        listener::v1alpha1::ServiceType::NodePort
+        | listener::v1alpha1::ServiceType::ClusterIP
+        | listener::v1alpha1::ServiceType::OpenShiftRoute => None,
     };
     let allocate_load_balancer_node_ports = match listener_class.spec.service_type {
         listener::v1alpha1::ServiceType::LoadBalancer => {
             Some(listener_class.spec.load_balancer_allocate_node_ports)
         }
-        listener::v1alpha1::ServiceType::NodePort | listener::v1alpha1::ServiceType::ClusterIP => {
-            None
-        }
+        listener::v1alpha1::ServiceType::NodePort
+        | listener::v1alpha1::ServiceType::ClusterIP
+        | listener::v1alpha1::ServiceType::OpenShiftRoute => None,
     };
 
     let mut svc = Service {
@@ -401,7 +453,8 @@ pub async fn reconcile(
             type_: Some(match listener_class.spec.service_type {
                 listener::v1alpha1::ServiceType::NodePort => "NodePort".to_string(),
                 listener::v1alpha1::ServiceType::LoadBalancer => "LoadBalancer".to_string(),
-                listener::v1alpha1::ServiceType::ClusterIP => "ClusterIP".to_string(),
+                listener::v1alpha1::ServiceType::ClusterIP
+                | listener::v1alpha1::ServiceType::OpenShiftRoute => "ClusterIP".to_string(),
             }),
             load_balancer_class,
             allocate_load_balancer_node_ports,
@@ -435,6 +488,10 @@ pub async fn reconcile(
     ensure_existing_service_is_not_foreign(&ctx.client, &svc_name, ns, listener_uid, &svc_ref)
         .await?;
 
+    let desired_route = route_config
+        .as_ref()
+        .map(|(route_resource, port, tls)| route::build(route_resource, &svc, port, *tls));
+
     let svc = cluster_resources
         .add(&ctx.client, svc)
         .await
@@ -442,10 +499,29 @@ pub async fn reconcile(
     let preferred_address_type = listener_class.spec.resolve_preferred_address_type();
 
     let nodes: Vec<Node>;
+    let route_hosts: Vec<String>;
     let kubernetes_service_fqdn: String;
     let addresses: Vec<(&str, listener::v1alpha1::AddressType)>;
     let ports: BTreeMap<String, i32>;
     match listener_class.spec.service_type {
+        listener::v1alpha1::ServiceType::OpenShiftRoute => {
+            let (route_resource, port, tls) = route_config.as_ref().expect("Route was configured");
+            let route = route::apply(
+                ctx.client.as_kube_client(),
+                route_resource,
+                &format!("{OPERATOR_KEY}/{CONTROLLER_NAME}"),
+                desired_route.as_ref().expect("Route was built"),
+                listener_uid,
+            )
+            .await
+            .context(RouteSnafu)?;
+            route_hosts = route::admitted_hosts(&route);
+            addresses = route_hosts
+                .iter()
+                .map(|host| (host.as_str(), listener::v1alpha1::AddressType::Hostname))
+                .collect();
+            ports = [(port.clone(), route::external_port(*tls))].into();
+        }
         listener::v1alpha1::ServiceType::NodePort => {
             let node_names =
                 node_names_for_nodeport_listener(&ctx.client, listener, ns, &svc_name).await?;
@@ -555,6 +631,17 @@ pub async fn reconcile(
         .delete_orphaned_resources(&ctx.client)
         .await
         .context(DeleteOrphansSnafu)?;
+    if let (Some(route_resource), None) = (&ctx.route_resource, &route_config) {
+        route::delete(
+            ctx.client.as_kube_client(),
+            route_resource,
+            ns,
+            &svc_name,
+            listener_uid,
+        )
+        .await
+        .context(RouteSnafu)?;
+    }
 
     ctx.client
         .apply_patch_status(CONTROLLER_NAME, &listener_status_meta, &listener_status)
@@ -578,7 +665,7 @@ pub fn error_policy<T>(_obj: Arc<T>, error: &Error, _ctx: Arc<Ctx>) -> controlle
 /// Services that we previously created ourselves; refusing otherwise prevents the Listener
 /// primitive from being abused to clobber foreign same-named Services via the operator's elevated
 /// cluster-wide write permissions.
-fn is_owned_by_listener(existing_owners: &[OwnerReference], listener_uid: &str) -> bool {
+pub(crate) fn is_owned_by_listener(existing_owners: &[OwnerReference], listener_uid: &str) -> bool {
     let listener_kind = <listener::v1alpha1::Listener as Resource>::kind(&());
     existing_owners.iter().any(|owner| {
         owner.controller == Some(true)
