@@ -28,7 +28,6 @@ use stackable_operator::{
     utils::signal::{self, SignalWatcher},
     webhook::health::HealthCheckRegistry,
 };
-use tokio::sync::oneshot;
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 use utils::unix_stream::{TonicUnixStream, uds_bind_private};
@@ -198,7 +197,7 @@ async fn main() -> anyhow::Result<()> {
                         crd = v1alpha1::Listener::crd_name()
                     ));
 
-                    let (webhook_server, initial_reconcile_rx) = create_webhook_server(
+                    let (webhook_server, _) = create_webhook_server(
                         &operator_environment,
                         maintenance.disable_crd_maintenance,
                         readiness_checks,
@@ -210,15 +209,6 @@ async fn main() -> anyhow::Result<()> {
                         .run(sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run webhook server"));
 
-                    let listener_classes = create_listener_classes(
-                        initial_reconcile_rx,
-                        listener_class_preset,
-                        client.clone(),
-                    )
-                    .map_err(|err| {
-                        anyhow!(err).context("failed to apply listener classes selected by preset")
-                    });
-
                     let csi_server = csi_server
                         .add_service(ControllerServer::new(ListenerOperatorController {
                             client: client.clone(),
@@ -226,11 +216,7 @@ async fn main() -> anyhow::Result<()> {
                         .serve_with_incoming_shutdown(csi_listener, sigterm_watcher.handle())
                         .map_err(|err| anyhow!(err).context("failed to run csi server"));
 
-                    let controller =
-                        listener_controller::run(client.clone(), sigterm_watcher.handle())
-                            .map(anyhow::Ok);
-
-                    let delayed_controller = async {
+                    let controller_and_listener_classes = async {
                         signal::crd_established(&client, v1alpha1::ListenerClass::crd_name())
                             .await?;
                         listener_class_crd_check.mark_passed();
@@ -239,12 +225,27 @@ async fn main() -> anyhow::Result<()> {
                         pod_listeners_crd_check.mark_passed();
                         signal::crd_established(&client, v1alpha1::Listener::crd_name()).await?;
                         listener_crd_check.mark_passed();
-                        controller.await
+
+                        let controller =
+                            listener_controller::run(client.clone(), sigterm_watcher.handle())
+                                .map(anyhow::Ok);
+
+                        // Only create the listener classes after the CRDs are established
+                        let listener_classes = create_listener_classes(
+                            listener_class_preset,
+                            client.clone(),
+                        )
+                        .map_err(|err| {
+                            anyhow!(err)
+                                .context("failed to apply listener classes selected by preset")
+                        });
+
+                        futures::try_join!(controller, listener_classes)?;
+                        Ok(())
                     };
 
                     futures::try_join!(
-                        delayed_controller,
-                        listener_classes,
+                        controller_and_listener_classes,
                         webhook_server,
                         eos_checker,
                         csi_server,
@@ -270,12 +271,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn create_listener_classes(
-    initial_reconcile_rx: oneshot::Receiver<()>,
     listener_class_preset: ListenerClassPreset,
     client: Client,
 ) -> anyhow::Result<()> {
-    initial_reconcile_rx.await?;
-
     tracing::info!(
         preset = %listener_class_preset,
         "apply listener class preset"

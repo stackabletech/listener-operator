@@ -150,9 +150,6 @@ rules:
     resources:
       - listenerclasses
     verbs:
-      {{- if .Values.maintenance.customResourceDefinitions.maintain }}
-      - patch
-      {{- end }}
       - get
       - list
       - watch
