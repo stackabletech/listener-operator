@@ -21,11 +21,13 @@ All notable changes to this project will be documented in this file.
   previously ignored in favour of a hardcoded name. `serviceAccount.create=false` now requires
   `serviceAccount.name`; it used to fall back to the namespace default ServiceAccount, which lacks
   the operator ClusterRole ([#418]).
+- Install default resources regardless of CRD maintenance flag ([#439]).
 
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
 [#416]: https://github.com/stackabletech/listener-operator/pull/416
 [#418]: https://github.com/stackabletech/listener-operator/pull/418
 [#434]: https://github.com/stackabletech/listener-operator/pull/434
+[#439]: https://github.com/stackabletech/listener-operator/pull/439
 
 ## [26.7.0] - 2026-07-21
 
