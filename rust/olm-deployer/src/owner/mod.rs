@@ -57,7 +57,6 @@ mod test {
     use std::sync::LazyLock;
 
     use anyhow::Result;
-    use serde::Deserialize;
     use stackable_operator::k8s_openapi::apimachinery::pkg::apis::meta::v1::OwnerReference;
 
     use super::*;
@@ -77,10 +76,7 @@ spec:
           image: "quay.io/stackable/listener-operator@sha256:bb5063aa67336465fd3fa80a7c6fd82ac6e30ebe3ffc6dba6ca84c1f1af95bfe"
 "#;
 
-        let data =
-            serde_yaml::Value::deserialize(serde_yaml::Deserializer::from_str(STR_DAEMONSET))
-                .unwrap();
-        serde_yaml::from_value(data).unwrap()
+        stackable_operator::utils::yaml_from_str_singleton_map(STR_DAEMONSET).unwrap()
     });
 
     static DEPLOYMENT: LazyLock<Deployment> = LazyLock::new(|| {
@@ -104,10 +100,7 @@ spec:
           effect: NoSchedule
     "#;
 
-        let data =
-            serde_yaml::Value::deserialize(serde_yaml::Deserializer::from_str(STR_DEPLOYMENT))
-                .unwrap();
-        serde_yaml::from_value(data).unwrap()
+        stackable_operator::utils::yaml_from_str_singleton_map(STR_DEPLOYMENT).unwrap()
     });
 
     static CLUSTER_ROLE: LazyLock<ClusterRole> = LazyLock::new(|| {
@@ -126,10 +119,7 @@ rules:
     verbs:
       - get
     "#;
-        let data =
-            serde_yaml::Value::deserialize(serde_yaml::Deserializer::from_str(STR_CLUSTER_ROLE))
-                .unwrap();
-        serde_yaml::from_value(data).unwrap()
+        stackable_operator::utils::yaml_from_str_singleton_map(STR_CLUSTER_ROLE).unwrap()
     });
 
     #[test]

@@ -286,9 +286,9 @@ async fn create_listener_classes(
         ListenerClassPreset::StableNodes => include_str!("manifests/stable-nodes.yaml"),
     };
 
-    for document in serde_yaml::Deserializer::from_str(contents) {
+    for document in yaml_serde::Deserializer::from_str(contents) {
         let class: v1alpha1::ListenerClass =
-            serde_yaml::with::singleton_map_recursive::deserialize(document)
+            yaml_serde::with::singleton_map_recursive::deserialize(document)
                 .expect("compile-time included listener classes must be valid YAML");
 
         tracing::debug!(name = class.name_any(), preset = %listener_class_preset, "create listener class if needed");

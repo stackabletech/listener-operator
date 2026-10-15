@@ -11,9 +11,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Bump stackable-operator to 0.114.0 ([#411]).
-- Bump stackable-operator to 0.115.0 ([#416]).
-- Bump stackable-operator to 0.119.0 ([#434]).
+- Bump stackable-operator to 0.121.0 ([#411], [#416], [#434], [#441]).
+- All pods now set `securityContext.seccompProfile.type` to `RuntimeDefault` ([#441]).
+- Replace the unmaintained `serde_yaml` with `yaml_serde` ([#441]).
 
 ### Fixed
 
@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 [#418]: https://github.com/stackabletech/listener-operator/pull/418
 [#434]: https://github.com/stackabletech/listener-operator/pull/434
 [#439]: https://github.com/stackabletech/listener-operator/pull/439
+[#441]: https://github.com/stackabletech/listener-operator/pull/441
 
 ## [26.7.0] - 2026-07-21
 
