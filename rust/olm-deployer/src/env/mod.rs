@@ -72,7 +72,6 @@ mod test {
     use std::sync::LazyLock;
 
     use anyhow::Result;
-    use serde::Deserialize;
 
     use super::*;
 
@@ -94,10 +93,7 @@ spec:
               value: value1
 "#;
 
-        let data =
-            serde_yaml::Value::deserialize(serde_yaml::Deserializer::from_str(STR_DAEMONSET))
-                .unwrap();
-        serde_yaml::from_value(data).unwrap()
+        stackable_operator::utils::yaml_from_str_singleton_map(STR_DAEMONSET).unwrap()
     });
 
     static DEPLOYMENT: LazyLock<Deployment> = LazyLock::new(|| {
@@ -124,10 +120,7 @@ spec:
           effect: NoSchedule
     "#;
 
-        let data =
-            serde_yaml::Value::deserialize(serde_yaml::Deserializer::from_str(STR_DEPLOYMENT))
-                .unwrap();
-        serde_yaml::from_value(data).unwrap()
+        stackable_operator::utils::yaml_from_str_singleton_map(STR_DEPLOYMENT).unwrap()
     });
 
     #[test]
