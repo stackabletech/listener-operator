@@ -97,6 +97,10 @@ spec:
           volumeMounts:
             - name: csi
               mountPath: /csi
+            {{- if .Values.telemetry.fileLog.enabled }}
+            - name: log
+              mountPath: {{ include "listener-operator.telemetry.fileLogDirectory" . }}
+            {{- end }}
           startupProbe:
             httpGet:
               path: /ready
@@ -120,6 +124,10 @@ spec:
       volumes:
         - name: csi
           emptyDir: {}
+        {{- if .Values.telemetry.fileLog.enabled }}
+        - name: log
+          emptyDir: {}
+        {{- end }}
       {{- with .Values.csiProvisioner.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
