@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
   `serviceAccount.name`; it used to fall back to the namespace default ServiceAccount, which lacks
   the operator ClusterRole ([#418]).
 - Install default resources regardless of CRD maintenance flag ([#439]).
+- File logging no longer crash-loops the operator when the root filesystem is read-only, as it is on OpenShift. Logs are written to an `emptyDir` at `/var/log/listener-operator` ([#444]).
 
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
 [#416]: https://github.com/stackabletech/listener-operator/pull/416
@@ -29,6 +30,7 @@ All notable changes to this project will be documented in this file.
 [#434]: https://github.com/stackabletech/listener-operator/pull/434
 [#439]: https://github.com/stackabletech/listener-operator/pull/439
 [#441]: https://github.com/stackabletech/listener-operator/pull/441
+[#444]: https://github.com/stackabletech/listener-operator/pull/444
 
 ## [26.7.0] - 2026-07-21
 

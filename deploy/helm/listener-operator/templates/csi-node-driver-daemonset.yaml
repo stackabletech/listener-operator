@@ -91,6 +91,10 @@ spec:
               mountPath: /csi
             - name: mountpoint
               mountPath: {{ .Values.kubeletDir }}/pods
+            {{- if .Values.telemetry.fileLog.enabled }}
+            - name: log
+              mountPath: {{ include "listener-operator.telemetry.fileLogDirectory" . }}
+            {{- end }}
         - name: node-driver-registrar
           image: "{{ include "listener-operator.csi-node-driver-registrar.image" . }}"
           imagePullPolicy: {{ .Values.csiNodeDriver.nodeDriverRegistrar.image.pullPolicy }}
@@ -116,6 +120,10 @@ spec:
         - name: mountpoint
           hostPath:
             path: {{ .Values.kubeletDir }}/pods/
+        {{- if .Values.telemetry.fileLog.enabled }}
+        - name: log
+          emptyDir: {}
+        {{- end }}
       {{- with .Values.csiNodeDriver.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
