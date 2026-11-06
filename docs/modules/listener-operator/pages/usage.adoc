@@ -1,4 +1,5 @@
 = Usage
+:description: Usage of the Stackable listener operator, covering listenerClass settings in SDP operators, the exposed addresses and use in other applications.
 
 The Listener Operator is used differently depending on whether you are using Stackable data platform operators or building custom applications.
 

@@ -1,4 +1,5 @@
 = Installation
+:description: Installation of the Stackable listener operator with stackablectl or Helm, covering ListenerClass presets and settings for Kubernetes distributions.
 
 There are two ways to run the Stackable Listener Operator:
 
