@@ -1,4 +1,5 @@
 = Overview
+:description: Overview of the Stackable listener operator, covering why exposing services in Kubernetes is hard and how it handles access scope, routing and addresses.
 
 So. You've deployed something, and now you want let people call into it.
 Just grab the IP address, port, maybe punch a hole through the firewall if you're feeling particularly adventurous, and you're off to the races... right?
