@@ -25,14 +25,13 @@ Requirements:
 
 import argparse
 import datetime
-import subprocess
 import json
-import urllib.request
+import subprocess
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 import yaml
-
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 REPO_ROOT = SCRIPT_DIR.parent
@@ -1181,9 +1180,7 @@ def build_configmap(
             key = "storageclass.yaml"
         elif kind == "Service":
             key = "service.yaml"
-        elif kind == "DaemonSet":
-            key = f"{name}.yaml"
-        elif kind == "Deployment":
+        elif kind == "DaemonSet" or kind == "Deployment":
             key = f"{name}.yaml"
         else:
             continue
@@ -1309,9 +1306,9 @@ def format_created_at(epoch_seconds: int) -> str:
     >>> format_created_at(1784628000)
     '2026-07-21T10:00:00Z'
     """
-    return datetime.datetime.fromtimestamp(
-        epoch_seconds, tz=datetime.timezone.utc
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.datetime.fromtimestamp(epoch_seconds, tz=datetime.UTC).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
 
 
 def build_csv(
