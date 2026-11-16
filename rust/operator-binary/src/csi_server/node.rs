@@ -565,37 +565,93 @@ async fn publish_pod_listener(
 }
 
 mod pod_dir {
-    use std::path::Path;
+    use std::{
+        ffi::OsStr,
+        fs::File,
+        io::Write as _,
+        os::fd::{AsFd, BorrowedFd, OwnedFd},
+        path::{Path, PathBuf},
+    };
 
-    use snafu::{OptionExt, ResultExt, Snafu};
+    use rustix::{
+        fs::{CWD, FileType, Mode, OFlags, fstat, mkdirat, openat},
+        io::Errno,
+    };
+    use snafu::{OptionExt, ResultExt, Snafu, ensure};
     use stackable_operator::crd::listener;
 
     #[derive(Snafu, Debug)]
     pub enum Error {
-        #[snafu(display("failed to write content"), context(false))]
-        WriteContent { source: std::io::Error },
+        #[snafu(display("failed to create file at {path:?}"))]
+        CreateFile {
+            source: std::io::Error,
+            path: PathBuf,
+        },
+
+        #[snafu(display("file {path:?} exists but is not a regular file"))]
+        NotRegularFile { path: PathBuf },
+
+        #[snafu(display("failed to write contents to file at {path:?}"))]
+        WriteFileContents {
+            source: std::io::Error,
+            path: PathBuf,
+        },
+
         #[snafu(display("listener has no address yet"))]
         NoDefaultAddress,
+
         #[snafu(display("default address folder is outside of the volume root"))]
         DefaultAddrIsOutsideRoot { source: std::path::StripPrefixError },
+
+        #[snafu(display("failed to create parent dir {path:?}"))]
+        CreateDirectory {
+            source: std::io::Error,
+            path: PathBuf,
+        },
+
+        #[snafu(display("child directory path must contain at least one component"))]
+        EmptyChildDirectoryPath,
+
+        #[snafu(display("failed to create default address symlink"))]
+        CreateDefaultAddrSymlink { source: std::io::Error },
     }
 
     pub async fn write_listener_info_to_pod_dir(
         target_path: &Path,
         listener_addrs: &[listener::v1alpha1::ListenerIngress],
     ) -> Result<(), Error> {
-        let addrs_path = target_path.join("addresses");
-        tokio::fs::create_dir_all(&addrs_path).await?;
+        let (root_dir_fd, root_dir_path) = open_root_dir(target_path)?;
+        let (addrs_dir_fd, addrs_dir_path) =
+            create_dir_all(root_dir_fd.as_fd(), &root_dir_path, Path::new("addresses"))?;
+
         let mut default_addr_dir = None;
         for addr in listener_addrs {
-            let addr_dir = addrs_path.join(&addr.address);
-            let ports_dir = addr_dir.join("ports");
-            tokio::fs::create_dir_all(&ports_dir).await?;
-            tokio::fs::write(addr_dir.join("address"), addr.address.as_bytes()).await?;
-            for (port_name, port) in &addr.ports {
-                tokio::fs::write(ports_dir.join(port_name), port.to_string().as_bytes()).await?;
+            let (addr_dir_fd, addr_dir_path) = create_dir_all(
+                addrs_dir_fd.as_fd(),
+                &addrs_dir_path,
+                Path::new(&addr.address),
+            )?;
+
+            let (ports_dir_fd, ports_dir_path) =
+                create_dir_all(addr_dir_fd.as_fd(), &addr_dir_path, Path::new("ports"))?;
+
+            write_file(
+                addr_dir_fd.as_fd(),
+                &addr_dir_path,
+                "address",
+                addr.address.as_bytes(),
+            )?;
+
+            for (port_name, port_number) in &addr.ports {
+                write_file(
+                    ports_dir_fd.as_fd(),
+                    &ports_dir_path,
+                    port_name,
+                    port_number.to_string().as_bytes(),
+                )?;
             }
-            default_addr_dir.get_or_insert(addr_dir);
+
+            default_addr_dir.get_or_insert(addr_dir_path);
         }
 
         let relative_default_addr_dir = default_addr_dir
@@ -615,8 +671,128 @@ mod pod_dir {
             // This happens if the node was restarted. The pod then restarts with the same UID and
             // the pre-populated volume.
             let _ = tokio::fs::remove_file(&default_addr_dir_link).await;
-            tokio::fs::symlink(relative_default_addr_dir, &default_addr_dir_link).await?;
+            tokio::fs::symlink(relative_default_addr_dir, &default_addr_dir_link)
+                .await
+                .context(CreateDefaultAddrSymlinkSnafu)?;
         }
+
         Ok(())
+    }
+
+    fn open_root_dir(target_path: &Path) -> Result<(OwnedFd, PathBuf), Error> {
+        // RDONLY: a directory can only be opened read-only, and the descriptor is only used as the
+        //   base for the next `openat`/`mkdirat`.
+        // DIRECTORY: fail if the entry is not a directory.
+        // NOFOLLOW: fail if the entry is a symlink instead of following it.
+        // CLOEXEC: do not leak the descriptor into child processes.
+        let directory_flags =
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+
+        let path = target_path.to_path_buf();
+        let directory_fd = openat(CWD, target_path, directory_flags, Mode::empty())
+            .map_err(std::io::Error::from)
+            .context(CreateDirectorySnafu { path: &path })?;
+
+        Ok((directory_fd, path))
+    }
+
+    fn create_dir_all(
+        parent_directory_fd: BorrowedFd,
+        parent_directory_path: &Path,
+        directory_path: &Path,
+    ) -> Result<(OwnedFd, PathBuf), Error> {
+        let mut path = parent_directory_path.to_path_buf();
+        let mut components = directory_path.components();
+
+        let first = components.next().context(EmptyChildDirectoryPathSnafu)?;
+        let mut directory = create_dir(parent_directory_fd, &mut path, first.as_os_str())?;
+
+        for component in components {
+            directory = create_dir(directory.as_fd(), &mut path, component.as_os_str())?;
+        }
+
+        Ok((directory, path))
+    }
+
+    fn create_dir(
+        parent_directory_fd: BorrowedFd<'_>,
+        parent_directory_path: &mut PathBuf,
+        component: &OsStr,
+    ) -> Result<OwnedFd, Error> {
+        // RDONLY: a directory can only be opened read-only, and the descriptor is only used as the
+        //   base for the next `openat`/`mkdirat`.
+        // DIRECTORY: fail if the entry is not a directory.
+        // NOFOLLOW: fail if the entry is a symlink instead of following it.
+        // CLOEXEC: do not leak the descriptor into child processes.
+        let directory_flags =
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+
+        parent_directory_path.push(component);
+
+        // Directories need the execute bit to be entered, so this is 0o750 rather than the 0o640
+        // of the files.
+        match mkdirat(parent_directory_fd, component, Mode::from_raw_mode(0o750)) {
+            Ok(()) | Err(Errno::EXIST) => {}
+            Err(err) => {
+                return Err(std::io::Error::from(err)).with_context(|_| CreateDirectorySnafu {
+                    path: parent_directory_path.clone(),
+                });
+            }
+        }
+        openat(
+            parent_directory_fd,
+            component,
+            directory_flags,
+            Mode::empty(),
+        )
+        .map_err(std::io::Error::from)
+        .context(CreateDirectorySnafu {
+            path: &parent_directory_path,
+        })
+    }
+
+    fn write_file(
+        directory_fd: BorrowedFd,
+        directory_path: &Path,
+        file_name: &str,
+        contents: &[u8],
+    ) -> Result<(), Error> {
+        let path = directory_path.join(file_name);
+
+        let file = openat(
+            directory_fd,
+            file_name,
+            OFlags::WRONLY
+            | OFlags::CREATE
+            // A repeated publish rewrites existing files, and regenerated keys and certificates
+            // vary in length, so a shorter file would keep trailing bytes of the previous one.
+            | OFlags::TRUNC
+            // Fail on a symlink instead of writing to its target.
+            | OFlags::NOFOLLOW
+            // Opening a FIFO would otherwise block until a reader appears. With it the open fails
+            // if there is no reader, and the type check below rejects a FIFO that has one.
+            | OFlags::NONBLOCK
+            | OFlags::CLOEXEC,
+            // User: root/secret-operator
+            // Group: Controlled by Pod.securityContext.fsGroup, the actual application
+            // (when running as unprivileged user)
+            Mode::from_raw_mode(0o640),
+        )
+        .map_err(std::io::Error::from)
+        .context(CreateFileSnafu { path: &path })?;
+
+        let file_type = fstat(&file)
+            .map(|stat| FileType::from_raw_mode(stat.st_mode))
+            .map_err(std::io::Error::from)
+            .context(CreateFileSnafu { path: &path })?;
+
+        ensure!(
+            file_type == FileType::RegularFile,
+            NotRegularFileSnafu { path }
+        );
+
+        File::from(file)
+            .write_all(contents)
+            .context(WriteFileContentsSnafu { path })
     }
 }

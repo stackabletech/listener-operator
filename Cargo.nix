@@ -11073,6 +11073,12 @@ rec {
             packageId = "prost";
           }
           {
+            name = "rustix";
+            packageId = "rustix";
+            usesDefaultFeatures = false;
+            features = [ "fs" "std" ];
+          }
+          {
             name = "serde";
             packageId = "serde";
           }
