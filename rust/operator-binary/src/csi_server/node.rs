@@ -691,15 +691,17 @@ mod pod_dir {
         Ok(())
     }
 
-    fn open_root_dir(target_path: &Path) -> Result<(OwnedFd, PathBuf), Error> {
+    fn directory_open_flags() -> OFlags {
         // RDONLY: a directory can only be opened read-only, and the descriptor is only used as the
-        //   base for the next `openat`/`mkdirat`.
+        //         base for the next `openat`/`mkdirat`.
         // DIRECTORY: fail if the entry is not a directory.
         // NOFOLLOW: fail if the entry is a symlink instead of following it.
         // CLOEXEC: do not leak the descriptor into child processes.
-        let directory_flags =
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC
+    }
 
+    fn open_root_dir(target_path: &Path) -> Result<(OwnedFd, PathBuf), Error> {
+        let directory_flags = directory_open_flags();
         let path = target_path.to_path_buf();
         let directory_fd = openat(CWD, target_path, directory_flags, Mode::empty())
             .map_err(std::io::Error::from)
@@ -731,14 +733,7 @@ mod pod_dir {
         parent_directory_path: &mut PathBuf,
         component: &OsStr,
     ) -> Result<OwnedFd, Error> {
-        // RDONLY: a directory can only be opened read-only, and the descriptor is only used as the
-        //   base for the next `openat`/`mkdirat`.
-        // DIRECTORY: fail if the entry is not a directory.
-        // NOFOLLOW: fail if the entry is a symlink instead of following it.
-        // CLOEXEC: do not leak the descriptor into child processes.
-        let directory_flags =
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
-
+        let directory_flags = directory_open_flags();
         parent_directory_path.push(component);
 
         // Directories need the execute bit to be entered, so this is 0o750 rather than the 0o640
