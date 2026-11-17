@@ -1,4 +1,7 @@
-use std::{fmt::Debug, path::PathBuf};
+use std::{
+    fmt::Debug,
+    path::{Path, PathBuf},
+};
 
 use csi_grpc::{self as csi, v1::Topology};
 use serde::{Deserialize, de::IntoDeserializer};
@@ -103,6 +106,12 @@ enum PublishVolumeError {
     #[snafu(display("listener has no addresses yet"))]
     NoAddresses,
 
+    #[snafu(display("failed to create pod dir at {target_path:?}"))]
+    CreatePodDir {
+        source: std::io::Error,
+        target_path: PathBuf,
+    },
+
     #[snafu(display("failed to prepare pod dir at {target_path:?}"))]
     PreparePodDir {
         source: pod_dir::Error,
@@ -139,6 +148,7 @@ impl From<PublishVolumeError> for Status {
             PublishVolumeError::AddListenerLabelToPv { .. } => Status::unavailable(full_msg),
             PublishVolumeError::AddListenerLabelToPod { .. } => Status::unavailable(full_msg),
             PublishVolumeError::NoAddresses => Status::unavailable(full_msg),
+            PublishVolumeError::CreatePodDir { .. } => Status::internal(full_msg),
             PublishVolumeError::PreparePodDir { .. } => Status::internal(full_msg),
             PublishVolumeError::WritePodListeners { .. } => Status::unavailable(full_msg),
             PublishVolumeError::FindPodVolumeForPvc { .. } => Status::failed_precondition(full_msg),
@@ -364,7 +374,9 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
             &listener_addrs,
         )
         .await?;
+
         let target_path = PathBuf::from(request.target_path);
+        self.prepare_listener_dir(&target_path).await?;
         let result = {
             let target_path = target_path.clone();
             tokio::task::spawn_blocking(move || {
@@ -420,6 +432,24 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         _request: Request<csi::v1::NodeExpandVolumeRequest>,
     ) -> Result<Response<csi::v1::NodeExpandVolumeResponse>, Status> {
         tonic_unimplemented()
+    }
+}
+
+impl ListenerOperatorNode {
+    async fn prepare_listener_dir(&self, target_path: &Path) -> Result<(), PublishVolumeError> {
+        match tokio::fs::create_dir(target_path).await {
+            Ok(_) => {}
+            Err(err) => match err.kind() {
+                std::io::ErrorKind::AlreadyExists => {
+                    tracing::warn!(volume.path = %target_path.display(), "Tried to create volume path that already exists");
+                }
+                _ => {
+                    return Err(err)
+                        .context(publish_volume_error::CreatePodDirSnafu { target_path });
+                }
+            },
+        }
+        Ok(())
     }
 }
 
