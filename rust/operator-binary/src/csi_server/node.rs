@@ -791,7 +791,9 @@ mod pod_dir {
 
         // Directories need the execute bit to be entered, so this is 0o750 rather than the 0o640
         // of the files.
-        match mkdirat(parent_directory_fd, component, Mode::from_raw_mode(0o750)) {
+        // FIXME (@Techassi): The mode reflects the current permissions (as of 2026-11-17), but
+        // eventually we want to have 550.
+        match mkdirat(parent_directory_fd, component, Mode::from_raw_mode(0o755)) {
             Ok(()) | Err(Errno::EXIST) => {}
             Err(err) => {
                 return Err(std::io::Error::from(err)).with_context(|_| CreateDirectorySnafu {
@@ -836,7 +838,9 @@ mod pod_dir {
             // User: root/secret-operator
             // Group: Controlled by Pod.securityContext.fsGroup, the actual application
             // (when running as unprivileged user)
-            Mode::from_raw_mode(0o640),
+            // FIXME (@Techassi): The mode reflects the current permissions (as of 2026-11-17), but
+            // eventually we want to have 440.
+            Mode::from_raw_mode(0o644),
         )
         .map_err(std::io::Error::from)
         .context(OpenFileSnafu { path: &path })?;
