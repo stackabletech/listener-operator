@@ -377,6 +377,14 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
 
         let target_path = PathBuf::from(request.target_path);
         self.prepare_listener_dir(&target_path).await?;
+
+        // TODO (@Techassi): This code is structured very differently. We should instead aim for a
+        // similar approach like in secret operator. Also, this weird mix of async and non-async
+        // code feels very off.
+        // TODO (@Techassi): The fs code should be abstracted in a better way and in a single place.
+        // I recently learned that cap-std was moved out of the ByteCodeAlliance's org on GitHub and
+        // is now minimally maintained (and probably soon archived) by a maintainer working for
+        // BCA. Ideally, we should write our cap-std-esque library with async (tokio) support.
         let result = {
             let target_path = target_path.clone();
             tokio::task::spawn_blocking(move || {
