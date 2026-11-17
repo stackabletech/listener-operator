@@ -582,8 +582,14 @@ mod pod_dir {
 
     #[derive(Snafu, Debug)]
     pub enum Error {
-        #[snafu(display("failed to create file at {path:?}"))]
-        CreateFile {
+        #[snafu(display("failed to open file at {path:?}"))]
+        OpenFile {
+            source: std::io::Error,
+            path: PathBuf,
+        },
+
+        #[snafu(display("failed to query file metadata for {path:?}"))]
+        QueryFileMetadata {
             source: std::io::Error,
             path: PathBuf,
         },
@@ -603,7 +609,13 @@ mod pod_dir {
         #[snafu(display("default address folder is outside of the volume root"))]
         DefaultAddrIsOutsideRoot { source: std::path::StripPrefixError },
 
-        #[snafu(display("failed to create parent dir {path:?}"))]
+        #[snafu(display("failed to open directory at {path:?}"))]
+        OpenDirectory {
+            source: std::io::Error,
+            path: PathBuf,
+        },
+
+        #[snafu(display("failed to create parent dir at {path:?}"))]
         CreateDirectory {
             source: std::io::Error,
             path: PathBuf,
@@ -691,7 +703,7 @@ mod pod_dir {
         let path = target_path.to_path_buf();
         let directory_fd = openat(CWD, target_path, directory_flags, Mode::empty())
             .map_err(std::io::Error::from)
-            .context(CreateDirectorySnafu { path: &path })?;
+            .context(OpenDirectorySnafu { path: &path })?;
 
         Ok((directory_fd, path))
     }
@@ -746,7 +758,7 @@ mod pod_dir {
             Mode::empty(),
         )
         .map_err(std::io::Error::from)
-        .context(CreateDirectorySnafu {
+        .context(OpenDirectorySnafu {
             path: &parent_directory_path,
         })
     }
@@ -779,12 +791,12 @@ mod pod_dir {
             Mode::from_raw_mode(0o640),
         )
         .map_err(std::io::Error::from)
-        .context(CreateFileSnafu { path: &path })?;
+        .context(OpenFileSnafu { path: &path })?;
 
         let file_type = fstat(&file)
             .map(|stat| FileType::from_raw_mode(stat.st_mode))
             .map_err(std::io::Error::from)
-            .context(CreateFileSnafu { path: &path })?;
+            .context(QueryFileMetadataSnafu { path: &path })?;
 
         ensure!(
             file_type == FileType::RegularFile,
