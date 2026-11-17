@@ -365,10 +365,16 @@ impl csi::v1::node_server::Node for ListenerOperatorNode {
         )
         .await?;
         let target_path = PathBuf::from(request.target_path);
-        pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
+        let result = {
+            let target_path = target_path.clone();
+            tokio::task::spawn_blocking(move || {
+                pod_dir::write_listener_info_to_pod_dir(&target_path, &listener_addrs)
+            })
             .await
-            .context(PreparePodDirSnafu { target_path })?;
+            .expect("write_listener_info_to_pod_dir task unexpectedly failed to join")
+        };
 
+        result.context(PreparePodDirSnafu { target_path })?;
         Ok(Response::new(csi::v1::NodePublishVolumeResponse {}))
     }
 
@@ -569,12 +575,18 @@ mod pod_dir {
         ffi::OsStr,
         fs::File,
         io::Write as _,
-        os::fd::{AsFd, BorrowedFd, OwnedFd},
+        os::{
+            fd::{AsFd, BorrowedFd, OwnedFd},
+            unix::ffi::OsStrExt as _,
+        },
         path::{Path, PathBuf},
     };
 
     use rustix::{
-        fs::{CWD, FileType, Mode, OFlags, fstat, mkdirat, openat},
+        fs::{
+            AtFlags, CWD, FileType, Mode, OFlags, fstat, mkdirat, openat, readlinkat, symlinkat,
+            unlinkat,
+        },
         io::Errno,
     };
     use snafu::{OptionExt, ResultExt, Snafu, ensure};
@@ -628,7 +640,7 @@ mod pod_dir {
         CreateDefaultAddrSymlink { source: std::io::Error },
     }
 
-    pub async fn write_listener_info_to_pod_dir(
+    pub fn write_listener_info_to_pod_dir(
         target_path: &Path,
         listener_addrs: &[listener::v1alpha1::ListenerIngress],
     ) -> Result<(), Error> {
@@ -671,21 +683,24 @@ mod pod_dir {
             .strip_prefix(target_path)
             .context(DefaultAddrIsOutsideRootSnafu)?
             .to_owned();
-        let default_addr_dir_link = target_path.join("default-address");
+
         // Check if the symlink needs to be updated
-        if tokio::fs::read_link(&default_addr_dir_link)
-            .await
+        let current_link_target = readlinkat(root_dir_fd.as_fd(), "default-address", Vec::new())
             .ok()
-            .as_ref()
-            != Some(&relative_default_addr_dir)
-        {
-            // Remove any existing symlink because `tokio::fs::symlink` fails if it already exists.
+            .map(|target| PathBuf::from(OsStr::from_bytes(target.as_bytes())));
+
+        if current_link_target.as_deref() != Some(relative_default_addr_dir.as_path()) {
+            // Remove any existing symlink because `symlinkat` fails if it already exists.
             // This happens if the node was restarted. The pod then restarts with the same UID and
             // the pre-populated volume.
-            let _ = tokio::fs::remove_file(&default_addr_dir_link).await;
-            tokio::fs::symlink(relative_default_addr_dir, &default_addr_dir_link)
-                .await
-                .context(CreateDefaultAddrSymlinkSnafu)?;
+            let _ = unlinkat(root_dir_fd.as_fd(), "default-address", AtFlags::empty());
+            symlinkat(
+                relative_default_addr_dir,
+                root_dir_fd.as_fd(),
+                "default-address",
+            )
+            .map_err(std::io::Error::from)
+            .context(CreateDefaultAddrSymlinkSnafu)?;
         }
 
         Ok(())
