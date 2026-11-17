@@ -87,7 +87,8 @@ ignore = [
     #         └── stackable-operator v0.122.0
     #
     # humantime is only used in a single place to format timestamps according to RFC 3339. We
-    # ideally should switch it out for jiff.
+    # already switched to jiff in https://github.com/stackabletech/operator-rs/pull/1335,
+    # but this change needs to be rolled out across all operators.
     "RUSTSEC-2026-0542",
 ]
 
