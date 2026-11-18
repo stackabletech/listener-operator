@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- `NodePublishVolume` no longer follows symlinks inside the volume and only writes data into regular files ([#450]).
 - BREAKING: Honour `serviceAccount.name`, which the ServiceAccount and both CSI workloads
   previously ignored in favour of a hardcoded name. `serviceAccount.create=false` now requires
   `serviceAccount.name`; it used to fall back to the namespace default ServiceAccount, which lacks
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 [#439]: https://github.com/stackabletech/listener-operator/pull/439
 [#441]: https://github.com/stackabletech/listener-operator/pull/441
 [#444]: https://github.com/stackabletech/listener-operator/pull/444
+[#450]: https://github.com/stackabletech/listener-operator/pull/450
 
 ## [26.7.0] - 2026-07-21
 

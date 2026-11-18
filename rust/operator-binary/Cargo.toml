@@ -19,6 +19,7 @@ h2.workspace = true
 libc.workspace = true
 pin-project.workspace = true
 prost.workspace = true
+rustix = { workspace = true, features = ["fs", "std"] }
 socket2.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true

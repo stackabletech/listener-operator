@@ -40,3 +40,5 @@ extend-ignore-re = [
 [default.extend-words]
 # Azure Kubernetes Service
 aks = "aks"
+# open(2) flag for write-only access, as `OFlags::WRONLY` in `rustix`.
+WRONLY = "WRONLY"
