@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- The OLM bundle declares that the operator provides a CSI driver and sets `createdAt` ([#449]).
+
+[#449]: https://github.com/stackabletech/listener-operator/pull/449
+
+## [26.11.0] - 2026-11-20
+
+## [26.11.0-rc1] - 2026-11-19
+
+### Added
+
 - Add `/ready` endpoint to the operator Deployment, which reports the CRD installation status ([#434]).
 - Add startup probe to the operator Deployment ([#434]).
 
@@ -24,7 +34,6 @@ All notable changes to this project will be documented in this file.
   the operator ClusterRole ([#418]).
 - Install default resources regardless of CRD maintenance flag ([#439]).
 - File logging no longer crash-loops the operator when the root filesystem is read-only, as it is on OpenShift. Logs are written to an `emptyDir` at `/var/log/listener-operator` ([#444]).
-- The OLM bundle declares that the operator provides a CSI driver and sets `createdAt` ([#449]).
 
 [#411]: https://github.com/stackabletech/listener-operator/pull/411
 [#416]: https://github.com/stackabletech/listener-operator/pull/416
@@ -33,7 +42,6 @@ All notable changes to this project will be documented in this file.
 [#439]: https://github.com/stackabletech/listener-operator/pull/439
 [#441]: https://github.com/stackabletech/listener-operator/pull/441
 [#444]: https://github.com/stackabletech/listener-operator/pull/444
-[#449]: https://github.com/stackabletech/listener-operator/pull/449
 [#450]: https://github.com/stackabletech/listener-operator/pull/450
 
 ## [26.7.0] - 2026-07-21
